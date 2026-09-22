@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/engine",
+    "crates/engine-lsp",
+    "crates/driver-core",
+    "crates/drivers/mysql",
+    "crates/drivers/postgres",
+    "app/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/anderson-andres-dev/khipu"
+authors = ["Khipu contributors"]
+
+[workspace.dependencies]
+khipu-engine = { path = "crates/engine" }
+khipu-driver-core = { path = "crates/driver-core" }
+khipu-driver-mysql = { path = "crates/drivers/mysql" }
+khipu-driver-postgres = { path = "crates/drivers/postgres" }
+sqlparser = "0.52"
+tree-sitter = "0.24"
+tower-lsp = "0.20"
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+async-trait = "0.1"
+thiserror = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

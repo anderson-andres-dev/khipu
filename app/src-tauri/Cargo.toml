@@ -1,0 +1,31 @@
+[package]
+name = "khipu-desktop"
+version.workspace = true
+description = "Khipu desktop shell (Tauri)"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
+khipu-engine.workspace = true
+khipu-driver-core.workspace = true
+khipu-driver-mysql.workspace = true
+khipu-driver-postgres.workspace = true
+tokio.workspace = true

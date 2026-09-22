@@ -1,0 +1,7 @@
+# Rust workspace (cargo builds every member into this shared dir)
+/target/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp

@@ -1,0 +1,18 @@
+pub mod catalog;
+pub mod completion;
+pub mod parser;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dialect {
+    MySql,
+    Postgres,
+}
+
+impl Dialect {
+    pub fn as_sqlparser_dialect(&self) -> Box<dyn sqlparser::dialect::Dialect> {
+        match self {
+            Dialect::MySql => Box::new(sqlparser::dialect::MySqlDialect {}),
+            Dialect::Postgres => Box::new(sqlparser::dialect::PostgreSqlDialect {}),
+        }
+    }
+}
