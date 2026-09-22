@@ -384,7 +384,7 @@
     max-height: calc(100vh - 2rem);
     padding: 0;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: var(--radius-sm);
     background: var(--surface);
     color: var(--text-primary);
