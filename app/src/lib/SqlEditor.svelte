@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { get } from "svelte/store";
   import { basicSetup, EditorView } from "codemirror";
   import { sql } from "@codemirror/lang-sql";
-  import { oneDark } from "@codemirror/theme-one-dark";
+  import { Compartment } from "@codemirror/state";
+  import { buildCmTheme } from "$lib/theming/codemirrorTheme";
+  import { editorPalette, effectiveScheme } from "$lib/theming/theme";
 
   let { value = $bindable(""), onchange }: { value?: string; onchange?: (sql: string) => void } = $props();
 
   let container: HTMLDivElement;
   let view: EditorView | undefined;
+  const themeCompartment = new Compartment();
 
   onMount(() => {
     view = new EditorView({
@@ -16,7 +20,7 @@
       extensions: [
         basicSetup,
         sql(),
-        oneDark,
+        themeCompartment.of(buildCmTheme(get(editorPalette), get(effectiveScheme))),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             value = update.state.doc.toString();
@@ -25,6 +29,13 @@
         }),
       ],
     });
+  });
+
+  $effect(() => {
+    const palette = $editorPalette;
+    const scheme = $effectiveScheme;
+    if (!view) return;
+    view.dispatch({ effects: themeCompartment.reconfigure(buildCmTheme(palette, scheme)) });
   });
 
   onDestroy(() => view?.destroy());

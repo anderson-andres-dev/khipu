@@ -3,8 +3,11 @@
   import "$lib/styles/tokens.css";
   import { connection } from "$lib/stores/connection";
   import { initThemeEffects } from "$lib/theming/theme";
+  import { Settings } from "@lucide/svelte";
+  import SettingsPanel from "$lib/components/SettingsPanel.svelte";
 
   let cleanupThemeEffects: (() => void) | undefined;
+  let settingsOpen = $state(false);
 
   onMount(() => {
     cleanupThemeEffects = initThemeEffects();
@@ -21,6 +24,16 @@
     {#if $connection.connected}
       <span class="pill">{$connection.tableCount} tablas cargadas</span>
     {/if}
+    <button
+      class="icon-button"
+      type="button"
+      aria-label="Abrir ajustes"
+      aria-haspopup="dialog"
+      aria-expanded={settingsOpen}
+      onclick={() => (settingsOpen = true)}
+    >
+      <Settings size={18} />
+    </button>
   </header>
 
   <aside class="sidebar"></aside>
@@ -29,6 +42,8 @@
     <slot />
   </main>
 </div>
+
+<SettingsPanel bind:open={settingsOpen} />
 
 <style>
   :global(html, body) {
@@ -77,6 +92,35 @@
     font-size: 0.8rem;
     letter-spacing: var(--tracking-body);
     line-height: var(--leading-body);
+  }
+
+  .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: transform var(--duration-fast);
+  }
+
+  .icon-button:hover {
+    color: var(--text-primary);
+    background: var(--surface-elevated);
+    border-color: var(--border);
+  }
+
+  .icon-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .icon-button:active {
+    transform: scale(0.94);
   }
 
   .sidebar {
