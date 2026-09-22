@@ -1,0 +1,97 @@
+/*
+ * Design tokens — Khipu
+ *
+ * Dark es el tema por defecto en :root; se redefine bajo
+ * `@media (prefers-color-scheme: light)`. `color-scheme: light dark`
+ * deja que los controles nativos (inputs, selects, scrollbars) sigan
+ * el esquema del sistema sin estilizarlos a mano.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Color semántico (tema oscuro, por defecto) */
+  --surface: #1e1e1e;
+  --surface-elevated: #2a2a2a;
+  --border: #3a3a3a;
+  --text-primary: #e6e6e6;
+  --text-secondary: #999999;
+  --text-on-accent: #ffffff;
+  --accent: #0a84ff;
+  --danger: #ff453a;
+  --control-disabled: #555555;
+  --focus-ring: #409cff;
+
+  /* Espaciado — base 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+
+  /* Elevación */
+  --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.45);
+
+  /* Movimiento */
+  --duration-fast: 150ms;
+
+  /* Tipografía */
+  --font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-size-base: 1rem;
+
+  /* Nivel "heading": texto de énfasis/títulos cortos */
+  --font-size-heading: 1.0625rem;
+  --font-weight-heading: 600;
+  --tracking-heading: -0.01em;
+  --leading-heading: 1.2;
+
+  /* Nivel "body": texto de cuerpo/controles */
+  --font-size-body: 1rem;
+  --font-weight-body: 400;
+  --tracking-body: 0;
+  --leading-body: 1.5;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --surface: #f5f5f7;
+    --surface-elevated: #ffffff;
+    --border: #d2d2d7;
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --text-on-accent: #ffffff;
+    --accent: #007aff;
+    --danger: #ff3b30;
+    --control-disabled: #c7c7cc;
+    --focus-ring: #007aff;
+
+    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+  }
+}
+
+/* Alto contraste: bordes y foco más marcados, en el esquema que esté activo */
+@media (prefers-contrast: more) {
+  :root {
+    --border: #b3b3b3;
+    --focus-ring: #6cb2ff;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: light) {
+  :root {
+    --border: #4d4d4f;
+    --focus-ring: #0060df;
+  }
+}
