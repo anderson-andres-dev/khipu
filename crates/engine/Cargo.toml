@@ -9,7 +9,6 @@ authors.workspace = true
 
 [dependencies]
 sqlparser.workspace = true
-tree-sitter.workspace = true
 serde.workspace = true
 
 [dev-dependencies]

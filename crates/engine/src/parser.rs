@@ -1,5 +1,7 @@
-//! Incremental, error-tolerant parsing of the buffer being edited (tree-sitter),
-//! plus validation against the real dialect grammar (sqlparser) on demand.
+//! Validation against the real dialect grammar (`sqlparser`) on demand.
+//!
+//! Incremental, error-tolerant parsing of the buffer while it's being edited
+//! is not implemented yet.
 
 use crate::Dialect;
 use sqlparser::parser::{Parser, ParserError};

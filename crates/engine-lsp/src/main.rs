@@ -10,12 +10,12 @@ struct KhipuLanguageServer {
 #[tower_lsp::async_trait]
 impl LanguageServer for KhipuLanguageServer {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+        // `completion_provider` and `text_document_sync` are intentionally not
+        // announced here: the server does not implement `did_open`/`did_change`
+        // yet, and `completion` always returns an empty list. Advertising a
+        // capability the server doesn't back is worse than not advertising it.
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
-                completion_provider: Some(CompletionOptions::default()),
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::INCREMENTAL,
-                )),
                 ..Default::default()
             },
             ..Default::default()

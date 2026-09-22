@@ -45,9 +45,11 @@ pub enum DriverError {
     Query(String),
 }
 
-/// Implemented by each database plugin (khipu-driver-mysql, khipu-driver-postgres, ...).
-/// The engine and the app only ever depend on this trait, never on a concrete driver,
-/// so adding a new database is adding a new crate that implements it.
+/// Implemented by each database driver crate (khipu-driver-mysql, khipu-driver-postgres, ...).
+/// The engine depends only on this trait, never on a concrete driver. The app does
+/// depend on the concrete driver crates, since it builds them through a factory
+/// (`app/src-tauri/src/drivers.rs`) — adding a new database is adding a new crate
+/// that implements this trait plus a branch in that factory.
 #[async_trait]
 pub trait DbConnector: Send + Sync {
     async fn connect(config: &ConnectionConfig) -> Result<Self, DriverError>

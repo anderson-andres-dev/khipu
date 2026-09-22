@@ -1,5 +1,5 @@
 //! In-memory schema catalog that completion resolves against. Populated by a
-//! khipu-driver-* plugin via `DbConnector::list_tables`, kept independent of any
+//! khipu-driver-* crate via `DbConnector::list_tables`, kept independent of any
 //! single database's introspection format.
 
 #[derive(Debug, Clone, Default)]

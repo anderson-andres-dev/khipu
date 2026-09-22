@@ -10,14 +10,14 @@ modo que una relación amarra tablas.
 ## Estado
 
 En construcción. Core: MySQL y PostgreSQL. El resto de motores se suman como
-plugins independientes — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+crates nuevos en `crates/drivers/` — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+para el mecanismo real (no es un sistema de plugins dinámicos).
 
 ## Stack
 
 - **Shell**: [Tauri](https://tauri.app) (Rust)
-- **Motor de parsing/autocompletado**: Rust — [`sqlparser`](https://github.com/apache/datafusion-sqlparser-rs) +
-  [`tree-sitter`](https://tree-sitter.github.io/tree-sitter/), expuesto como
-  [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+- **Motor de parsing/autocompletado**: Rust — [`sqlparser`](https://github.com/apache/datafusion-sqlparser-rs),
+  expuesto como [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
 - **Conectores de base de datos**: [`sqlx`](https://github.com/launchbadge/sqlx) detrás de un trait propio (`DbConnector`)
 - **Frontend**: Svelte + [CodeMirror 6](https://codemirror.net/)
 - **Licencia**: MIT o Apache-2.0, a tu elección
@@ -50,6 +50,9 @@ cd app && npm install && npm run tauri dev
 
 ## Contribuir
 
-Ver [`CONTRIBUTING.md`](CONTRIBUTING.md). Cada motor de base de datos nuevo se
-agrega como un crate en `crates/drivers/` que implementa `DbConnector` — no hace
-falta tocar el engine ni la UI.
+Ver [`CONTRIBUTING.md`](CONTRIBUTING.md). Un motor nuevo con un dialecto ya
+soportado por `sqlparser` (por ejemplo otro compatible con MySQL o Postgres) se
+agrega como un crate en `crates/drivers/` que implementa `DbConnector`, más la
+rama correspondiente en la fábrica de drivers de `app/src-tauri/src/drivers.rs`
+— no hace falta tocar el engine. Un motor con un dialecto distinto sí requiere
+extender el enum `Dialect` de `crates/engine/src/lib.rs`.

@@ -19,12 +19,21 @@ cd app && npm install && npm run tauri dev
 
 ## Agregar soporte para un nuevo motor de base de datos
 
-Es la forma más directa de contribuir sin pisar el trabajo de nadie más:
+Si el motor usa un dialecto SQL ya soportado por `sqlparser` (por ejemplo otro
+compatible con MySQL o Postgres), es la forma más directa de contribuir sin
+pisar el trabajo de nadie más:
 
 1. `cargo new --lib crates/drivers/<motor>`
 2. Implementar el trait `DbConnector` de `khipu-driver-core`
 3. Agregarlo a `[workspace] members` en el `Cargo.toml` raíz
-4. Abrir el PR — no hace falta tocar `engine` ni `app`
+4. Agregar la rama correspondiente en la fábrica de drivers de
+   `app/src-tauri/src/drivers.rs` — hoy sí hace falta tocar `app` para que el
+   motor nuevo sea seleccionable, aunque no haga falta tocar `engine`
+5. Abrir el PR
+
+Si el motor necesita un dialecto SQL distinto de los que ya soporta
+`sqlparser`/`crates/engine/src/lib.rs` (enum `Dialect`), sí hay que extender
+ese enum — discutilo en un issue antes de mandar el PR.
 
 ## Pruebas de contrato de drivers
 
