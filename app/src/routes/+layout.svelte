@@ -20,7 +20,6 @@
 
 <div class="shell">
   <header class="topbar">
-    <h1>Khipu</h1>
     {#if $connection.connected}
       <span class="pill">{$connection.tableCount} tablas cargadas</span>
     {/if}
@@ -73,14 +72,6 @@
     background: var(--topbar-background);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-  }
-
-  h1 {
-    margin: 0;
-    font-size: var(--font-size-heading);
-    font-weight: var(--font-weight-heading);
-    letter-spacing: var(--tracking-heading);
-    line-height: var(--leading-heading);
   }
 
   .pill {
