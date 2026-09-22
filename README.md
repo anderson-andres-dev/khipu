@@ -1,32 +1,41 @@
 # Khipu
 
-Khipu es un cliente de escritorio para trabajar con bases de datos SQL, con
-un editor y autocompletado orientados a una sesión de trabajo compacta.
+**Open-source desktop SQL client for MySQL, MariaDB and PostgreSQL, built
+with Tauri, Rust and Svelte.**
 
-## Estado
+Khipu is a compact SQL workspace: connect to a database, browse its schema
+and write SQL with schema-aware autocompletion, in a lightweight desktop app.
 
-En desarrollo. Actualmente soporta:
+Read this in other languages: [Español](README.es.md).
 
-- MySQL y MariaDB mediante el conector MySQL.
-- PostgreSQL.
-- Catálogo inicial de tablas y metadatos.
-- Editor SQL con sugerencias basadas en el catálogo.
-- Perfiles de conexión locales.
-- Contraseñas en el almacén seguro del sistema cuando se elige Siempre.
+## Supported databases
 
-El catálogo y la sesión de base de datos todavía son una primera integración;
-la ejecución de consultas y los resultados se incorporarán después.
+- PostgreSQL
+- MySQL
+- MariaDB
+
+## Status
+
+Khipu is under active development. Available today:
+
+- Connection profiles for MySQL/MariaDB and PostgreSQL.
+- Schema catalog (tables and column metadata).
+- SQL editor with catalog-aware autocompletion.
+- Secure credential storage via the OS keyring (when "Always" is selected).
+
+Query execution and a results viewer are the next milestone and are not
+available yet.
 
 ## Stack
 
-- Tauri 2 y Rust.
-- Svelte 5 y TypeScript.
-- CodeMirror 6.
-- SQLx para los conectores.
+- [Tauri 2](https://tauri.app/) and Rust
+- Svelte 5 and TypeScript
+- [CodeMirror 6](https://codemirror.net/)
+- [SQLx](https://github.com/launchbadge/sqlx) for the database connectors
 
-## Desarrollo
+## Development
 
-Requisitos: Rust y Node.js 20 o posterior.
+Requirements: Rust and Node.js 20+.
 
 ```bash
 cargo build --workspace
@@ -38,20 +47,20 @@ npm run check
 npm run tauri dev
 ```
 
-El formato del repositorio se mantiene con `cargo fmt --all` y las
-comprobaciones Rust se pueden ejecutar con `cargo clippy --workspace --all-targets`.
+Formatting is enforced with `cargo fmt --all`; lints can be run with
+`cargo clippy --workspace --all-targets`.
 
-## Arquitectura
+## Architecture
 
-El motor y los conectores viven en `crates/`. La aplicación Tauri está en
-`app/src-tauri/` y la interfaz Svelte en `app/src/`.
+The engine and database connectors live in `crates/`. The Tauri shell is in
+`app/src-tauri/` and the Svelte UI in `app/src/`.
 
-La arquitectura de los conectores está documentada en
+Connector architecture is documented in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Las credenciales no se escriben en los perfiles de `localStorage`: la opción
-Siempre usa el keyring nativo del sistema operativo mediante `keyring-rs`.
+Credentials are never written to connection profiles in `localStorage`: the
+"Always" option stores them in the native OS keyring via `keyring-rs`.
 
-## Licencia
+## License
 
-MIT o Apache-2.0.
+MIT or Apache-2.0.
