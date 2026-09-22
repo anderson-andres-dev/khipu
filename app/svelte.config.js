@@ -8,6 +8,15 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
+  // El cargador de CSS virtual de vite-plugin-svelte puede recibir la
+  // peticion del <style> antes de que exista el resultado compilado y termina
+  // sirviendo el .svelte completo como CSS. En el webview de Tauri ocurre de
+  // forma reproducible y deja componentes sin estilo. Inyectar el CSS
+  // compilado junto al modulo elimina esa carrera; esta app es un unico
+  // bundle de escritorio y no necesita extraer CSS por componente.
+  vitePlugin: {
+    emitCss: false,
+  },
   kit: {
     adapter: adapter({
       fallback: "index.html",

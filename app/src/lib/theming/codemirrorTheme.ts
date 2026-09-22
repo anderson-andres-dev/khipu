@@ -32,13 +32,40 @@ export function buildCmTheme(palette: EditorPalette, scheme: ColorScheme): Exten
 				color: palette.activeLineNumber
 			},
 			'.cm-activeLine': {
-				backgroundColor: palette.background
+				// drawSelection pinta por debajo del contenido. Un fondo incluso
+				// identico al del editor tapa la seleccion en la linea que contiene
+				// el cursor (la cm-activeLine); transparente conserva la capa azul.
+				backgroundColor: 'transparent !important'
+			},
+			'.cm-activeStatement': {
+				width: 'calc(var(--cm-active-statement-width) + 0.5ch)',
+				boxShadow: `inset 1px 0 ${palette.string}, inset -1px 0 ${palette.string}`
+			},
+			'.cm-activeStatement.cm-activeStatementStart': {
+				boxShadow: `inset 1px 0 ${palette.string}, inset -1px 0 ${palette.string}, inset 0 1px ${palette.string}`
+			},
+			'.cm-activeStatement.cm-activeStatementEnd': {
+				boxShadow: `inset 1px 0 ${palette.string}, inset -1px 0 ${palette.string}, inset 0 -1px ${palette.string}`
+			},
+			'.cm-activeStatement.cm-activeStatementStart.cm-activeStatementEnd': {
+				boxShadow: `inset 1px 0 ${palette.string}, inset -1px 0 ${palette.string}, inset 0 1px ${palette.string}, inset 0 -1px ${palette.string}`
 			},
 			'.cm-cursor, .cm-dropCursor': {
 				borderLeftColor: palette.caret
 			},
-			'.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
-				backgroundColor: palette.selection
+			// CodeMirror define el color de seleccion por defecto (@codemirror/view)
+			// con selectores muy especificos, entre ellos
+			// "&dark.cm-focused > .cm-scroller > .cm-selectionLayer
+			// .cm-selectionBackground" - misma cantidad de clases que un intento
+			// de pisarlo con "&.cm-focused > .cm-scroller > .cm-selectionLayer
+			// .cm-selectionBackground" propio, asi que el empate de especificidad
+			// puede perderse igual segun el orden real de insercion de las hojas
+			// de estilo. Con !important no hay ambiguedad posible.
+			'.cm-selectionBackground': {
+				backgroundColor: palette.selection + ' !important'
+			},
+			'&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
+				backgroundColor: palette.selection + ' !important'
 			}
 		},
 		{ dark: scheme === 'dark' }

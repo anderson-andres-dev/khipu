@@ -1,0 +1,301 @@
+/*
+ * Estilos para el DOM de autocompletado de CodeMirror dentro de .sql-editor.
+ * CodeMirror pinta este DOM el mismo (fuera del arbol de Svelte), asi que va
+ * en un CSS global de verdad en vez de :global() dentro de un <style> con
+ * scope de componente. Aparte de ser mas correcto, mover esto a un archivo
+ * aparte esquiva un bug del modo dev de Vite 8 (confirmado: "npm run build"
+ * compila esto sin problema, asi que no era un error real de CSS) donde el
+ * modulo virtual de estilos de SqlEditor.svelte se corrompia por las URLs
+ * data-URI largas de mas abajo.
+ */
+
+/*
+ * Iconos del tooltip de autocompletado. Usa la clase cm-completionIcon-<type>
+ * segun el "type" de cada Completion (ver sqlSchema.ts). Se enmascara un SVG
+ * de Lucide (mismo set que el resto de la app, via @lucide/svelte) con
+ * mask-image y se colorea via background-color para que siga el tema activo
+ * en vez de quedar fijo a un color.
+ *
+ * Todos los iconos usan el mismo gris (--text-secondary), sin distincion de
+ * color por tipo: la forma ya distingue tabla/columna/keyword-por-grupo (ver
+ * KEYWORD_ICON_TYPES en sqlSchema.ts), y un solo gris consistente se ve mas
+ * pulido que una fila de colores sueltos.
+ *
+ * @codemirror/autocomplete trae su propio baseTheme para ".cm-completionIcon"
+ * (padding-right, opacity, box-sizing: content-box, font-size, text-align)
+ * inyectado por JS en tiempo de ejecucion, cuyo orden real en el cascade no
+ * esta garantizado respecto a este CSS. Con la misma especificidad de
+ * selector, quien gane el empate depende de ese orden - por eso cada
+ * propiedad que choca se resetea aca con !important en vez de confiar en
+ * especificidad/orden (mismo motivo que el !important ya usado mas abajo en
+ * este archivo para el tooltip). Sin este reset, el padding-right de .6em de
+ * la libreria sobrevive y deja un hueco asimetrico entre icono y texto que
+ * el margin-right de aca no explica.
+ */
+.sql-editor .cm-completionIcon-table,
+.sql-editor .cm-completionIcon-column,
+.sql-editor .cm-completionIcon-keyword,
+.sql-editor .cm-completionIcon-type,
+.sql-editor .cm-completionIcon-function,
+.sql-editor .cm-completionIcon-constant,
+.sql-editor .cm-completionIcon-keyword-query,
+.sql-editor .cm-completionIcon-keyword-source,
+.sql-editor .cm-completionIcon-keyword-filter,
+.sql-editor .cm-completionIcon-keyword-join,
+.sql-editor .cm-completionIcon-keyword-group,
+.sql-editor .cm-completionIcon-keyword-sort,
+.sql-editor .cm-completionIcon-keyword-limit,
+.sql-editor .cm-completionIcon-keyword-insert,
+.sql-editor .cm-completionIcon-keyword-update,
+.sql-editor .cm-completionIcon-keyword-remove,
+.sql-editor .cm-completionIcon-keyword-ddl,
+.sql-editor .cm-completionIcon-keyword-branch,
+.sql-editor .cm-completionIcon-keyword-cte,
+.sql-editor .cm-completionIcon-keyword-union {
+  --completion-icon-color: var(--text-secondary);
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 0.9rem !important;
+  height: 0.9rem;
+  flex: 0 0 0.9rem;
+  align-items: center;
+  justify-content: center;
+  margin-right: 3px;
+  padding: 0 !important;
+  border: 0;
+  background: transparent;
+  font-size: inherit !important;
+  text-align: center;
+  opacity: 1 !important;
+}
+
+.sql-editor .cm-completionIcon-table::after,
+.sql-editor .cm-completionIcon-column::after,
+.sql-editor .cm-completionIcon-keyword::after,
+.sql-editor .cm-completionIcon-type::after,
+.sql-editor .cm-completionIcon-function::after,
+.sql-editor .cm-completionIcon-constant::after,
+.sql-editor .cm-completionIcon-keyword-query::after,
+.sql-editor .cm-completionIcon-keyword-source::after,
+.sql-editor .cm-completionIcon-keyword-filter::after,
+.sql-editor .cm-completionIcon-keyword-join::after,
+.sql-editor .cm-completionIcon-keyword-group::after,
+.sql-editor .cm-completionIcon-keyword-sort::after,
+.sql-editor .cm-completionIcon-keyword-limit::after,
+.sql-editor .cm-completionIcon-keyword-insert::after,
+.sql-editor .cm-completionIcon-keyword-update::after,
+.sql-editor .cm-completionIcon-keyword-remove::after,
+.sql-editor .cm-completionIcon-keyword-ddl::after,
+.sql-editor .cm-completionIcon-keyword-branch::after,
+.sql-editor .cm-completionIcon-keyword-cte::after,
+.sql-editor .cm-completionIcon-keyword-union::after {
+  content: "";
+  width: 0.62rem;
+  height: 0.62rem;
+  background: var(--completion-icon-color);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* table */
+.sql-editor .cm-completionIcon-table::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v18'/%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M3 15h18'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v18'/%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M3 9h18'/%3E%3Cpath d='M3 15h18'/%3E%3C/svg%3E");
+}
+
+/* column */
+.sql-editor .cm-completionIcon-column::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M9 3v18'/%3E%3Cpath d='M15 3v18'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M9 3v18'/%3E%3Cpath d='M15 3v18'/%3E%3C/svg%3E");
+}
+
+/* keyword generico (fallback: AS, AND, OR, NOT, IN, LIKE, IS, NULL, DISTINCT, ASC, DESC, ALL, EXISTS, INTO, SET, BY...) */
+.sql-editor .cm-completionIcon-keyword::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='m7 8 3 3-3 3'/%3E%3Cpath d='M13 14h4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='m7 8 3 3-3 3'/%3E%3Cpath d='M13 14h4'/%3E%3C/svg%3E");
+}
+
+/* type (INT, VARCHAR, ...) */
+.sql-editor .cm-completionIcon-type::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1'/%3E%3Cpath d='M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1'/%3E%3Cpath d='M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1'/%3E%3C/svg%3E");
+}
+
+/* function / constant (alias conocido) */
+.sql-editor .cm-completionIcon-function::after,
+.sql-editor .cm-completionIcon-constant::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 7V4H6l6 8-6 8h12v-3'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 7V4H6l6 8-6 8h12v-3'/%3E%3C/svg%3E");
+}
+
+/* SELECT -> lucide "search" */
+.sql-editor .cm-completionIcon-keyword-query::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.34-4.34'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.34-4.34'/%3E%3C/svg%3E");
+}
+
+/* FROM -> lucide "database" */
+.sql-editor .cm-completionIcon-keyword-source::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5' rx='9' ry='3'/%3E%3Cpath d='M3 5V19A9 3 0 0 0 21 19V5'/%3E%3Cpath d='M3 12A9 3 0 0 0 21 12'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='5' rx='9' ry='3'/%3E%3Cpath d='M3 5V19A9 3 0 0 0 21 19V5'/%3E%3Cpath d='M3 12A9 3 0 0 0 21 12'/%3E%3C/svg%3E");
+}
+
+/* WHERE, HAVING -> lucide "funnel" */
+.sql-editor .cm-completionIcon-keyword-filter::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z'/%3E%3C/svg%3E");
+}
+
+/* JOIN, ON -> lucide "git-merge" */
+.sql-editor .cm-completionIcon-keyword-join::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='18' r='3'/%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M6 21V9a9 9 0 0 0 9 9'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='18' r='3'/%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M6 21V9a9 9 0 0 0 9 9'/%3E%3C/svg%3E");
+}
+
+/* GROUP -> lucide "layers" */
+.sql-editor .cm-completionIcon-keyword-group::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z'/%3E%3Cpath d='M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12'/%3E%3Cpath d='M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z'/%3E%3Cpath d='M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12'/%3E%3Cpath d='M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17'/%3E%3C/svg%3E");
+}
+
+/* ORDER -> lucide "arrow-up-down" */
+.sql-editor .cm-completionIcon-keyword-sort::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21 16-4 4-4-4'/%3E%3Cpath d='M17 20V4'/%3E%3Cpath d='m3 8 4-4 4 4'/%3E%3Cpath d='M7 4v16'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21 16-4 4-4-4'/%3E%3Cpath d='M17 20V4'/%3E%3Cpath d='m3 8 4-4 4 4'/%3E%3Cpath d='M7 4v16'/%3E%3C/svg%3E");
+}
+
+/* LIMIT -> lucide "scissors" */
+.sql-editor .cm-completionIcon-keyword-limit::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M8.12 8.12 12 12'/%3E%3Cpath d='M20 4 8.12 15.88'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cpath d='M14.8 14.8 20 20'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M8.12 8.12 12 12'/%3E%3Cpath d='M20 4 8.12 15.88'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cpath d='M14.8 14.8 20 20'/%3E%3C/svg%3E");
+}
+
+/* INSERT, VALUES -> lucide "square-plus" */
+.sql-editor .cm-completionIcon-keyword-insert::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M8 12h8'/%3E%3Cpath d='M12 8v8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M8 12h8'/%3E%3Cpath d='M12 8v8'/%3E%3C/svg%3E");
+}
+
+/* UPDATE -> lucide "pencil" */
+.sql-editor .cm-completionIcon-keyword-update::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E");
+}
+
+/* DELETE, DROP -> lucide "trash" */
+.sql-editor .cm-completionIcon-keyword-remove::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 11v6'/%3E%3Cpath d='M14 11v6'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3C/svg%3E");
+}
+
+/* CREATE, ALTER -> lucide "wrench" */
+.sql-editor .cm-completionIcon-keyword-ddl::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z'/%3E%3C/svg%3E");
+}
+
+/* CASE, WHEN -> lucide "git-branch" */
+.sql-editor .cm-completionIcon-keyword-branch::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6a9 9 0 0 0-9 9V3'/%3E%3Ccircle cx='18' cy='6' r='3'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6a9 9 0 0 0-9 9V3'/%3E%3Ccircle cx='18' cy='6' r='3'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3C/svg%3E");
+}
+
+/* WITH -> lucide "list" */
+.sql-editor .cm-completionIcon-keyword-cte::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5h.01'/%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M3 19h.01'/%3E%3Cpath d='M8 5h13'/%3E%3Cpath d='M8 12h13'/%3E%3Cpath d='M8 19h13'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5h.01'/%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M3 19h.01'/%3E%3Cpath d='M8 5h13'/%3E%3Cpath d='M8 12h13'/%3E%3Cpath d='M8 19h13'/%3E%3C/svg%3E");
+}
+
+/* UNION -> lucide "merge" (distinto de FROM/database y JOIN/git-merge) */
+.sql-editor .cm-completionIcon-keyword-union::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 6 4-4 4 4'/%3E%3Cpath d='M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22'/%3E%3Cpath d='m20 22-5-5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 6 4-4 4 4'/%3E%3Cpath d='M12 2v10.3a4 4 0 0 1-1.172 2.872L4 22'/%3E%3Cpath d='m20 22-5-5'/%3E%3C/svg%3E");
+}
+
+/*
+ * El tooltip de autocompletado trae colores fijos de CodeMirror
+ * (#f5f5f5/#333338, azul #17c para la fila seleccionada) sin relacion con la
+ * paleta activa. Se pisa con los mismos tokens que usa el resto de la app
+ * (superficies, radios, sombra) para que se sienta nativo de Khipu, no un
+ * popup generico de la libreria.
+ */
+.sql-editor .cm-tooltip.cm-tooltip-autocomplete {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-elevated);
+}
+
+.sql-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
+  /* min-width chico a proposito: una lista con pocos resultados (p.ej. un
+     solo "FROM") no debe quedar flotando en un cuadro ancho con un hueco
+     vacio a la derecha del detail. El contenido real empuja el ancho hacia
+     arriba hasta max-width cuando hace falta. */
+  min-width: min(11rem, calc(100vw - 2rem));
+  max-width: min(30rem, calc(100vw - 2rem));
+  padding: var(--space-1);
+  color: var(--text-primary);
+}
+
+.sql-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 1.3rem;
+  margin: 0;
+  padding: 1px 6px !important;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.sql-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface-elevated)) !important;
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  color: var(--text-primary) !important;
+}
+
+.sql-editor .cm-completionLabel {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sql-editor .cm-completionMatchedText {
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/*
+ * Jerarquia tipografica: cm-completionMatchedText (lo ya escrito) en negrita
+ * es lo unico que lleva peso extra - marca lo que coincide con el filtro.
+ * El resto del label queda en peso normal (ver font-weight de la fila de
+ * arriba) y el detail (descripcion de keyword, tipo de columna, "(schema)")
+ * va en cursiva: es informacion secundaria, no texto que se vaya a insertar,
+ * y la cursiva lo separa del label sin subirle contraste ni peso.
+ */
+.sql-editor .cm-completionDetail {
+  margin-left: auto;
+  padding-left: 6px;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-style: italic;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.sql-editor li:has(.cm-completionIcon-table) .cm-completionDetail::before {
+  content: "(";
+}
+
+.sql-editor li:has(.cm-completionIcon-table) .cm-completionDetail::after {
+  content: ")";
+}

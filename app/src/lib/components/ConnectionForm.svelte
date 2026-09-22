@@ -24,10 +24,12 @@
   let {
     driver,
     profile = null,
+    initialError = null,
     onclose,
   }: {
     driver: ConnectionDriver;
     profile?: ConnectionProfile | null;
+    initialError?: string | null;
     onclose: () => void;
   } = $props();
 
@@ -83,6 +85,7 @@
       database = profile?.database ?? "";
       passwordPolicy = profile?.passwordPolicy ?? "forever";
       initialized = true;
+      if (initialError) attempted = true;
 
       if (profile) void hydratePassword(profile.id, profile.passwordPolicy);
     }
@@ -172,7 +175,7 @@
         username: config.username,
         passwordPolicy,
       });
-      completeConnection(tableCount);
+      completeConnection(tableCount, profileId);
     } catch (error) {
       persistenceError = `La conexión funciona, pero no se pudo guardar la contraseña de forma segura: ${String(error)}`;
     } finally {

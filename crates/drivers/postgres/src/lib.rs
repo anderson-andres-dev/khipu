@@ -1,7 +1,10 @@
 use async_trait::async_trait;
-use khipu_driver_core::{ColumnInfo, ConnectionConfig, DbConnector, DriverError, TableInfo};
+use khipu_driver_core::{
+    ColumnInfo, ConnectionConfig, DbConnector, DriverError, ForeignKeyInfo, TableInfo,
+};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{PgPool, Row};
+use std::collections::HashMap;
 
 pub struct PostgresConnector {
     pool: PgPool,
@@ -78,8 +81,50 @@ impl DbConnector for PostgresConnector {
                     schema: schema.to_string(),
                     name: table_name,
                     columns: vec![column],
+                    foreign_keys: Vec::new(),
                 }),
             }
+        }
+
+        let table_index: HashMap<String, usize> = tables
+            .iter()
+            .enumerate()
+            .map(|(i, t)| (t.name.clone(), i))
+            .collect();
+
+        let fk_rows = sqlx::query(
+            "SELECT tc.table_name, kcu.column_name, ccu.table_name AS referenced_table, \
+             ccu.column_name AS referenced_column \
+             FROM information_schema.table_constraints tc \
+             JOIN information_schema.key_column_usage kcu \
+               ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema \
+             JOIN information_schema.constraint_column_usage ccu \
+               ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema \
+             WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = $1",
+        )
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DriverError::Query(e.to_string()))?;
+
+        for row in fk_rows {
+            let table_name: String = row
+                .try_get("table_name")
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+            let Some(&index) = table_index.get(table_name.as_str()) else {
+                continue;
+            };
+            tables[index].foreign_keys.push(ForeignKeyInfo {
+                column: row
+                    .try_get("column_name")
+                    .map_err(|e| DriverError::Query(e.to_string()))?,
+                referenced_table: row
+                    .try_get("referenced_table")
+                    .map_err(|e| DriverError::Query(e.to_string()))?,
+                referenced_column: row
+                    .try_get("referenced_column")
+                    .map_err(|e| DriverError::Query(e.to_string()))?,
+            });
         }
 
         Ok(tables)

@@ -1,9 +1,9 @@
 use khipu_driver_core::TableInfo;
-use khipu_engine::catalog::{CatalogColumn, CatalogTable, SchemaCatalog};
+use khipu_engine::catalog::{CatalogColumn, CatalogForeignKey, CatalogTable, SchemaCatalog};
 
 /// Converts driver introspection results into the engine's own catalog types,
 /// preserving column metadata so completion can use it (primary keys, types,
-/// nullability).
+/// nullability, foreign keys).
 pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
     let tables = tables
         .into_iter()
@@ -20,6 +20,15 @@ pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
                     is_primary_key: column.is_primary_key,
                 })
                 .collect(),
+            foreign_keys: table
+                .foreign_keys
+                .into_iter()
+                .map(|fk| CatalogForeignKey {
+                    column: fk.column,
+                    referenced_table: fk.referenced_table,
+                    referenced_column: fk.referenced_column,
+                })
+                .collect(),
         })
         .collect();
 
@@ -29,7 +38,7 @@ pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use khipu_driver_core::ColumnInfo;
+    use khipu_driver_core::{ColumnInfo, ForeignKeyInfo};
 
     #[test]
     fn preserves_column_metadata() {
@@ -42,6 +51,7 @@ mod tests {
                 nullable: false,
                 is_primary_key: true,
             }],
+            foreign_keys: vec![],
         }];
 
         let catalog = tables_to_catalog(tables);
@@ -52,5 +62,26 @@ mod tests {
         assert_eq!(column.data_type, "integer");
         assert!(!column.nullable);
         assert!(column.is_primary_key);
+    }
+
+    #[test]
+    fn preserves_foreign_keys() {
+        let tables = vec![TableInfo {
+            schema: "public".to_string(),
+            name: "orders".to_string(),
+            columns: vec![],
+            foreign_keys: vec![ForeignKeyInfo {
+                column: "user_id".to_string(),
+                referenced_table: "users".to_string(),
+                referenced_column: "id".to_string(),
+            }],
+        }];
+
+        let catalog = tables_to_catalog(tables);
+
+        let fk = &catalog.tables[0].foreign_keys[0];
+        assert_eq!(fk.column, "user_id");
+        assert_eq!(fk.referenced_table, "users");
+        assert_eq!(fk.referenced_column, "id");
     }
 }

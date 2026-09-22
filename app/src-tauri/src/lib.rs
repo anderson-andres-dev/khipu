@@ -3,8 +3,7 @@ mod credentials;
 mod drivers;
 
 use khipu_driver_core::ConnectionConfig;
-use khipu_engine::catalog::SchemaCatalog;
-use khipu_engine::completion::{CompletionEngine, CompletionItem};
+use khipu_engine::catalog::{CatalogTable, SchemaCatalog};
 use std::sync::Mutex;
 
 /// Holds the catalog loaded by the most recent `connect` call, if any.
@@ -14,15 +13,14 @@ struct AppState {
 }
 
 #[tauri::command]
-fn complete(sql: String, state: tauri::State<'_, AppState>) -> Vec<CompletionItem> {
-    let catalog = state
+fn list_tables(state: tauri::State<'_, AppState>) -> Vec<CatalogTable> {
+    state
         .catalog
         .lock()
         .expect("catalog mutex poisoned")
         .clone()
-        .unwrap_or_default();
-    let engine = CompletionEngine::new(catalog);
-    engine.complete(&sql)
+        .unwrap_or_default()
+        .tables
 }
 
 #[tauri::command]
@@ -72,7 +70,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
-            complete,
+            list_tables,
             connect,
             test_connection,
             save_connection_password,

@@ -2,30 +2,107 @@
   import { onMount, onDestroy } from "svelte";
   import type { Snippet } from "svelte";
   import "$lib/styles/tokens.css";
-  import { connection } from "$lib/stores/connection";
+  import { connection, catalogTables, connectToProfile, pendingEdit, reset } from "$lib/stores/connection";
+  import { connectionProfiles } from "$lib/stores/connectionProfiles";
+  import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
   import { initThemeEffects } from "$lib/theming/theme";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { Minus, Settings, Square, X } from "@lucide/svelte";
+  import {
+    ArrowLeft,
+    Minus,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Settings,
+    Square,
+    X,
+  } from "@lucide/svelte";
   import SettingsPanel from "$lib/components/SettingsPanel.svelte";
+  import SchemaTree from "$lib/components/SchemaTree.svelte";
+  import ConnectionSwitcher from "$lib/components/ConnectionSwitcher.svelte";
 
   let cleanupThemeEffects: (() => void) | undefined;
   let settingsOpen = $state(false);
+  let sidebarCollapsed = $state(false);
+  let refreshingTables = $state(false);
   let { children }: { children: Snippet } = $props();
   const appWindow = getCurrentWindow();
 
+  // "Recargar tablas" es, en la practica, volver a conectar al mismo
+  // perfil activo: no hay pool vivo que reintrospectar (ver comentario de
+  // reset() en connection.ts), asi que connectToProfile ya hace exactamente
+  // lo que un refresh necesita, sin agregar ningun comando nuevo en Rust.
+  async function handleRefreshTables() {
+    const profile = $connectionProfiles.find((candidate) => candidate.id === $connection.profileId);
+    if (!profile || refreshingTables) return;
+
+    refreshingTables = true;
+    const result = await connectToProfile(profile);
+    refreshingTables = false;
+
+    if (!result.ok) {
+      pendingEdit.set({ profile, error: result.reason === "connect-failed" ? result.error : null });
+    }
+  }
+
+  // Atajos globales resueltos desde Ajustes > Atajos (shortcuts.ts). Se
+  // desactivan mientras el modal de Ajustes esta abierto, porque ahi mismo
+  // se pueden estar capturando nuevas combinaciones.
+  function handleGlobalKeydown(event: KeyboardEvent) {
+    if (settingsOpen) return;
+
+    const toggleSidebar = $shortcuts.find((shortcut) => shortcut.id === "toggle-sidebar");
+    if (toggleSidebar && eventMatchesShortcut(event, toggleSidebar.keys)) {
+      if (!$connection.connected) return;
+      event.preventDefault();
+      sidebarCollapsed = !sidebarCollapsed;
+    }
+  }
+
   onMount(() => {
     cleanupThemeEffects = initThemeEffects();
+    document.addEventListener("keydown", handleGlobalKeydown);
   });
 
   onDestroy(() => {
     cleanupThemeEffects?.();
+    document.removeEventListener("keydown", handleGlobalKeydown);
   });
 </script>
 
-<div class="shell">
+<div class="shell" class:with-sidebar={$connection.connected}>
   <header class="topbar">
     {#if $connection.connected}
-      <span class="pill">{$connection.tableCount} tablas cargadas</span>
+      <button
+        class="icon-button"
+        type="button"
+        title={sidebarCollapsed ? "Mostrar panel de tablas" : "Ocultar panel de tablas"}
+        aria-label={sidebarCollapsed ? "Mostrar panel de tablas" : "Ocultar panel de tablas"}
+        aria-pressed={!sidebarCollapsed}
+        onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
+      >
+        {#if sidebarCollapsed}
+          <PanelLeftOpen size={16} aria-hidden="true" />
+        {:else}
+          <PanelLeftClose size={16} aria-hidden="true" />
+        {/if}
+      </button>
+      <div class="connection-nav">
+        <button
+          class="icon-button"
+          type="button"
+          title="Volver a conexiones"
+          aria-label="Volver a conexiones"
+          disabled={$connection.connecting}
+          onclick={reset}
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+        </button>
+        <ConnectionSwitcher
+          profiles={$connectionProfiles}
+          activeProfileId={$connection.profileId}
+          disabled={$connection.connecting}
+        />
+      </div>
     {/if}
     <div class="drag-region" data-tauri-drag-region></div>
     <button
@@ -68,16 +145,29 @@
     </div>
   </header>
 
-  <aside class="sidebar" aria-hidden="true"></aside>
+  <aside
+    class="sidebar"
+    class:collapsed={sidebarCollapsed}
+    aria-hidden={!$connection.connected || sidebarCollapsed}
+  >
+    {#if $connection.connected}
+      <SchemaTree
+        tables={$catalogTables}
+        refreshing={refreshingTables}
+        onrefresh={handleRefreshTables}
+      />
+    {/if}
+  </aside>
 
   <main class="main">
-    <div class="route-content" hidden={settingsOpen} inert={settingsOpen}>
+    <div class="route-content">
       {@render children()}
     </div>
-    {#if settingsOpen}
-      <SettingsPanel onclose={() => (settingsOpen = false)} />
-    {/if}
   </main>
+
+  {#if settingsOpen}
+    <SettingsPanel onclose={() => (settingsOpen = false)} />
+  {/if}
 </div>
 
 <style>
@@ -106,6 +196,10 @@
     background: var(--surface);
   }
 
+  .shell.with-sidebar {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
   .topbar {
     grid-area: topbar;
     display: flex;
@@ -118,15 +212,10 @@
     background: var(--topbar-background);
   }
 
-  .pill {
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    letter-spacing: var(--tracking-body);
-    line-height: var(--leading-body);
+  .connection-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
   }
 
   .drag-region {
@@ -159,6 +248,16 @@
   .icon-button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  .icon-button:disabled {
+    color: var(--control-disabled);
+    cursor: not-allowed;
+  }
+
+  .icon-button:disabled:hover {
+    background: transparent;
+    border-color: transparent;
   }
 
   .window-controls {
@@ -198,6 +297,22 @@
   .sidebar {
     grid-area: sidebar;
     overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid transparent;
+    transition:
+      width var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+  }
+
+  .shell.with-sidebar .sidebar {
+    width: 220px;
+    border-right-color: var(--border);
+  }
+
+  .shell.with-sidebar .sidebar.collapsed {
+    width: 0;
+    border-right-color: transparent;
   }
 
   .main {
