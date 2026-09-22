@@ -35,8 +35,7 @@
           aria-pressed={selected === driver.id}
           onclick={() => onselect(driver.id)}
         >
-          <img class="driver-icon" src={driver.icon} alt="" aria-hidden="true" />
-          <strong>{driver.name}</strong>
+          <img class="driver-icon" src={driver.wordmark} alt={driver.name} />
         </button>
       {/each}
     </div>
@@ -143,15 +142,10 @@
 
   .driver-icon {
     display: block;
-    width: 2rem;
-    height: 2rem;
+    width: min(8rem, 72%);
+    height: 3.5rem;
     object-fit: contain;
     filter: grayscale(1) brightness(1.35);
-  }
-
-  .driver strong {
-    font-size: 0.875rem;
-    font-weight: 600;
   }
 
   @media (max-width: 28rem) {

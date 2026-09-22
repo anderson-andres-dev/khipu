@@ -1,6 +1,9 @@
 import mysqlIcon from "devicon/icons/mysql/mysql-original.svg?url";
 import mariaDbIcon from "devicon/icons/mariadb/mariadb-original.svg?url";
 import postgresIcon from "devicon/icons/postgresql/postgresql-plain.svg?url";
+import mysqlWordmark from "devicon/icons/mysql/mysql-plain-wordmark.svg?url";
+import mariaDbWordmark from "devicon/icons/mariadb/mariadb-original-wordmark.svg?url";
+import postgresWordmark from "devicon/icons/postgresql/postgresql-plain-wordmark.svg?url";
 
 export type ConnectionDriver = "mysql" | "mariadb" | "postgres";
 export type BackendKind = "mysql" | "postgres";
@@ -9,6 +12,7 @@ export interface DriverDefinition {
   id: ConnectionDriver;
   name: string;
   icon: string;
+  wordmark: string;
   defaultPort: number;
   backendKind: BackendKind;
 }
@@ -18,6 +22,7 @@ export const connectionDrivers: DriverDefinition[] = [
     id: "mysql",
     name: "MySQL",
     icon: mysqlIcon,
+    wordmark: mysqlWordmark,
     defaultPort: 3306,
     backendKind: "mysql",
   },
@@ -25,6 +30,7 @@ export const connectionDrivers: DriverDefinition[] = [
     id: "mariadb",
     name: "MariaDB",
     icon: mariaDbIcon,
+    wordmark: mariaDbWordmark,
     defaultPort: 3306,
     backendKind: "mysql",
   },
@@ -32,6 +38,7 @@ export const connectionDrivers: DriverDefinition[] = [
     id: "postgres",
     name: "PostgreSQL",
     icon: postgresIcon,
+    wordmark: postgresWordmark,
     defaultPort: 5432,
     backendKind: "postgres",
   },
