@@ -42,3 +42,77 @@ impl CompletionEngine {
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::catalog::{CatalogColumn, CatalogTable};
+
+    fn id_column() -> CatalogColumn {
+        CatalogColumn {
+            name: "id".to_string(),
+            data_type: "integer".to_string(),
+            nullable: false,
+            is_primary_key: true,
+        }
+    }
+
+    fn catalog() -> SchemaCatalog {
+        SchemaCatalog {
+            tables: vec![
+                CatalogTable {
+                    schema: "public".to_string(),
+                    name: "users".to_string(),
+                    columns: vec![id_column()],
+                },
+                CatalogTable {
+                    schema: "public".to_string(),
+                    name: "orders".to_string(),
+                    columns: vec![id_column()],
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn complete_returns_matching_table_as_completion_item() {
+        let engine = CompletionEngine::new(catalog());
+
+        let items = engine.complete("SELECT * FROM us");
+
+        assert_eq!(
+            items,
+            vec![CompletionItem {
+                label: "users".to_string(),
+                kind: CompletionKind::Table,
+            }]
+        );
+    }
+
+    #[test]
+    fn complete_returns_empty_when_prefix_matches_nothing() {
+        let engine = CompletionEngine::new(catalog());
+
+        let items = engine.complete("SELECT * FROM zzz");
+
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn completion_item_serializes_to_expected_json_shape() {
+        let item = CompletionItem {
+            label: "users".to_string(),
+            kind: CompletionKind::Table,
+        };
+
+        let json = serde_json::to_value(&item).expect("CompletionItem should serialize");
+
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "label": "users",
+                "kind": "Table",
+            })
+        );
+    }
+}

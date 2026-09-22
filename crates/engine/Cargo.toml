@@ -10,3 +10,6 @@ authors.workspace = true
 sqlparser.workspace = true
 tree-sitter.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

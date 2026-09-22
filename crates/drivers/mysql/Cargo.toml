@@ -10,4 +10,6 @@ authors.workspace = true
 khipu-driver-core.workspace = true
 sqlx = { workspace = true, features = ["mysql"] }
 async-trait.workspace = true
+
+[dev-dependencies]
 tokio.workspace = true

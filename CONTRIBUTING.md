@@ -26,6 +26,30 @@ Es la forma más directa de contribuir sin pisar el trabajo de nadie más:
 3. Agregarlo a `[workspace] members` en el `Cargo.toml` raíz
 4. Abrir el PR — no hace falta tocar `engine` ni `app`
 
+## Pruebas de contrato de drivers
+
+`cargo test --workspace` corre en verde sin ninguna base de datos disponible:
+los tests que necesitan una conexión real están marcados `#[ignore = "requires
+database"]`, así que se saltean en una corrida normal.
+
+Para correrlos contra una instancia real:
+
+```bash
+cargo test -p khipu-driver-mysql -- --ignored
+cargo test -p khipu-driver-postgres -- --ignored
+```
+
+Variables de entorno que necesita cada uno:
+
+- MySQL: `KHIPU_TEST_MYSQL_HOST`, `KHIPU_TEST_MYSQL_PORT`, `KHIPU_TEST_MYSQL_USER`,
+  `KHIPU_TEST_MYSQL_PASSWORD`, `KHIPU_TEST_MYSQL_DATABASE`
+- PostgreSQL: `KHIPU_TEST_POSTGRES_HOST`, `KHIPU_TEST_POSTGRES_PORT`,
+  `KHIPU_TEST_POSTGRES_USER`, `KHIPU_TEST_POSTGRES_PASSWORD`,
+  `KHIPU_TEST_POSTGRES_DATABASE`
+
+Si falta alguna, el test hace `panic!` con un mensaje indicando qué setear
+(no hace falta memorizarlas: el mensaje del panic las lista).
+
 ## Estilo
 
 - Rust: `cargo fmt` + `cargo clippy` antes de cada PR
