@@ -66,22 +66,22 @@ Si falta alguna, el test hace `panic!` con un mensaje indicando qué setear
   `main` tienen branch protection (PR + 1 aprobación + checks de
   `quality.yml` en verde + sin force-push).
 
-1. Abrí un PR desde `feature/...` hacia `develop`.
+1. Abrir un PR desde `feature/...` hacia `develop`.
 2. `quality.yml` corre automático (Rust fmt/clippy/test + Node check/build).
-3. Confirmá que el check `quality` esté verde.
-4. Revisá y probá funcionalmente el cambio en desarrollo.
-5. Aprobá y fusioná el PR en `develop`.
-6. Para publicar una versión, creá `release/X.Y.Z` desde `develop`.
-7. Abrí un PR `release/X.Y.Z → main`.
-8. Esperá de nuevo `quality`, aprobá y fusioná.
-9. Etiquetá el commit de `main`:
+3. Confirmar que el check `quality` esté verde.
+4. Revisar y probar funcionalmente el cambio en desarrollo.
+5. Aprobar y fusionar el PR en `develop`.
+6. Para publicar una versión, crear `release/X.Y.Z` desde `develop`.
+7. Abrir un PR `release/X.Y.Z → main`.
+8. Esperar de nuevo `quality`, aprobar y fusionar.
+9. Etiquetar el commit de `main`:
    ```bash
    git switch main
    git pull --ff-only
    git tag vX.Y.Z
    git push origin vX.Y.Z
    ```
-10. El tag dispara `release.yml` (build multiplataforma); esperá a que
+10. El tag dispara `release.yml` (build multiplataforma); esperar a que
     termine en verde.
 
 ## Estilo
