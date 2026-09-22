@@ -59,6 +59,31 @@ Variables de entorno que necesita cada uno:
 Si falta alguna, el test hace `panic!` con un mensaje indicando qué setear
 (no hace falta memorizarlas: el mensaje del panic las lista).
 
+## Flujo de ramas y releases
+
+- `main` es la rama por defecto (estilo público) y `develop` la de
+  integración. Nada se pushea directo a ninguna de las dos: `develop` y
+  `main` tienen branch protection (PR + 1 aprobación + checks de
+  `quality.yml` en verde + sin force-push).
+
+1. Abrí un PR desde `feature/...` hacia `develop`.
+2. `quality.yml` corre automático (Rust fmt/clippy/test + Node check/build).
+3. Confirmá que el check `quality` esté verde.
+4. Revisá y probá funcionalmente el cambio en desarrollo.
+5. Aprobá y fusioná el PR en `develop`.
+6. Para publicar una versión, creá `release/X.Y.Z` desde `develop`.
+7. Abrí un PR `release/X.Y.Z → main`.
+8. Esperá de nuevo `quality`, aprobá y fusioná.
+9. Etiquetá el commit de `main`:
+   ```bash
+   git switch main
+   git pull --ff-only
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+10. El tag dispara `release.yml` (build multiplataforma); esperá a que
+    termine en verde.
+
 ## Estilo
 
 - Rust: `cargo fmt` + `cargo clippy` antes de cada PR
