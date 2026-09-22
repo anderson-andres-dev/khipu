@@ -1,11 +1,11 @@
 # Contribuir a Khipu
 
 Gracias por el interés. El proyecto recién arranca, así que hay bastante
-espacio para decisiones de diseño — abrí un issue antes de un PR grande.
+espacio para decisiones de diseño — abrir un issue antes de un PR grande.
 
 ## Antes de empezar
 
-Leé [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) para entender por qué el
+Leer [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) para entender por qué el
 repo está dividido en `engine` / `driver-core` / `drivers/*` / `app`, y qué
 capa te toca según lo que quieras aportar.
 
