@@ -49,7 +49,7 @@
   }
 
   .suggestions {
-    border-left: 1px solid #333;
+    border-left: 1px solid var(--border);
     padding: 0.75rem;
     overflow-y: auto;
   }
@@ -64,16 +64,16 @@
   }
 
   .suggestion:hover {
-    background: #2a2a2a;
+    background: var(--surface-elevated);
   }
 
   .suggestion :global(.kind-icon) {
     flex-shrink: 0;
-    color: #888;
+    color: var(--text-secondary);
   }
 
   .empty {
-    color: #777;
+    color: var(--text-secondary);
     font-size: 0.8rem;
   }
 </style>

@@ -5,6 +5,142 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Khipu</title>
+    <script>
+      // Bootstrap de tema sin flash: corre antes de que cargue el bundle de
+      // SvelteKit, así que NO puede importar `theme.ts`/`palettes.ts` (son
+      // módulos ES que todavía no están disponibles en este punto del
+      // documento). Por eso los 4 bloques de paleta (shell únicamente, es lo
+      // único que este bootstrap necesita) están copiados aquí en forma de
+      // literales — es la única duplicación deliberada de este spec,
+      // exactamente para poder pintar las variables --palette-* antes del
+      // primer paint. Si `palettes.ts` cambia estos valores, hay que
+      // actualizar también esta copia.
+      (function () {
+        try {
+          var SHELL_PALETTES = {
+            datagrip: {
+              dark: {
+                surface: '#191A1C',
+                surfaceElevated: '#26282C',
+                border: '#33353B',
+                controlBorder: '#8B8E94',
+                textPrimary: '#D1D3D9',
+                textSecondary: '#9FA2A8',
+                textOnAccent: '#FFFFFF',
+                accent: '#3871E1',
+                danger: '#F57E84',
+                controlDisabled: '#4C4F56',
+                focusRing: '#3871E1',
+                shadow: '0 8px 30px rgba(0,0,0,0.45)',
+                topbarBackground: 'rgba(25,26,28,0.72)'
+              },
+              light: {
+                surface: '#E9EAEE',
+                surfaceElevated: '#FFFFFF',
+                border: '#DDDFE4',
+                controlBorder: '#5F6269',
+                textPrimary: '#000000',
+                textSecondary: '#4C4F56',
+                textOnAccent: '#FFFFFF',
+                accent: '#3871E1',
+                danger: '#C54E58',
+                controlDisabled: '#9FA2A8',
+                focusRing: '#3871E1',
+                shadow: '0 8px 30px rgba(0,0,0,0.12)',
+                topbarBackground: 'rgba(233,234,238,0.72)'
+              }
+            },
+            vscode: {
+              dark: {
+                surface: '#191A1B',
+                surfaceElevated: '#242526',
+                border: '#2A2B2C',
+                controlBorder: '#333536',
+                textPrimary: '#BFBFBF',
+                textSecondary: '#8C8C8C',
+                textOnAccent: '#FFFFFF',
+                accent: '#297AA0',
+                danger: '#F48771',
+                controlDisabled: '#555555',
+                focusRing: '#3994BC',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                topbarBackground: 'rgba(25,26,27,0.72)'
+              },
+              light: {
+                surface: '#FAFAFD',
+                surfaceElevated: '#FFFFFF',
+                border: '#E4E5E6',
+                controlBorder: '#D8D8D8',
+                textPrimary: '#202020',
+                textSecondary: '#606060',
+                textOnAccent: '#FFFFFF',
+                accent: '#0069CC',
+                danger: '#AD0707',
+                controlDisabled: '#BBBBBB',
+                focusRing: '#0069CC',
+                shadow: '0 8px 24px rgba(0,0,0,0.15)',
+                topbarBackground: 'rgba(250,250,253,0.72)'
+              }
+            }
+          };
+
+          // Mismo mapeo campo -> variable CSS que SHELL_PALETTE_CSS_VARS en
+          // theme.ts.
+          var CSS_VAR_NAMES = {
+            surface: '--palette-surface',
+            surfaceElevated: '--palette-surface-elevated',
+            border: '--palette-border',
+            controlBorder: '--palette-control-border',
+            textPrimary: '--palette-text-primary',
+            textSecondary: '--palette-text-secondary',
+            textOnAccent: '--palette-text-on-accent',
+            accent: '--palette-accent',
+            danger: '--palette-danger',
+            controlDisabled: '--palette-control-disabled',
+            focusRing: '--palette-focus-ring',
+            shadow: '--palette-shadow',
+            topbarBackground: '--palette-topbar-background'
+          };
+
+          var DEFAULT_CHOICE = { family: 'datagrip', scheme: 'system' };
+          var choice = DEFAULT_CHOICE;
+
+          try {
+            var raw = localStorage.getItem('khipu:theme');
+            if (raw) {
+              var parsed = JSON.parse(raw);
+              var familyOk = parsed && (parsed.family === 'datagrip' || parsed.family === 'vscode');
+              var schemeOk =
+                parsed &&
+                (parsed.scheme === 'system' || parsed.scheme === 'dark' || parsed.scheme === 'light');
+              if (familyOk && schemeOk) {
+                choice = { family: parsed.family, scheme: parsed.scheme };
+              }
+            }
+          } catch (e) {
+            choice = DEFAULT_CHOICE;
+          }
+
+          var resolvedScheme = choice.scheme;
+          if (resolvedScheme === 'system') {
+            resolvedScheme =
+              window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          }
+
+          var palette = SHELL_PALETTES[choice.family][resolvedScheme];
+          var root = document.documentElement;
+          for (var field in CSS_VAR_NAMES) {
+            root.style.setProperty(CSS_VAR_NAMES[field], palette[field]);
+          }
+          root.style.colorScheme = resolvedScheme;
+        } catch (e) {
+          // Si algo falla acá, se cae al CSS estático de tokens.css
+          // (DataGrip Dark) — nunca debe romper el arranque de la app.
+        }
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

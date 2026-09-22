@@ -1,6 +1,18 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import "$lib/styles/tokens.css";
   import { connection } from "$lib/stores/connection";
+  import { initThemeEffects } from "$lib/theming/theme";
+
+  let cleanupThemeEffects: (() => void) | undefined;
+
+  onMount(() => {
+    cleanupThemeEffects = initThemeEffects();
+  });
+
+  onDestroy(() => {
+    cleanupThemeEffects?.();
+  });
 </script>
 
 <div class="shell">
@@ -43,15 +55,9 @@
     gap: var(--space-3);
     padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--border);
-    background: rgba(30, 30, 30, 0.72);
+    background: var(--topbar-background);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-  }
-
-  @media (prefers-color-scheme: light) {
-    .topbar {
-      background: rgba(245, 245, 247, 0.72);
-    }
   }
 
   h1 {

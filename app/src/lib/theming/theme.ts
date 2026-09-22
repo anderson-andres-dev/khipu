@@ -1,0 +1,158 @@
+import { writable, derived, type Readable, type Writable } from 'svelte/store';
+import { browser } from '$app/environment';
+import {
+	palettes,
+	type ShellPalette,
+	type EditorPalette,
+	type ThemeFamily,
+	type ColorScheme
+} from './palettes';
+
+export type SchemePreference = 'system' | 'dark' | 'light';
+
+export interface ThemeChoice {
+	family: ThemeFamily;
+	scheme: SchemePreference;
+}
+
+const STORAGE_KEY = 'khipu:theme';
+const DEFAULT_THEME_CHOICE: ThemeChoice = { family: 'datagrip', scheme: 'system' };
+
+// Mapeo campo de ShellPalette -> variable CSS `--palette-*`. Usado tanto por
+// initThemeEffects() como (con el mismo nombre, duplicado literal) por el
+// script inline de app.html.
+const SHELL_PALETTE_CSS_VARS: Record<keyof ShellPalette, string> = {
+	surface: '--palette-surface',
+	surfaceElevated: '--palette-surface-elevated',
+	border: '--palette-border',
+	controlBorder: '--palette-control-border',
+	textPrimary: '--palette-text-primary',
+	textSecondary: '--palette-text-secondary',
+	textOnAccent: '--palette-text-on-accent',
+	accent: '--palette-accent',
+	danger: '--palette-danger',
+	controlDisabled: '--palette-control-disabled',
+	focusRing: '--palette-focus-ring',
+	shadow: '--palette-shadow',
+	topbarBackground: '--palette-topbar-background'
+};
+
+// --- systemPrefersDark ------------------------------------------------
+//
+// Un único listener de matchMedia, registrado una sola vez a nivel de
+// módulo (este bloque de nivel superior se ejecuta una vez por carga del
+// módulo, nunca dentro de una función que pueda invocarse repetidas veces).
+// Bajo `browser` para no tocar `window`/`matchMedia` en SSR o herramientas
+// de build.
+const darkMediaQuery = browser ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+const systemPrefersDarkStore: Writable<boolean> = writable(darkMediaQuery?.matches ?? false);
+
+if (darkMediaQuery) {
+	darkMediaQuery.addEventListener('change', (event) => {
+		systemPrefersDarkStore.set(event.matches);
+	});
+}
+
+export const systemPrefersDark: Readable<boolean> = {
+	subscribe: systemPrefersDarkStore.subscribe
+};
+
+// --- themeChoice --------------------------------------------------------
+
+function isThemeFamily(value: unknown): value is ThemeFamily {
+	return value === 'datagrip' || value === 'vscode';
+}
+
+function isSchemePreference(value: unknown): value is SchemePreference {
+	return value === 'system' || value === 'dark' || value === 'light';
+}
+
+function loadStoredThemeChoice(): ThemeChoice {
+	if (!browser) return DEFAULT_THEME_CHOICE;
+
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return DEFAULT_THEME_CHOICE;
+
+		const parsed = JSON.parse(raw) as Partial<Record<keyof ThemeChoice, unknown>> | null;
+		if (
+			parsed &&
+			typeof parsed === 'object' &&
+			isThemeFamily(parsed.family) &&
+			isSchemePreference(parsed.scheme)
+		) {
+			return { family: parsed.family, scheme: parsed.scheme };
+		}
+
+		return DEFAULT_THEME_CHOICE;
+	} catch {
+		return DEFAULT_THEME_CHOICE;
+	}
+}
+
+export const themeChoice: Writable<ThemeChoice> = writable(loadStoredThemeChoice());
+
+// --- derivados ------------------------------------------------------------
+
+// Única fuente de la que se derivan tanto shellPalette como editorPalette,
+// para que ambos cambien juntos ante un cambio de esquema del SO.
+export const effectiveScheme: Readable<ColorScheme> = derived(
+	[themeChoice, systemPrefersDark],
+	([$themeChoice, $systemPrefersDark]) =>
+		$themeChoice.scheme !== 'system'
+			? $themeChoice.scheme
+			: $systemPrefersDark
+				? 'dark'
+				: 'light'
+);
+
+export const shellPalette: Readable<ShellPalette> = derived(
+	[themeChoice, effectiveScheme],
+	([$themeChoice, $effectiveScheme]) => palettes[$themeChoice.family][$effectiveScheme].shell
+);
+
+export const editorPalette: Readable<EditorPalette> = derived(
+	[themeChoice, effectiveScheme],
+	([$themeChoice, $effectiveScheme]) => palettes[$themeChoice.family][$effectiveScheme].editor
+);
+
+// --- efecto secundario ------------------------------------------------
+
+/**
+ * Se suscribe (una vez, desde +layout.svelte) a themeChoice/effectiveScheme/
+ * shellPalette combinados. En cada cambio: escribe las `--palette-*` sobre
+ * documentElement, fija `documentElement.style.colorScheme`, y persiste
+ * themeChoice en localStorage. Devuelve una función de cleanup.
+ */
+export function initThemeEffects(): () => void {
+	if (!browser) return () => {};
+
+	const combined = derived(
+		[themeChoice, effectiveScheme, shellPalette],
+		([$themeChoice, $effectiveScheme, $shellPalette]) => ({
+			choice: $themeChoice,
+			scheme: $effectiveScheme,
+			palette: $shellPalette
+		})
+	);
+
+	const unsubscribe = combined.subscribe(({ choice, scheme, palette }) => {
+		const root = document.documentElement;
+
+		for (const key of Object.keys(SHELL_PALETTE_CSS_VARS) as (keyof ShellPalette)[]) {
+			root.style.setProperty(SHELL_PALETTE_CSS_VARS[key], palette[key]);
+		}
+
+		root.style.colorScheme = scheme;
+
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
+		} catch {
+			// localStorage no disponible (privado, cuota llena, etc.) — no
+			// persistir no debe romper la app.
+		}
+	});
+
+	return unsubscribe;
+}

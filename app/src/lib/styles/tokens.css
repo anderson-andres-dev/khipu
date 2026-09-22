@@ -1,26 +1,60 @@
 /*
  * Design tokens — Khipu
  *
- * Dark es el tema por defecto en :root; se redefine bajo
- * `@media (prefers-color-scheme: light)`. `color-scheme: light dark`
- * deja que los controles nativos (inputs, selects, scrollbars) sigan
- * el esquema del sistema sin estilizarlos a mano.
+ * Las variables --surface/--border/etc. son un alias estable de las
+ * --palette-* correspondientes. --palette-* son la fuente real: las
+ * escribe el script inline de app.html (arranca antes del primer paint,
+ * sin flash) y luego theme.ts (indirección explicada en el spec de temas,
+ * necesaria para que @media (prefers-contrast: more) pueda seguir
+ * pisando --border/--focus-ring/--control-border por especificidad de
+ * hoja de estilo sin que un valor inline lo tape).
+ *
+ * Los valores estáticos de --palette-* en :root son DataGrip Dark (el
+ * tema por defecto), para que coincida con lo que ya escribió el bootstrap
+ * de app.html si ambos corrieron. El bloque
+ * `@media (prefers-color-scheme: light)` redefine solo las --palette-*
+ * (nunca los nombres finales) con los valores de DataGrip Light, como
+ * fallback de primer paint mientras el script de app.html no corrió
+ * todavía (p.ej. JS deshabilitado) y el SO está en modo claro.
+ *
+ * `color-scheme: light dark` deja que los controles nativos (inputs,
+ * selects, scrollbars) sigan el esquema del sistema sin estilizarlos a
+ * mano; theme.ts además fija `documentElement.style.colorScheme`
+ * explícitamente según el tema elegido por el usuario.
  */
 
 :root {
   color-scheme: light dark;
 
-  /* Color semántico (tema oscuro, por defecto) */
-  --surface: #1e1e1e;
-  --surface-elevated: #2a2a2a;
-  --border: #3a3a3a;
-  --text-primary: #e6e6e6;
-  --text-secondary: #999999;
-  --text-on-accent: #ffffff;
-  --accent: #0a84ff;
-  --danger: #ff453a;
-  --control-disabled: #555555;
-  --focus-ring: #409cff;
+  /* Paleta cruda (DataGrip Dark) — fuente real, ver comentario arriba */
+  --palette-surface: #191A1C;
+  --palette-surface-elevated: #26282C;
+  --palette-border: #33353B;
+  --palette-control-border: #8B8E94;
+  --palette-text-primary: #D1D3D9;
+  --palette-text-secondary: #9FA2A8;
+  --palette-text-on-accent: #FFFFFF;
+  --palette-accent: #3871E1;
+  --palette-danger: #F57E84;
+  --palette-control-disabled: #4C4F56;
+  --palette-focus-ring: #3871E1;
+  --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --palette-topbar-background: rgba(25, 26, 28, 0.72);
+
+  /* Color semántico — alias estable sobre --palette-* */
+  --surface: var(--palette-surface);
+  --surface-elevated: var(--palette-surface-elevated);
+  --border: var(--palette-border);
+  --control-border: var(--palette-control-border);
+  --text-primary: var(--palette-text-primary);
+  --text-secondary: var(--palette-text-secondary);
+  --text-on-accent: var(--palette-text-on-accent);
+  --accent: var(--palette-accent);
+  --danger: var(--palette-danger);
+  --control-disabled: var(--palette-control-disabled);
+  --focus-ring: var(--palette-focus-ring);
+  --shadow-elevated: var(--palette-shadow);
+  --topbar-background: var(--palette-topbar-background);
 
   /* Espaciado — base 4px */
   --space-1: 4px;
@@ -33,9 +67,6 @@
   /* Radios */
   --radius-sm: 6px;
   --radius-md: 12px;
-
-  /* Elevación */
-  --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.45);
 
   /* Movimiento */
   --duration-fast: 150ms;
@@ -58,20 +89,26 @@
   --leading-body: 1.5;
 }
 
+/*
+ * Fallback de primer paint (SO en claro, JS aún no corrió el bootstrap de
+ * app.html ni theme.ts): redefine las --palette-* con DataGrip Light,
+ * nunca los nombres finales.
+ */
 @media (prefers-color-scheme: light) {
   :root {
-    --surface: #f5f5f7;
-    --surface-elevated: #ffffff;
-    --border: #d2d2d7;
-    --text-primary: #1d1d1f;
-    --text-secondary: #6e6e73;
-    --text-on-accent: #ffffff;
-    --accent: #007aff;
-    --danger: #ff3b30;
-    --control-disabled: #c7c7cc;
-    --focus-ring: #007aff;
-
-    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --palette-surface: #E9EAEE;
+    --palette-surface-elevated: #FFFFFF;
+    --palette-border: #DDDFE4;
+    --palette-control-border: #5F6269;
+    --palette-text-primary: #000000;
+    --palette-text-secondary: #4C4F56;
+    --palette-text-on-accent: #FFFFFF;
+    --palette-accent: #3871E1;
+    --palette-danger: #C54E58;
+    --palette-control-disabled: #9FA2A8;
+    --palette-focus-ring: #3871E1;
+    --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    --palette-topbar-background: rgba(233, 234, 238, 0.72);
   }
 }
 
@@ -81,11 +118,18 @@
   }
 }
 
-/* Alto contraste: bordes y foco más marcados, en el esquema que esté activo */
+/*
+ * Alto contraste: bordes y foco más marcados, en el esquema que esté
+ * activo. Pisa directamente --border/--focus-ring/--control-border (no
+ * las --palette-*), para que la indirección de theme.ts nunca lo tape:
+ * la escritura inline de theme.ts solo toca --palette-*, así que este
+ * media query de hoja de estilo sigue ganando sobre --border/etc.
+ */
 @media (prefers-contrast: more) {
   :root {
     --border: #b3b3b3;
     --focus-ring: #6cb2ff;
+    --control-border: #e6e6e6;
   }
 }
 
@@ -93,5 +137,6 @@
   :root {
     --border: #4d4d4f;
     --focus-ring: #0060df;
+    --control-border: #262626;
   }
 }
