@@ -1,10 +1,17 @@
 use async_trait::async_trait;
 use khipu_driver_core::{ColumnInfo, ConnectionConfig, DbConnector, DriverError, TableInfo};
-use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlRow};
 use sqlx::{MySqlPool, Row};
 
 pub struct MySqlConnector {
     pool: MySqlPool,
+}
+
+fn text_column(row: &MySqlRow, index: usize) -> Result<String, DriverError> {
+    let bytes: Vec<u8> = row
+        .try_get(index)
+        .map_err(|error| DriverError::Query(error.to_string()))?;
+    String::from_utf8(bytes).map_err(|error| DriverError::Query(error.to_string()))
 }
 
 #[async_trait]
@@ -29,10 +36,7 @@ impl DbConnector for MySqlConnector {
             .await
             .map_err(|e| DriverError::Query(e.to_string()))?
             .into_iter()
-            .map(|row| {
-                row.try_get::<String, _>(0)
-                    .map_err(|e| DriverError::Query(e.to_string()))
-            })
+            .map(|row| text_column(&row, 0))
             .collect()
     }
 
@@ -48,24 +52,16 @@ impl DbConnector for MySqlConnector {
 
         let mut tables: Vec<TableInfo> = Vec::new();
         for row in rows {
-            let table_name: String = row
-                .try_get("table_name")
-                .map_err(|e| DriverError::Query(e.to_string()))?;
+            let table_name = text_column(&row, 0)?;
             let column = ColumnInfo {
-                name: row
-                    .try_get("column_name")
-                    .map_err(|e| DriverError::Query(e.to_string()))?,
-                data_type: row
-                    .try_get("data_type")
-                    .map_err(|e| DriverError::Query(e.to_string()))?,
-                nullable: row
-                    .try_get::<String, _>("is_nullable")
-                    .map_err(|e| DriverError::Query(e.to_string()))?
-                    == "YES",
+                name: text_column(&row, 1)?,
+                data_type: text_column(&row, 2)?,
+                nullable: text_column(&row, 3)? == "YES",
                 is_primary_key: row
-                    .try_get::<String, _>("column_key")
+                    .try_get::<Option<Vec<u8>>, _>(4)
                     .map_err(|e| DriverError::Query(e.to_string()))?
-                    == "PRI",
+                    .as_deref()
+                    == Some(b"PRI"),
             };
 
             match tables.last_mut() {

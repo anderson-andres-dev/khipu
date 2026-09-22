@@ -29,11 +29,18 @@
 <style>
   .btn {
     font: inherit;
+    min-height: 2.125rem;
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
-    transition: transform var(--duration-fast);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      background-color var(--duration-fast),
+      border-color var(--duration-fast),
+      transform var(--duration-fast);
   }
 
   .btn.primary {
@@ -42,9 +49,18 @@
   }
 
   .btn.secondary {
-    background: var(--surface);
+    background: var(--surface-elevated);
     color: var(--text-primary);
     border-color: var(--border);
+  }
+
+  .btn.primary:not(:disabled):hover {
+    background: color-mix(in srgb, var(--accent) 86%, white);
+  }
+
+  .btn.secondary:not(:disabled):hover {
+    border-color: var(--control-border);
+    background: color-mix(in srgb, var(--surface-elevated) 88%, var(--accent));
   }
 
   .btn:focus-visible {

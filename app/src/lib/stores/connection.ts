@@ -29,26 +29,41 @@ export interface ConnectionConfig {
   password: string;
 }
 
-export async function connect(kind: "mysql" | "postgres", config: ConnectionConfig): Promise<void> {
+export async function connect(
+  kind: "mysql" | "postgres",
+  config: ConnectionConfig,
+): Promise<number | null> {
   connection.update((state) => ({ ...state, connecting: true, error: null }));
 
   try {
     const tableCount = await invoke<number>("connect", { kind, config });
-    connection.update((state) => ({
-      ...state,
-      connected: true,
-      tableCount,
-      error: null,
-    }));
+    return tableCount;
   } catch (e) {
     connection.update((state) => ({
       ...state,
       connected: false,
       error: String(e),
     }));
+    return null;
   } finally {
     connection.update((state) => ({ ...state, connecting: false }));
   }
+}
+
+export function completeConnection(tableCount: number): void {
+  connection.update((state) => ({
+    ...state,
+    connected: true,
+    tableCount,
+    error: null,
+  }));
+}
+
+export async function testConnection(
+  kind: "mysql" | "postgres",
+  config: ConnectionConfig,
+): Promise<void> {
+  await invoke("test_connection", { kind, config });
 }
 
 // reset() SOLO limpia el estado del lado del frontend. No existe un comando

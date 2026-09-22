@@ -29,3 +29,4 @@ khipu-driver-core.workspace = true
 khipu-driver-mysql.workspace = true
 khipu-driver-postgres.workspace = true
 tokio.workspace = true
+keyring = "4.2.0"

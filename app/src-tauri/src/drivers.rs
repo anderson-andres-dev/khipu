@@ -12,6 +12,24 @@ pub enum DatabaseKind {
     Postgres,
 }
 
+/// Verifies that the credentials can open a database connection, then drops
+/// the connector without loading or replacing the current catalog.
+pub async fn test_connection(
+    kind: DatabaseKind,
+    config: &ConnectionConfig,
+) -> Result<(), DriverError> {
+    match kind {
+        DatabaseKind::MySql => {
+            MySqlConnector::connect(config).await?;
+        }
+        DatabaseKind::Postgres => {
+            PostgresConnector::connect(config).await?;
+        }
+    }
+
+    Ok(())
+}
+
 /// Connects to the given database, lists its tables, and drops the
 /// connection/pool before returning. Callers only ever see the resulting
 /// `TableInfo`s, never the live connector.

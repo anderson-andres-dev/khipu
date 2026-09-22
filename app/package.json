@@ -21,7 +21,8 @@
     "@lezer/highlight": "^1.2.3",
     "@lucide/svelte": "^1.47.0",
     "@tauri-apps/api": "^2",
-    "codemirror": "^6.0.2"
+    "codemirror": "^6.0.2",
+    "devicon": "^2.17.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
