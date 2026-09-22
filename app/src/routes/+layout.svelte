@@ -92,11 +92,18 @@
   }
 
   .shell {
+    position: fixed;
+    inset: 0;
     display: grid;
     grid-template-areas: "topbar topbar" "sidebar main";
     grid-template-rows: auto 1fr;
     grid-template-columns: 0 minmax(0, 1fr);
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--surface);
   }
 
   .topbar {

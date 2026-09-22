@@ -19,11 +19,7 @@
 <section class="landing" aria-labelledby="connection-state-title">
   {#if profiles.length === 0}
     <div class="empty">
-      <span
-        class="database-icon"
-        style={`--database-icon: url("${databaseIcon}")`}
-        aria-hidden="true"
-      ></span>
+      <img class="database-icon" src={databaseIcon} alt="" aria-hidden="true" />
       <h1 id="connection-state-title">Sin conexiones guardadas</h1>
       <p>Conecta una base de datos para comenzar.</p>
       <Button type="button" variant="primary" onclick={onnewconnection}>Nueva conexión</Button>
@@ -44,11 +40,7 @@
             aria-label={`Abrir ${profile.name}, ${driver.name}`}
             onclick={() => onopen(profile)}
           >
-            <span
-              class="profile-icon"
-              style={`--profile-icon: url("${driver.icon}")`}
-              aria-hidden="true"
-            ></span>
+            <img class="profile-icon" src={driver.icon} alt="" aria-hidden="true" />
             <strong>{profile.name}</strong>
             <span>{driver.name}</span>
             <small>{profile.database}@{profile.host}</small>
@@ -80,7 +72,8 @@
 
   .empty {
     display: flex;
-    min-height: calc(100dvh - 2.625rem);
+    height: 100%;
+    min-height: 0;
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
@@ -90,12 +83,12 @@
   }
 
   .database-icon {
+    display: block;
     width: 2.25rem;
     height: 2.25rem;
     margin-bottom: var(--space-1);
-    background: var(--text-secondary);
-    mask: var(--database-icon) center / contain no-repeat;
-    -webkit-mask: var(--database-icon) center / contain no-repeat;
+    object-fit: contain;
+    filter: grayscale(1) brightness(1.35);
   }
 
   .saved {
@@ -161,12 +154,12 @@
   }
 
   .profile-icon {
+    display: block;
     width: 2rem;
     height: 2rem;
     margin-bottom: var(--space-1);
-    background: var(--text-secondary);
-    mask: var(--profile-icon) center / contain no-repeat;
-    -webkit-mask: var(--profile-icon) center / contain no-repeat;
+    object-fit: contain;
+    filter: grayscale(1) brightness(1.35);
   }
 
   .profile-card strong {

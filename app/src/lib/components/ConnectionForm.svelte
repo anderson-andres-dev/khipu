@@ -201,11 +201,7 @@
   onclick={handleBackdropClick}
 >
   <header class="dialog-header">
-    <span
-      class="driver-icon"
-      style={`--driver-icon: url("${driverDefinition.icon}")`}
-      aria-hidden="true"
-    ></span>
+    <img class="driver-icon" src={driverDefinition.icon} alt="" aria-hidden="true" />
     <div class="dialog-title">
       <h1 id="connection-dialog-title">
         {profile ? profile.name : "Nueva conexión"}
@@ -407,11 +403,11 @@
   }
 
   .driver-icon {
+    display: block;
     width: 1.625rem;
     height: 1.625rem;
-    background: var(--text-secondary);
-    mask: var(--driver-icon) center / contain no-repeat;
-    -webkit-mask: var(--driver-icon) center / contain no-repeat;
+    object-fit: contain;
+    filter: grayscale(1) brightness(1.35);
   }
 
   .dialog-title {

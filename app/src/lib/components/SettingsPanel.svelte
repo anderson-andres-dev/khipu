@@ -57,7 +57,7 @@
       </header>
 
       <fieldset>
-        <legend>Modo</legend>
+        <legend>Apariencia</legend>
         <div class="scheme-grid">
           {#each schemeOptions as option (option.value)}
             {@const Icon = option.icon}
@@ -76,7 +76,7 @@
       </fieldset>
 
       <fieldset>
-        <legend>Tema</legend>
+        <legend>Paleta</legend>
         <div class="palette-grid">
           {#each familyOptions as option (option.value)}
             {@const preview = palettes[option.value][$effectiveScheme]}

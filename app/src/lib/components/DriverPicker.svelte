@@ -35,11 +35,7 @@
           aria-pressed={selected === driver.id}
           onclick={() => onselect(driver.id)}
         >
-          <span
-            class="driver-icon"
-            style={`--driver-icon: url("${driver.icon}")`}
-            aria-hidden="true"
-          ></span>
+          <img class="driver-icon" src={driver.icon} alt="" aria-hidden="true" />
           <strong>{driver.name}</strong>
         </button>
       {/each}
@@ -146,11 +142,11 @@
   }
 
   .driver-icon {
+    display: block;
     width: 2rem;
     height: 2rem;
-    background: var(--text-secondary);
-    mask: var(--driver-icon) center / contain no-repeat;
-    -webkit-mask: var(--driver-icon) center / contain no-repeat;
+    object-fit: contain;
+    filter: grayscale(1) brightness(1.35);
   }
 
   .driver strong {
