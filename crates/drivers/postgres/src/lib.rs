@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use khipu_driver_core::{ColumnInfo, ConnectionConfig, DbConnector, DriverError, TableInfo};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{PgPool, Row};
 
 pub struct PostgresConnector {
@@ -9,11 +10,14 @@ pub struct PostgresConnector {
 #[async_trait]
 impl DbConnector for PostgresConnector {
     async fn connect(config: &ConnectionConfig) -> Result<Self, DriverError> {
-        let url = format!(
-            "postgres://{}:{}@{}:{}/{}",
-            config.username, config.password, config.host, config.port, config.database
-        );
-        let pool = PgPool::connect(&url)
+        let options = PgConnectOptions::new()
+            .host(&config.host)
+            .port(config.port)
+            .username(&config.username)
+            .password(&config.password)
+            .database(&config.database);
+        let pool = PgPoolOptions::new()
+            .connect_with(options)
             .await
             .map_err(|e| DriverError::Connection(e.to_string()))?;
         Ok(Self { pool })

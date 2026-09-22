@@ -1,13 +1,25 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ConnectionConfig {
     pub host: String,
     pub port: u16,
     pub database: String,
     pub username: String,
     pub password: String,
+}
+
+impl std::fmt::Debug for ConnectionConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConnectionConfig")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .field("database", &self.database)
+            .field("username", &self.username)
+            .field("password", &"***")
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,4 +57,26 @@ pub trait DbConnector: Send + Sync {
     async fn list_schemas(&self) -> Result<Vec<String>, DriverError>;
 
     async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn debug_output_redacts_password() {
+        let config = ConnectionConfig {
+            host: "db.example.com".to_string(),
+            port: 5432,
+            database: "mydb".to_string(),
+            username: "myuser".to_string(),
+            password: "supersecreto123".to_string(),
+        };
+
+        let debug_output = format!("{config:?}");
+
+        assert!(!debug_output.contains("supersecreto123"));
+        assert!(debug_output.contains("db.example.com"));
+        assert!(debug_output.contains("myuser"));
+    }
 }

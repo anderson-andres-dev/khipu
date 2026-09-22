@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use khipu_driver_core::{ColumnInfo, ConnectionConfig, DbConnector, DriverError, TableInfo};
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::{MySqlPool, Row};
 
 pub struct MySqlConnector {
@@ -9,11 +10,14 @@ pub struct MySqlConnector {
 #[async_trait]
 impl DbConnector for MySqlConnector {
     async fn connect(config: &ConnectionConfig) -> Result<Self, DriverError> {
-        let url = format!(
-            "mysql://{}:{}@{}:{}/{}",
-            config.username, config.password, config.host, config.port, config.database
-        );
-        let pool = MySqlPool::connect(&url)
+        let options = MySqlConnectOptions::new()
+            .host(&config.host)
+            .port(config.port)
+            .username(&config.username)
+            .password(&config.password)
+            .database(&config.database);
+        let pool = MySqlPoolOptions::new()
+            .connect_with(options)
             .await
             .map_err(|e| DriverError::Connection(e.to_string()))?;
         Ok(Self { pool })
