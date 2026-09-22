@@ -142,10 +142,10 @@
 
   .driver-icon {
     display: block;
-    width: min(8rem, 72%);
-    height: 3.5rem;
+    width: min(9rem, 80%);
+    height: 4rem;
     object-fit: contain;
-    filter: grayscale(1) brightness(1.35);
+    filter: brightness(0) invert(0.7);
   }
 
   @media (max-width: 28rem) {
