@@ -15,7 +15,9 @@
         "title": "Khipu",
         "width": 800,
         "height": 600,
-        "decorations": false
+        "decorations": false,
+        "transparent": false,
+        "shadow": false
       }
     ],
     "security": {

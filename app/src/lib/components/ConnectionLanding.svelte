@@ -72,8 +72,7 @@
 
   .empty {
     display: flex;
-    height: 100%;
-    min-height: 0;
+    min-height: calc(100dvh - 2.625rem - (var(--space-6) * 2));
     box-sizing: border-box;
     flex-direction: column;
     align-items: center;
