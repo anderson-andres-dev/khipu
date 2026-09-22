@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus } from "@lucide/svelte";
+  import { Pencil, Plus } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { getDriver } from "$lib/connections";
   import type { ConnectionProfile } from "$lib/stores/connectionProfiles";
@@ -7,12 +7,16 @@
 
   let {
     profiles,
+    connectingId = null,
     onnewconnection,
-    onopen,
+    onconnect,
+    onedit,
   }: {
     profiles: ConnectionProfile[];
+    connectingId?: string | null;
     onnewconnection: () => void;
-    onopen: (profile: ConnectionProfile) => void;
+    onconnect: (profile: ConnectionProfile) => void;
+    onedit: (profile: ConnectionProfile) => void;
   } = $props();
 </script>
 
@@ -34,21 +38,38 @@
       <div class="profile-grid" aria-label="Conexiones guardadas">
         {#each profiles as profile (profile.id)}
           {@const driver = getDriver(profile.driver)}
-          <button
-            class="profile-card"
-            type="button"
-            aria-label={`Abrir ${profile.name}, ${driver.name}`}
-            onclick={() => onopen(profile)}
-          >
-            <img class="profile-icon" src={driver.icon} alt="" aria-hidden="true" />
-            <strong>{profile.name}</strong>
-            <span>{driver.name}</span>
-            <small>{profile.database}@{profile.host}</small>
-          </button>
+          {@const busy = connectingId !== null}
+          <div class="profile-card" class:connecting={connectingId === profile.id}>
+            <button
+              class="profile-main"
+              type="button"
+              aria-label={`Conectar a ${profile.name}, ${driver.name}`}
+              aria-busy={connectingId === profile.id}
+              disabled={busy}
+              onclick={() => onconnect(profile)}
+            >
+              <img class="profile-icon" src={driver.icon} alt="" aria-hidden="true" />
+              <strong>{profile.name}</strong>
+              <span>{driver.name}</span>
+              <small>{profile.database}@{profile.host}</small>
+            </button>
+            <button
+              class="edit-button"
+              type="button"
+              aria-label={`Editar ${profile.name}`}
+              disabled={busy}
+              onclick={(event) => {
+                event.stopPropagation();
+                onedit(profile);
+              }}
+            >
+              <Pencil size={13} aria-hidden="true" />
+            </button>
+          </div>
         {/each}
 
         <button
-          class="profile-card add-card"
+          class="add-card"
           type="button"
           aria-label="Agregar otra conexión"
           onclick={onnewconnection}
@@ -122,8 +143,13 @@
   }
 
   .profile-card {
-    display: flex;
+    position: relative;
     min-width: 0;
+  }
+
+  .profile-main {
+    display: flex;
+    width: 100%;
     aspect-ratio: 1;
     flex-direction: column;
     align-items: center;
@@ -142,14 +168,62 @@
       background-color var(--duration-fast);
   }
 
-  .profile-card:hover {
+  .profile-main:hover:not(:disabled) {
     border-color: var(--control-border);
     background: color-mix(in srgb, var(--surface-elevated) 88%, var(--accent));
   }
 
-  .profile-card:focus-visible {
+  .profile-main:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  .profile-main:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .profile-card.connecting .profile-main {
+    opacity: 1;
+    border-color: var(--accent);
+  }
+
+  .edit-button {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--duration-fast);
+  }
+
+  .profile-card:hover .edit-button,
+  .profile-card:focus-within .edit-button,
+  .edit-button:focus-visible {
+    opacity: 1;
+  }
+
+  .edit-button:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--control-border);
+  }
+
+  .edit-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  .edit-button:disabled {
+    cursor: not-allowed;
   }
 
   .profile-icon {
@@ -161,7 +235,8 @@
     filter: grayscale(1) brightness(1.35);
   }
 
-  .profile-card strong {
+  .profile-card strong,
+  .add-card strong {
     max-width: 100%;
     overflow: hidden;
     font-size: 0.875rem;
@@ -170,7 +245,7 @@
     white-space: nowrap;
   }
 
-  .profile-card > span:not(.profile-icon),
+  .profile-main > span:not(.profile-icon),
   .profile-card small {
     max-width: 100%;
     overflow: hidden;
@@ -185,13 +260,34 @@
   }
 
   .add-card {
-    border-style: dashed;
+    display: flex;
+    min-width: 0;
+    aspect-ratio: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-secondary);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast),
+      background-color var(--duration-fast);
   }
 
   .add-card:hover {
     color: var(--text-primary);
+    border-color: var(--control-border);
+  }
+
+  .add-card:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   @media (max-width: 28rem) {

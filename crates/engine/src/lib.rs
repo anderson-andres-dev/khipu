@@ -1,5 +1,4 @@
 pub mod catalog;
-pub mod completion;
 pub mod parser;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

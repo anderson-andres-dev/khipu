@@ -1,13 +1,66 @@
 <script lang="ts">
-  import { ArrowLeft, Monitor, Moon, Palette, Sun } from "@lucide/svelte";
+  import { ArrowLeft, Code2, Keyboard, Monitor, Moon, Palette, Pencil, RotateCcw, Sun } from "@lucide/svelte";
   import { palettes, type ThemeFamily } from "$lib/theming/palettes";
   import {
     effectiveScheme,
     themeChoice,
     type SchemePreference,
   } from "$lib/theming/theme";
+  import {
+    formatShortcutEvent,
+    resetShortcutKeys,
+    setShortcutKeys,
+    shortcuts,
+  } from "$lib/stores/shortcuts";
+  import {
+    DEFAULT_FORMATTER_LINE_WIDTH,
+    MAX_FORMATTER_LINE_WIDTH,
+    MIN_FORMATTER_LINE_WIDTH,
+    editorSettings,
+    setAutoUppercaseKeywords,
+    setFormatterLineWidth,
+    setTabNavigatesCompletion,
+  } from "$lib/stores/editorSettings";
 
   let { onclose }: { onclose: () => void } = $props();
+
+  type Section = "appearance" | "editor" | "shortcuts";
+  let activeSection = $state<Section>("appearance");
+  let recordingId = $state<string | null>(null);
+
+  function startRecording(id: string) {
+    recordingId = id;
+  }
+
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
+  }
+
+  function handleRecordKeydown(event: KeyboardEvent, id: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === "Escape") {
+      recordingId = null;
+      return;
+    }
+
+    const keys = formatShortcutEvent(event);
+    if (!keys) return; // solo se solto un modificador, seguir esperando
+
+    setShortcutKeys(id, keys);
+    recordingId = null;
+  }
+
+  let dialogEl: HTMLDialogElement | undefined = $state();
+
+  $effect(() => {
+    if (dialogEl && !dialogEl.open) dialogEl.showModal();
+  });
+
+  function handleBackdropClick(event: MouseEvent) {
+    if (event.target === dialogEl) dialogEl?.close();
+  }
 
   const schemeOptions = [
     { value: "system", label: "Sistema", description: "Usa el modo del sistema operativo", icon: Monitor },
@@ -34,87 +87,272 @@
   }
 </script>
 
-<section class="settings" aria-labelledby="settings-title">
+<dialog bind:this={dialogEl} aria-labelledby="settings-title" onclose={onclose} onclick={handleBackdropClick}>
+<section class="settings">
   <aside class="settings-nav" aria-label="Secciones de ajustes">
-    <button class="back" type="button" onclick={onclose}>
+    <button class="back" type="button" onclick={() => dialogEl?.close()}>
       <ArrowLeft size={15} aria-hidden="true" />
       Volver
     </button>
 
     <nav>
-      <button class="nav-item active" type="button" aria-current="page">
+      <button
+        class="nav-item"
+        class:active={activeSection === "editor"}
+        type="button"
+        aria-current={activeSection === "editor" ? "page" : undefined}
+        onclick={() => (activeSection = "editor")}
+      >
+        <Code2 size={15} aria-hidden="true" />
+        Editor SQL
+      </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "appearance"}
+        type="button"
+        aria-current={activeSection === "appearance" ? "page" : undefined}
+        onclick={() => (activeSection = "appearance")}
+      >
         <Palette size={15} aria-hidden="true" />
         Apariencia
+      </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "shortcuts"}
+        type="button"
+        aria-current={activeSection === "shortcuts" ? "page" : undefined}
+        onclick={() => (activeSection = "shortcuts")}
+      >
+        <Keyboard size={15} aria-hidden="true" />
+        Atajos
       </button>
     </nav>
   </aside>
 
   <div class="settings-main">
-    <div class="settings-content">
-      <header>
-        <h1 id="settings-title">Apariencia</h1>
-        <p>Personaliza el aspecto del shell y del editor.</p>
-      </header>
+    {#if activeSection === "appearance"}
+      <div class="settings-content">
+        <header>
+          <h1 id="settings-title">Apariencia</h1>
+          <p>Personaliza el aspecto del shell y del editor.</p>
+        </header>
 
-      <fieldset>
-        <legend>Apariencia</legend>
-        <div class="scheme-grid">
-          {#each schemeOptions as option (option.value)}
-            {@const Icon = option.icon}
-            <button
-              class:selected={$themeChoice.scheme === option.value}
-              type="button"
-              aria-pressed={$themeChoice.scheme === option.value}
-              onclick={() => setScheme(option.value)}
-            >
-              <Icon size={18} aria-hidden="true" />
-              <strong>{option.label}</strong>
-              <span>{option.description}</span>
-            </button>
-          {/each}
-        </div>
-      </fieldset>
+        <fieldset>
+          <legend>Apariencia</legend>
+          <div class="scheme-grid">
+            {#each schemeOptions as option (option.value)}
+              {@const Icon = option.icon}
+              <button
+                class:selected={$themeChoice.scheme === option.value}
+                type="button"
+                aria-pressed={$themeChoice.scheme === option.value}
+                onclick={() => setScheme(option.value)}
+              >
+                <Icon size={18} aria-hidden="true" />
+                <strong>{option.label}</strong>
+                <span>{option.description}</span>
+              </button>
+            {/each}
+          </div>
+        </fieldset>
 
-      <fieldset>
-        <legend>Paleta</legend>
-        <div class="palette-grid">
-          {#each familyOptions as option (option.value)}
-            {@const preview = palettes[option.value][$effectiveScheme]}
-            <button
-              class:selected={$themeChoice.family === option.value}
-              class="palette-option"
-              type="button"
-              aria-pressed={$themeChoice.family === option.value}
-              onclick={() => setFamily(option.value)}
-            >
-              <span
-                class="theme-preview"
-                style:background={preview.shell.surface}
-                style:border-color={preview.shell.border}
-                aria-hidden="true"
+        <fieldset>
+          <legend>Paleta</legend>
+          <div class="palette-grid">
+            {#each familyOptions as option (option.value)}
+              {@const preview = palettes[option.value][$effectiveScheme]}
+              <button
+                class:selected={$themeChoice.family === option.value}
+                class="palette-option"
+                type="button"
+                aria-pressed={$themeChoice.family === option.value}
+                onclick={() => setFamily(option.value)}
               >
                 <span
-                  class="preview-sidebar"
-                  style:background={preview.shell.surfaceElevated}
+                  class="theme-preview"
+                  style:background={preview.shell.surface}
                   style:border-color={preview.shell.border}
-                ></span>
-                <span class="preview-lines">
-                  <i style:background={preview.editor.keyword}></i>
-                  <i style:background={preview.editor.string}></i>
-                  <i style:background={preview.shell.textSecondary}></i>
+                  aria-hidden="true"
+                >
+                  <span
+                    class="preview-sidebar"
+                    style:background={preview.shell.surfaceElevated}
+                    style:border-color={preview.shell.border}
+                  ></span>
+                  <span class="preview-lines">
+                    <i style:background={preview.editor.keyword}></i>
+                    <i style:background={preview.editor.string}></i>
+                    <i style:background={preview.shell.textSecondary}></i>
+                  </span>
                 </span>
+                <span class="palette-name">{option.label}</span>
+                <span class="selection" aria-hidden="true"></span>
+              </button>
+            {/each}
+          </div>
+        </fieldset>
+      </div>
+    {:else if activeSection === "editor"}
+      <div class="settings-content">
+        <header>
+          <h1 id="settings-title">Editor SQL</h1>
+          <p>Configura el comportamiento del editor y del formateador.</p>
+        </header>
+
+        <fieldset>
+          <legend>Formato</legend>
+          <div class="setting-row">
+            <div class="setting-text">
+              <label for="formatter-line-width">Longitud máxima de consulta corta</label>
+              <span>
+                Las consultas que caben en este límite permanecen en una línea; las más largas se organizan en bloques.
               </span>
-              <span class="palette-name">{option.label}</span>
-              <span class="selection" aria-hidden="true"></span>
+            </div>
+            <div class="number-setting">
+              <input
+                id="formatter-line-width"
+                type="number"
+                min={MIN_FORMATTER_LINE_WIDTH}
+                max={MAX_FORMATTER_LINE_WIDTH}
+                step="1"
+                value={$editorSettings.formatterLineWidth}
+                onchange={(event) => setFormatterLineWidth(event.currentTarget.valueAsNumber)}
+              />
+              <span>caracteres</span>
+              {#if $editorSettings.formatterLineWidth !== DEFAULT_FORMATTER_LINE_WIDTH}
+                <button
+                  class="shortcut-icon-button"
+                  type="button"
+                  aria-label="Restablecer longitud a 60 caracteres"
+                  title="Restablecer a 60"
+                  onclick={() => setFormatterLineWidth(DEFAULT_FORMATTER_LINE_WIDTH)}
+                >
+                  <RotateCcw size={13} aria-hidden="true" />
+                </button>
+              {/if}
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-text">
+              <span class="setting-label">Mayúsculas automáticas para palabras clave</span>
+              <span>
+                Convierte palabras reconocidas como <code>select</code> y <code>where</code> al terminar de escribirlas.
+              </span>
+            </div>
+            <button
+              class="switch"
+              class:enabled={$editorSettings.autoUppercaseKeywords}
+              type="button"
+              role="switch"
+              aria-checked={$editorSettings.autoUppercaseKeywords}
+              aria-label="Mayúsculas automáticas para palabras clave SQL"
+              onclick={() => setAutoUppercaseKeywords(!$editorSettings.autoUppercaseKeywords)}
+            >
+              <span aria-hidden="true"></span>
             </button>
-          {/each}
-        </div>
-      </fieldset>
-    </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Autocompletado</legend>
+          <div class="setting-row">
+            <div class="setting-text">
+              <span class="setting-label">Navegar sugerencias con Tab</span>
+              <span>
+                Además de las flechas, usa <code>Tab</code> para bajar y <code>Shift+Tab</code> para subir en la lista de sugerencias.
+              </span>
+            </div>
+            <button
+              class="switch"
+              class:enabled={$editorSettings.tabNavigatesCompletion}
+              type="button"
+              role="switch"
+              aria-checked={$editorSettings.tabNavigatesCompletion}
+              aria-label="Navegar sugerencias del autocompletado con Tab"
+              onclick={() => setTabNavigatesCompletion(!$editorSettings.tabNavigatesCompletion)}
+            >
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+        </fieldset>
+      </div>
+    {:else}
+      <div class="settings-content">
+        <header>
+          <h1 id="settings-title">Atajos</h1>
+          <p>Atajos de teclado disponibles en la app.</p>
+        </header>
+
+        <fieldset>
+          <legend>General</legend>
+          <ul class="shortcut-list">
+            {#each $shortcuts as shortcut (shortcut.id)}
+              <li>
+                <div class="shortcut-text">
+                  <strong>{shortcut.label}</strong>
+                  <span>{shortcut.description}</span>
+                </div>
+
+                <div class="shortcut-actions">
+                  {#if recordingId === shortcut.id}
+                    <button
+                      class="record-target"
+                      type="button"
+                      use:focusOnMount
+                      onkeydown={(event) => handleRecordKeydown(event, shortcut.id)}
+                      onblur={() => (recordingId = null)}
+                    >
+                      Presiona una combinacion...
+                    </button>
+                  {:else}
+                    <kbd>{shortcut.keys}</kbd>
+                    {#if shortcut.isCustom}
+                      <button
+                        class="shortcut-icon-button"
+                        type="button"
+                        aria-label={`Restablecer atajo de ${shortcut.label}`}
+                        title="Restablecer al valor por defecto"
+                        onclick={() => resetShortcutKeys(shortcut.id)}
+                      >
+                        <RotateCcw size={13} aria-hidden="true" />
+                      </button>
+                    {/if}
+                    <button
+                      class="shortcut-icon-button"
+                      type="button"
+                      aria-label={`Cambiar atajo de ${shortcut.label}`}
+                      title="Cambiar atajo"
+                      onclick={() => startRecording(shortcut.id)}
+                    >
+                      <Pencil size={13} aria-hidden="true" />
+                    </button>
+                  {/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        </fieldset>
+      </div>
+    {/if}
   </div>
 </section>
+</dialog>
 
 <style>
+  dialog {
+    width: min(56rem, calc(100vw - 4rem));
+    height: min(34rem, calc(100vh - 4rem));
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-elevated);
+  }
+
   .settings {
     display: grid;
     grid-template-columns: 11rem minmax(0, 1fr);
@@ -270,6 +508,198 @@
     background: color-mix(in srgb, var(--surface-elevated) 92%, var(--accent));
   }
 
+  .shortcut-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-elevated);
+  }
+
+  .setting-row + .setting-row {
+    margin-top: var(--space-2);
+  }
+
+  .setting-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .setting-text label,
+  .setting-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .setting-text span,
+  .number-setting > span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .number-setting {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .number-setting input {
+    width: 4.5rem;
+    padding: var(--space-2);
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.8125rem;
+  }
+
+  .number-setting input:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  .switch {
+    position: relative;
+    width: 2.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
+    padding: 2px;
+    border: 1px solid var(--control-border);
+    border-radius: 999px;
+    background: var(--surface);
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast),
+      background-color var(--duration-fast);
+  }
+
+  .switch span {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    transition:
+      transform var(--duration-fast),
+      background-color var(--duration-fast);
+  }
+
+  .switch.enabled {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 30%, var(--surface));
+  }
+
+  .switch.enabled span {
+    transform: translateX(0.95rem);
+    background: var(--accent);
+  }
+
+  .switch:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  code {
+    color: var(--text-primary);
+    font-family: inherit;
+  }
+
+  .shortcut-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-elevated);
+  }
+
+  .shortcut-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .shortcut-text strong {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .shortcut-text span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  kbd {
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.75rem;
+  }
+
+  .shortcut-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .shortcut-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .shortcut-icon-button:hover {
+    color: var(--text-primary);
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .shortcut-icon-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  .record-target {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--surface) 88%, var(--accent));
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: default;
+  }
+
   .palette-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -351,6 +781,11 @@
     .scheme-grid,
     .palette-grid {
       grid-template-columns: 1fr;
+    }
+
+    .setting-row {
+      align-items: flex-start;
+      flex-direction: column;
     }
   }
 </style>

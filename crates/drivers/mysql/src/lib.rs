@@ -1,7 +1,10 @@
 use async_trait::async_trait;
-use khipu_driver_core::{ColumnInfo, ConnectionConfig, DbConnector, DriverError, TableInfo};
+use khipu_driver_core::{
+    ColumnInfo, ConnectionConfig, DbConnector, DriverError, ForeignKeyInfo, TableInfo,
+};
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlRow};
 use sqlx::{MySqlPool, Row};
+use std::collections::HashMap;
 
 pub struct MySqlConnector {
     pool: MySqlPool,
@@ -70,8 +73,37 @@ impl DbConnector for MySqlConnector {
                     schema: schema.to_string(),
                     name: table_name,
                     columns: vec![column],
+                    foreign_keys: Vec::new(),
                 }),
             }
+        }
+
+        let table_index: HashMap<String, usize> = tables
+            .iter()
+            .enumerate()
+            .map(|(i, t)| (t.name.clone(), i))
+            .collect();
+
+        let fk_rows = sqlx::query(
+            "SELECT table_name, column_name, referenced_table_name, referenced_column_name \
+             FROM information_schema.key_column_usage \
+             WHERE table_schema = ? AND referenced_table_name IS NOT NULL",
+        )
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DriverError::Query(e.to_string()))?;
+
+        for row in fk_rows {
+            let table_name = text_column(&row, 0)?;
+            let Some(&index) = table_index.get(table_name.as_str()) else {
+                continue;
+            };
+            tables[index].foreign_keys.push(ForeignKeyInfo {
+                column: text_column(&row, 1)?,
+                referenced_table: text_column(&row, 2)?,
+                referenced_column: text_column(&row, 3)?,
+            });
         }
 
         Ok(tables)

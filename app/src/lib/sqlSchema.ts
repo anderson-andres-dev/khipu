@@ -1,0 +1,415 @@
+import type { Completion, CompletionResult, CompletionSource } from "@codemirror/autocomplete";
+import {
+  MariaSQL,
+  MySQL,
+  PostgreSQL,
+  keywordCompletionSource,
+  schemaCompletionSource,
+  type SQLDialect,
+  type SQLNamespace,
+} from "@codemirror/lang-sql";
+import { foldNodeProp } from "@codemirror/language";
+import type { ConnectionDriver } from "$lib/connections";
+import type { CatalogTable, ForeignKey } from "$lib/types";
+import { boostFor, recordUsage } from "$lib/usageStats";
+import { classifyContext } from "$lib/sqlContext";
+import { completionPolicy, type CompletionPolicy } from "$lib/sqlCompletionPolicy";
+
+// @codemirror/lang-sql pliega cada "Statement" de nivel superior desde
+// min(inicio + 100, fin de su primera linea) hasta su fin. Con una consulta
+// escrita a mano cuya primera linea es solo "SELECT" (formato habitual, ej.
+// DataGrip), ese min() cae en el fin de la linea 1 - dejando TODA la
+// sentencia como una unica region plegable anclada ahi (chevron en la
+// linea 1, la consulta entera "colapsable" como si fuera una sola linea).
+// Se anula solo el fold de Statement via configureLanguage (BlockComment
+// se preserva), sin tocar basicSetup ni foldGutter/foldKeymap.
+const NO_STATEMENT_FOLD = foldNodeProp.add({ Statement: () => null });
+const dialectCache = new Map<ConnectionDriver, SQLDialect>();
+
+export function dialectFor(driver: ConnectionDriver): SQLDialect {
+  const cached = dialectCache.get(driver);
+  if (cached) return cached;
+  const base = driver === "mariadb" ? MariaSQL : driver === "postgres" ? PostgreSQL : MySQL;
+  const configured = base.configureLanguage({ props: [NO_STATEMENT_FOLD] });
+  dialectCache.set(driver, configured);
+  return configured;
+}
+
+// Relacion inversa de una FK: otra tabla que apunta a la que estamos
+// resolviendo (p.ej. parados en "users", "orders.user_id -> users.id" es
+// una relacion reverse con table="orders").
+export interface FkRelation {
+  table: string;
+  column: string;
+  referencedColumn: string;
+}
+
+interface TableFks {
+  forward: ForeignKey[];
+  reverse: FkRelation[];
+}
+
+export type FkIndex = Map<string, TableFks>;
+
+function buildFkIndex(tables: CatalogTable[]): FkIndex {
+  const index: FkIndex = new Map();
+  const ensure = (name: string): TableFks => {
+    let entry = index.get(name);
+    if (!entry) {
+      entry = { forward: [], reverse: [] };
+      index.set(name, entry);
+    }
+    return entry;
+  };
+
+  for (const table of tables) {
+    for (const fk of table.foreignKeys) {
+      ensure(table.name).forward.push(fk);
+      ensure(fk.referencedTable).reverse.push({
+        table: table.name,
+        column: fk.column,
+        referencedColumn: fk.referencedColumn,
+      });
+    }
+  }
+
+  return index;
+}
+
+function applyAndRecord(key: string): NonNullable<Completion["apply"]> {
+  return (view, completion, from, to) => {
+    recordUsage(key);
+    view.dispatch({
+      changes: { from, to, insert: completion.label },
+      selection: { anchor: from + completion.label.length },
+    });
+  };
+}
+
+// Traduce el catalogo (tablas + columnas) al SQLNamespace que espera
+// @codemirror/lang-sql, para que el completado de tablas/columnas y la
+// resolucion de "alias.columna" los resuelva la libreria en vez de
+// reinventarlo en Rust. Tambien arma el indice de FK (ver buildFkIndex) que
+// alimenta el completado de JOIN.
+//
+// Ojo: completeFromSchema (la funcion de la libreria que resuelve esto) NO
+// distingue clausulas SQL (FROM vs WHERE vs SELECT) - solo resuelve rutas
+// con punto ("alias.columna"). Sin punto, siempre devuelve el nivel
+// superior (todas las tablas), sin importar si estas despues de FROM o de
+// WHERE. Por eso extractDefaultTable() existe: detecta la tabla del FROM
+// actual con un heuristico de texto y se pasa como defaultTable a
+// buildCompletionSource(), que si mezcla las columnas de esa tabla puntual
+// en el nivel superior.
+//
+// La restriccion por clausula en si (nada de tablas sueltas en "SELECT *
+// fro|", nada de catalogo al inicio de sentencia, WHERE priorizado justo
+// despues de un FROM completo) la resuelve sqlContext.ts +
+// sqlCompletionPolicy.ts, consumidos aca mismo en buildCompletionSource.
+export function buildSqlSchema(tables: CatalogTable[]): {
+  schema: SQLNamespace;
+  defaultSchema?: string;
+  fkIndex: FkIndex;
+} {
+  const schema: Record<string, Record<string, { self: Completion; children: Completion[] }>> = {};
+  const schemaNames = new Set<string>();
+
+  for (const table of tables) {
+    schemaNames.add(table.schema);
+    schema[table.schema] ??= {};
+    schema[table.schema][table.name] = {
+      self: {
+        label: table.name,
+        type: "table",
+        detail: table.schema,
+        boost: boostFor(`table:${table.name}`),
+        apply: applyAndRecord(`table:${table.name}`),
+      },
+      children: table.columns.map((column) => ({
+        label: column.name,
+        type: "column",
+        detail: column.dataType,
+        boost: boostFor(`column:${table.name}.${column.name}`),
+        apply: applyAndRecord(`column:${table.name}.${column.name}`),
+      })),
+    };
+  }
+
+  // Hoy cada conexion introspecta un unico schema (el nombre de la BD en
+  // MySQL, "public" en Postgres, ver catalog_adapter.rs), asi que aplanarlo
+  // como defaultSchema evita tener que escribir "core.tabla". Si el catalogo
+  // llega a traer varios, se completan calificados sin tocar este codigo.
+  const defaultSchema = schemaNames.size === 1 ? [...schemaNames][0] : undefined;
+  return { schema, defaultSchema, fkIndex: buildFkIndex(tables) };
+}
+
+const FROM_CONTEXT =
+  /\bfrom\s+["'`[]?([a-zA-Z_]\w*)(?:["'`\]])?(?:\.["'`[]?([a-zA-Z_]\w*))?(?:\s+(?:as\s+)?([a-zA-Z_]\w*))?/i;
+
+const RESERVED_AFTER_FROM = new Set([
+  "where",
+  "join",
+  "inner",
+  "left",
+  "right",
+  "full",
+  "cross",
+  "on",
+  "group",
+  "order",
+  "having",
+  "limit",
+  "union",
+  "as",
+]);
+
+// Heuristico de texto (no un parser real, ver comentario de arriba): toma
+// la ultima sentencia (separada por ";") hasta el cursor y devuelve la
+// primera tabla que aparece despues de un FROM (sin el prefijo de schema si
+// vino calificada) junto con su alias, si tiene uno valido. Alcanza para el
+// caso comun de un FROM con una sola tabla; con JOINs, las tablas extra solo
+// se completan calificadas (alias.columna), que si resuelve
+// completeFromSchema.
+export function extractFromContext(doc: string, cursor: number): { table: string; alias?: string } | undefined {
+  const upToCursor = doc.slice(0, cursor);
+  const statementStart = upToCursor.lastIndexOf(";") + 1;
+  const statement = upToCursor.slice(statementStart);
+
+  const match = FROM_CONTEXT.exec(statement);
+  if (!match) return undefined;
+
+  const table = match[2] ?? match[1];
+  const alias = match[3];
+  const validAlias = alias && !RESERVED_AFTER_FROM.has(alias.toLowerCase()) ? alias : undefined;
+  return { table, alias: validAlias };
+}
+
+export function extractDefaultTable(doc: string, cursor: number): string | undefined {
+  return extractFromContext(doc, cursor)?.table;
+}
+
+function applyForwardJoin(fromRef: string, fk: ForeignKey): NonNullable<Completion["apply"]> {
+  return (view, _completion, from, to) => {
+    recordUsage(`table:${fk.referencedTable}`);
+    const insert = `${fk.referencedTable} ON ${fromRef}.${fk.column} = ${fk.referencedTable}.${fk.referencedColumn}`;
+    view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
+  };
+}
+
+function applyReverseJoin(fromRef: string, rel: FkRelation): NonNullable<Completion["apply"]> {
+  return (view, _completion, from, to) => {
+    recordUsage(`table:${rel.table}`);
+    const insert = `${rel.table} ON ${fromRef}.${rel.referencedColumn} = ${rel.table}.${rel.column}`;
+    view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
+  };
+}
+
+// Fuente de completado dedicada a "acabas de escribir JOIN": si la tabla del
+// FROM actual tiene relaciones FK (en cualquier direccion) con otras tablas
+// del catalogo, las sugiere primero y su apply() inserta la clausula JOIN
+// completa con el ON ya resuelto, en vez de solo el nombre de la tabla.
+function buildJoinCompletionSource(fkIndex: FkIndex): CompletionSource {
+  return (context) => {
+    const word = context.matchBefore(/\w*/);
+    if (!word) return null;
+    if (word.from === word.to && !context.explicit) return null;
+
+    const before = context.state.doc.sliceString(Math.max(0, word.from - 10), word.from);
+    if (!/\bjoin\s+$/i.test(before)) return null;
+
+    const fromContext = extractFromContext(context.state.doc.toString(), word.from);
+    if (!fromContext) return null;
+
+    const related = fkIndex.get(fromContext.table);
+    if (!related || (related.forward.length === 0 && related.reverse.length === 0)) return null;
+
+    const fromRef = fromContext.alias ?? fromContext.table;
+    const options: Completion[] = [
+      ...related.forward.map((fk) => ({
+        label: fk.referencedTable,
+        displayLabel: `${fk.referencedTable} ON ${fromRef}.${fk.column} = ${fk.referencedTable}.${fk.referencedColumn}`,
+        type: "table",
+        detail: "FK",
+        boost: 1,
+        apply: applyForwardJoin(fromRef, fk),
+      })),
+      ...related.reverse.map((rel) => ({
+        label: rel.table,
+        displayLabel: `${rel.table} ON ${fromRef}.${rel.referencedColumn} = ${rel.table}.${rel.column}`,
+        type: "table",
+        detail: "FK",
+        boost: 1,
+        apply: applyReverseJoin(fromRef, rel),
+      })),
+    ];
+
+    return { from: word.from, options, validFor: /^\w*$/ };
+  };
+}
+
+// Tablas/columnas del catalogo propio (buildSqlSchema) solo llevan type
+// "table"/"column"; "type" (nombre de schema intermedio) y "constant"
+// (alias conocido) los agrega la propia libreria en completeFromSchema.
+// Filtrar por esto es lo que hace que "SELECT * fro|"/"se|" dejen de
+// ofrecer tablas sueltas sin tocar la resolucion de alias.columna (que pasa
+// por la rama "qualified" de buildCompletionSource, sin filtrar).
+function filterSchemaResult(result: CompletionResult | null, policy: CompletionPolicy): CompletionResult | null {
+  if (!result) return null;
+  if (policy.schemaMode === "fallback") return result;
+  if (policy.schemaMode === "none") return null;
+
+  const options = result.options.filter((option) => {
+    if (option.type === "table" || option.type === "type") return policy.schemaMode === "relations";
+    // "constant" (alias) y todo lo demas (columnas) son utiles para armar
+    // una expresion ("alias.columna"), no para nombrar una relacion.
+    return policy.schemaMode === "expressions";
+  });
+
+  if (options.length === 0) return null;
+  return { ...result, options };
+}
+
+function rankKeywordResult(result: CompletionResult | null, policy: CompletionPolicy): CompletionResult | null {
+  if (!result) return null;
+
+  let options = result.options;
+  if (policy.allowedKeywords) {
+    const allowed = policy.allowedKeywords;
+    options = options.filter((option) => allowed.has(option.label.toLowerCase()));
+  }
+  options = options.map((option) => {
+    const extra = policy.keywordBoost(option.label);
+    return extra === 0 ? option : { ...option, boost: (option.boost ?? 0) + extra };
+  });
+
+  if (options.length === 0) return null;
+  return { ...result, options };
+}
+
+const KEYWORD_DETAILS: Record<string, string> = {
+  SELECT: "Consultar filas",
+  INSERT: "Insertar filas",
+  UPDATE: "Actualizar filas",
+  DELETE: "Eliminar filas",
+  CREATE: "Crear un objeto",
+  ALTER: "Modificar un objeto",
+  DROP: "Eliminar un objeto",
+  FROM: "Origen de datos",
+  WHERE: "Filtrar resultados",
+  JOIN: "Relacionar tablas",
+  ON: "Condición de relación",
+  GROUP: "Agrupar resultados",
+  ORDER: "Ordenar resultados",
+  HAVING: "Filtrar grupos",
+  LIMIT: "Limitar resultados",
+  CASE: "Expresión condicional",
+  WHEN: "Rama condicional",
+  WITH: "Definir una CTE",
+  UNION: "Combinar resultados",
+  VALUES: "Valores de entrada",
+};
+
+// keywordCompletionSource (lang-sql) clasifica cada palabra del dialecto en
+// un unico "type" generico: "keyword", "type" (INT, VARCHAR...) o "variable"
+// (comandos de cliente como HELP/SOURCE). Eso deja a SELECT, FROM, WHERE,
+// JOIN, etc. compartiendo el mismo icono generico de keyword en el tooltip.
+// Este mapa les da un icono propio y con sentido semantico (ver
+// sqlEditorIcons.css, clases cm-completionIcon-keyword-*) sin tocar como se
+// filtran/rankean (sqlCompletionPolicy.ts sigue usando option.label, no
+// option.type, para eso).
+const KEYWORD_ICON_TYPES: Record<string, string> = {
+  SELECT: "keyword-query",
+  FROM: "keyword-source",
+  WHERE: "keyword-filter",
+  HAVING: "keyword-filter",
+  JOIN: "keyword-join",
+  ON: "keyword-join",
+  GROUP: "keyword-group",
+  ORDER: "keyword-sort",
+  LIMIT: "keyword-limit",
+  INSERT: "keyword-insert",
+  VALUES: "keyword-insert",
+  UPDATE: "keyword-update",
+  DELETE: "keyword-remove",
+  DROP: "keyword-remove",
+  CREATE: "keyword-ddl",
+  ALTER: "keyword-ddl",
+  CASE: "keyword-branch",
+  WHEN: "keyword-branch",
+  WITH: "keyword-cte",
+  UNION: "keyword-union",
+};
+
+function buildKeywordCompletion(label: string, type: string): Completion {
+  const iconType = type === "keyword" ? (KEYWORD_ICON_TYPES[label] ?? type) : type;
+  return {
+    label,
+    type: iconType,
+    detail: KEYWORD_DETAILS[label] ?? (type === "type" ? "Tipo SQL" : undefined),
+    boost: -1,
+  };
+}
+
+function mergeCompatibleResults(
+  schemaResult: CompletionResult | null,
+  keywordResult: CompletionResult | null,
+): CompletionResult | null {
+  if (!schemaResult && !keywordResult) return null;
+  if (!keywordResult) return schemaResult;
+  if (!schemaResult) return keywordResult;
+
+  if (schemaResult.from === keywordResult.from && schemaResult.to === keywordResult.to) {
+    // Sin validFor a proposito: CodeMirror vuelve a pedir en cada edicion
+    // relevante en vez de reusar un resultado ya filtrado para un contexto
+    // que pudo haber cambiado (ver plan, fase 4 para un validFor consciente
+    // del contexto una vez que esto se mida en uso real).
+    return { from: schemaResult.from, to: schemaResult.to, options: [...schemaResult.options, ...keywordResult.options] };
+  }
+
+  // Rangos distintos (p.ej. una completion calificada que consume una
+  // comilla de cierre extra): no se puede combinar sin romper el reemplazo
+  // de texto de alguno de los dos, asi que se prioriza el de catalogo.
+  return schemaResult.options.length > 0 ? schemaResult : keywordResult;
+}
+
+// Une schemaCompletionSource (tablas/columnas, con alias.columna resuelto),
+// keywordCompletionSource (keywords propias del dialecto activo) y el
+// completado de JOIN de arriba bajo una sola fuente, filtrando y boosteando
+// segun la clausula SQL detectada (sqlContext.ts + sqlCompletionPolicy.ts).
+// Es la unica desviacion de "que lo resuelva la libreria sola" de este
+// archivo, y es necesaria: autocompletion({override}) es todo o nada, asi
+// que una tercera fuente propia no se puede sumar al merge automatico que
+// hace sql() por si sola sin que nosotros nos hagamos cargo del filtrado.
+export function buildCompletionSource(options: {
+  dialect: SQLDialect;
+  driver: ConnectionDriver;
+  schema: SQLNamespace;
+  defaultSchema?: string;
+  defaultTable?: string;
+  fkIndex: FkIndex;
+}): CompletionSource {
+  const { dialect, driver, schema, defaultSchema, defaultTable, fkIndex } = options;
+  const schemaSource = schemaCompletionSource({ dialect, schema, defaultSchema, defaultTable });
+  // Las keywords se muestran e insertan en mayusculas. Identificadores del
+  // catalogo conservan exactamente el nombre que entrega la base de datos.
+  const keywordSource = keywordCompletionSource(dialect, true, buildKeywordCompletion);
+  const joinSource = buildJoinCompletionSource(fkIndex);
+
+  return async (context) => {
+    const clauseContext = classifyContext(context.state.doc.toString(), context.pos);
+    const policy = completionPolicy(clauseContext, driver);
+
+    if (policy.allowFkJoin) {
+      const joinResult = await joinSource(context);
+      if (joinResult) return joinResult;
+    }
+
+    // "alias.columna"/"schema.tabla" ya escritos: la libreria resuelve esto
+    // mejor de lo que nosotros podriamos, no hay que filtrarlo.
+    if (clauseContext.qualified) {
+      return schemaSource(context);
+    }
+
+    const [schemaResultRaw, keywordResultRaw] = await Promise.all([schemaSource(context), keywordSource(context)]);
+    return mergeCompatibleResults(filterSchemaResult(schemaResultRaw, policy), rankKeywordResult(keywordResultRaw, policy));
+  };
+}

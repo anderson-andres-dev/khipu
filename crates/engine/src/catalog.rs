@@ -2,22 +2,27 @@
 //! khipu-driver-* crate via `DbConnector::list_tables`, kept independent of any
 //! single database's introspection format.
 
-#[derive(Debug, Clone, Default)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct SchemaCatalog {
     pub tables: Vec<CatalogTable>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CatalogTable {
     pub schema: String,
     pub name: String,
     pub columns: Vec<CatalogColumn>,
+    pub foreign_keys: Vec<CatalogForeignKey>,
 }
 
 /// A single column's shape as reported by the driver's introspection, kept as
 /// the engine's own type so `khipu-engine` never has to depend on
 /// `khipu-driver-core` just to hold this data.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CatalogColumn {
     pub name: String,
     pub data_type: String,
@@ -25,90 +30,43 @@ pub struct CatalogColumn {
     pub is_primary_key: bool,
 }
 
-impl SchemaCatalog {
-    pub fn tables_matching(&self, prefix: &str) -> Vec<&CatalogTable> {
-        self.tables
-            .iter()
-            .filter(|t| t.name.starts_with(prefix))
-            .collect()
-    }
+/// A foreign key owned by a `CatalogTable`: `column` on this table references
+/// `referenced_column` on `referenced_table`. Used by the frontend to suggest
+/// JOIN targets and auto-complete their ON condition (see sqlSchema.ts).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogForeignKey {
+    pub column: String,
+    pub referenced_table: String,
+    pub referenced_column: String,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn column(name: &str) -> CatalogColumn {
-        CatalogColumn {
-            name: name.to_string(),
-            data_type: "text".to_string(),
-            nullable: true,
-            is_primary_key: false,
-        }
-    }
-
-    fn id_column() -> CatalogColumn {
-        CatalogColumn {
-            name: "id".to_string(),
-            data_type: "integer".to_string(),
-            nullable: false,
-            is_primary_key: true,
-        }
-    }
-
-    fn catalog() -> SchemaCatalog {
-        SchemaCatalog {
-            tables: vec![
-                CatalogTable {
-                    schema: "public".to_string(),
-                    name: "users".to_string(),
-                    columns: vec![id_column(), column("email")],
-                },
-                CatalogTable {
-                    schema: "public".to_string(),
-                    name: "user_roles".to_string(),
-                    columns: vec![id_column(), column("user_id"), column("role")],
-                },
-                CatalogTable {
-                    schema: "public".to_string(),
-                    name: "orders".to_string(),
-                    columns: vec![id_column(), column("user_id"), column("total")],
-                },
-            ],
-        }
-    }
-
     #[test]
-    fn tables_matching_filters_by_name_prefix() {
-        let catalog = catalog();
+    fn catalog_table_serializes_foreign_keys_to_camel_case() {
+        let table = CatalogTable {
+            schema: "public".to_string(),
+            name: "orders".to_string(),
+            columns: vec![],
+            foreign_keys: vec![CatalogForeignKey {
+                column: "user_id".to_string(),
+                referenced_table: "users".to_string(),
+                referenced_column: "id".to_string(),
+            }],
+        };
 
-        let matches = catalog.tables_matching("user");
-
-        let names: Vec<&str> = matches.iter().map(|t| t.name.as_str()).collect();
-        assert_eq!(names, vec!["users", "user_roles"]);
-    }
-
-    #[test]
-    fn tables_matching_returns_empty_when_no_prefix_matches() {
-        let catalog = catalog();
-
-        let matches = catalog.tables_matching("nope");
-
-        assert!(matches.is_empty());
-    }
-
-    #[test]
-    fn tables_matching_preserves_column_metadata() {
-        let catalog = catalog();
-
-        let matches = catalog.tables_matching("orders");
-        let orders = matches.first().expect("orders table should match");
+        let json = serde_json::to_value(&table).expect("CatalogTable should serialize");
 
         assert_eq!(
-            orders.columns,
-            vec![id_column(), column("user_id"), column("total")]
+            json["foreignKeys"][0],
+            serde_json::json!({
+                "column": "user_id",
+                "referencedTable": "users",
+                "referencedColumn": "id",
+            })
         );
-        assert!(orders.columns[0].is_primary_key);
-        assert!(!orders.columns[0].nullable);
     }
 }

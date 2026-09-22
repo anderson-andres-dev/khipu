@@ -31,10 +31,18 @@ pub struct ColumnInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForeignKeyInfo {
+    pub column: String,
+    pub referenced_table: String,
+    pub referenced_column: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableInfo {
     pub schema: String,
     pub name: String,
     pub columns: Vec<ColumnInfo>,
+    pub foreign_keys: Vec<ForeignKeyInfo>,
 }
 
 #[derive(Debug, thiserror::Error)]

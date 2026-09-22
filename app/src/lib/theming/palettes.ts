@@ -76,7 +76,7 @@ export const palettes: Record<ThemeFamily, Record<ColorScheme, ThemeVariant>> = 
 			shell: {
 				surface: '#E9EAEE',
 				surfaceElevated: '#FFFFFF',
-				border: '#DDDFE4',
+				border: '#8F959B',
 				controlBorder: '#5F6269',
 				textPrimary: '#000000',
 				textSecondary: '#4C4F56',
@@ -142,7 +142,7 @@ export const palettes: Record<ThemeFamily, Record<ColorScheme, ThemeVariant>> = 
 			shell: {
 				surface: '#FAFAFD',
 				surfaceElevated: '#FFFFFF',
-				border: '#E4E5E6',
+				border: '#909090',
 				controlBorder: '#D8D8D8',
 				textPrimary: '#202020',
 				textSecondary: '#606060',
