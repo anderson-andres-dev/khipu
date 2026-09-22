@@ -61,10 +61,10 @@ Si falta alguna, el test hace `panic!` con un mensaje indicando qué setear
 
 ## Flujo de ramas y releases
 
-- `main` es la rama por defecto (estilo público) y `develop` la de
-  integración. Nada se pushea directo a ninguna de las dos: `develop` y
-  `main` tienen branch protection (PR + 1 aprobación + checks de
-  `quality.yml` en verde + sin force-push).
+- `main` es la rama por defecto y `develop` la de integración. Nada se
+  pushea directo a ninguna de las dos: `develop` y `main` tienen branch
+  protection (PR + 1 aprobación + checks de `quality.yml` en verde + sin
+  force-push).
 
 1. Abrir un PR desde `feature/...` hacia `develop`.
 2. `quality.yml` corre automático (Rust fmt/clippy/test + Node check/build).
