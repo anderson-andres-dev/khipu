@@ -1,7 +1,15 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { Braces, Columns3, SquareFunction, Table } from "@lucide/svelte";
   import SqlEditor from "$lib/SqlEditor.svelte";
-  import type { CompletionItem } from "$lib/types";
+  import type { CompletionItem, CompletionKind } from "$lib/types";
+
+  const kindIcon = {
+    Table,
+    Column: Columns3,
+    Function: SquareFunction,
+    Keyword: Braces,
+  } as const satisfies Record<CompletionKind, typeof Table>;
 
   let sql = $state("SELECT * FROM ");
   let suggestions = $state<CompletionItem[]>([]);
@@ -22,7 +30,11 @@
 
   <aside class="suggestions">
     {#each suggestions as item (item.label)}
-      <div class="suggestion">{item.label}<span class="kind">{item.kind}</span></div>
+      {@const Icon = kindIcon[item.kind]}
+      <div class="suggestion">
+        <Icon size={14} class="kind-icon" />
+        {item.label}
+      </div>
     {:else}
       <p class="empty">Sin sugerencias todavía — el catálogo de esquema aún no está conectado.</p>
     {/each}
@@ -70,7 +82,8 @@
 
   .suggestion {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.35rem 0.5rem;
     border-radius: 4px;
     font-size: 0.85rem;
@@ -80,9 +93,9 @@
     background: #2a2a2a;
   }
 
-  .kind {
+  .suggestion :global(.kind-icon) {
+    flex-shrink: 0;
     color: #888;
-    font-size: 0.75rem;
   }
 
   .empty {
