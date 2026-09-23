@@ -5,3 +5,6 @@
 .DS_Store
 .idea/
 *.swp
+
+# graphify knowledge graph (generated, regenerate with `graphify update .`)
+/graphify-out/
