@@ -4,7 +4,9 @@ use khipu_driver_core::{
     ColumnInfo, ConnectionConfig, DbConnector, DriverError, ForeignKeyInfo, QueryColumn,
     QueryExecutionOptions, QueryExecutionResult, QueryRow, QueryValue, TableInfo,
 };
-use sqlx::mysql::{MySqlConnectOptions, MySqlConnection, MySqlDatabaseError, MySqlPoolOptions, MySqlRow};
+use sqlx::mysql::{
+    MySqlConnectOptions, MySqlConnection, MySqlDatabaseError, MySqlPoolOptions, MySqlRow,
+};
 use sqlx::{Column, Executor, MySqlPool, Row, TypeInfo};
 use std::collections::HashMap;
 use std::future::Future;
@@ -119,7 +121,7 @@ impl DbConnector for MySqlConnector {
 
     async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError> {
         let rows = sqlx::query(
-            "SELECT table_name, column_name, data_type, is_nullable, column_key \
+            "SELECT table_name, column_name, data_type, is_nullable, column_key, column_comment \
              FROM information_schema.columns WHERE table_schema = ? ORDER BY table_name, ordinal_position",
         )
         .bind(schema)
@@ -130,6 +132,10 @@ impl DbConnector for MySqlConnector {
         let mut tables: Vec<TableInfo> = Vec::new();
         for row in rows {
             let table_name = text_column(&row, 0)?;
+            // MySQL nunca devuelve NULL en column_comment, usa "" cuando no
+            // hay comentario — se normaliza a None para no mostrar un
+            // tooltip con una segunda linea vacia.
+            let comment = text_column(&row, 5)?;
             let column = ColumnInfo {
                 name: text_column(&row, 1)?,
                 data_type: text_column(&row, 2)?,
@@ -139,6 +145,11 @@ impl DbConnector for MySqlConnector {
                     .map_err(|e| DriverError::Query(e.to_string()))?
                     .as_deref()
                     == Some(b"PRI"),
+                comment: if comment.is_empty() {
+                    None
+                } else {
+                    Some(comment)
+                },
             };
 
             match tables.last_mut() {
@@ -183,6 +194,24 @@ impl DbConnector for MySqlConnector {
         Ok(tables)
     }
 
+    async fn table_definition(&self, schema: &str, table: &str) -> Result<String, DriverError> {
+        // Los identificadores no se pueden bindear como parametros (solo
+        // valores); se escapan a mano (backtick duplicado, la convencion de
+        // MySQL) e interpolan en el SQL en vez de bindearlos.
+        let sql = format!(
+            "SHOW CREATE TABLE `{}`.`{}`",
+            schema.replace('`', "``"),
+            table.replace('`', "``")
+        );
+
+        let row = sqlx::query(&sql)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| DriverError::Query(e.to_string()))?;
+
+        text_column(&row, 1)
+    }
+
     // Matches the `Pin<Box<dyn Future>>` shape the trait declares (see the
     // doc comment on `DbConnector::execute_query` for why this isn't `async
     // fn`/`#[async_trait]` like the other methods).
@@ -197,8 +226,43 @@ impl DbConnector for MySqlConnector {
                 Err(error) => return mysql_error_to_result(error),
             };
 
-            execute_on_connection(&mut conn, sql, options).await
+            let outcome = execute_on_connection(&mut conn, sql, options).await;
+            if !outcome.connection_reusable {
+                // Devolverla al pool haria que sqlx la "limpie" leyendo (y
+                // tirando) todo lo que el servidor todavia tenga para mandar
+                // — ver MAX_ROWS_TO_DRAIN. Cerrar el socket corta el envio
+                // en seco; el pool abre otra conexion cuando haga falta.
+                drop(conn.detach());
+            }
+            outcome.result
         })
+    }
+}
+
+/// Rows past `max_rows` that are still read (and discarded) so the
+/// connection can go back to the pool clean. MySQL can't stop sending a
+/// result set midway: whatever isn't read here, sqlx reads on release
+/// (`ping` -> `wait_until_ready`) before reusing the connection. Without a
+/// bound, a `SELECT * FROM big_table` that shows 500 rows downloads the
+/// whole table in the background, and a few of those in a row starve the
+/// pool — every later query, even `SELECT 1`, waits up to `acquire_timeout`.
+/// Past this bound the connection is discarded instead (see
+/// `ExecutionOutcome::connection_reusable`).
+const MAX_ROWS_TO_DRAIN: usize = 1000;
+
+struct ExecutionOutcome {
+    result: QueryExecutionResult,
+    /// `false` when the connection still has unread rows pending (or its
+    /// session state couldn't be restored) and must not go back to the pool.
+    connection_reusable: bool,
+}
+
+impl From<QueryExecutionResult> for ExecutionOutcome {
+    fn from(result: QueryExecutionResult) -> Self {
+        Self {
+            result,
+            connection_reusable: true,
+        }
     }
 }
 
@@ -206,25 +270,68 @@ async fn execute_on_connection(
     conn: &mut MySqlConnection,
     sql: &str,
     options: QueryExecutionOptions,
-) -> QueryExecutionResult {
+) -> ExecutionOutcome {
     let start = Instant::now();
 
     let describe = match conn.describe(sql).await {
         Ok(describe) => describe,
-        Err(error) => return mysql_error_to_result(error),
+        Err(error) => return mysql_error_to_result(error).into(),
     };
 
     if describe.columns().is_empty() {
         let outcome = match Executor::execute(&mut *conn, RawStatement(sql)).await {
             Ok(outcome) => outcome,
-            Err(error) => return mysql_error_to_result(error),
+            Err(error) => return mysql_error_to_result(error).into(),
         };
         return QueryExecutionResult::Command {
             affected_rows: outcome.rows_affected(),
             execution_time_ms: start.elapsed().as_millis() as u64,
-        };
+        }
+        .into();
     }
 
+    // El servidor deja de producir filas en max_rows + 1 (la extra es solo
+    // para saber si hubo truncado) en vez de mandar la tabla entera: es lo
+    // mismo que hace Connector/J con setMaxRows. Solo afecta al SELECT de
+    // nivel superior — no a subconsultas ni a INSERT ... SELECT — y un LIMIT
+    // explicito en la consulta tiene prioridad sobre esto. Si el SET falla
+    // (un servidor que no lo soporte) la consulta corre igual y la cota de
+    // MAX_ROWS_TO_DRAIN sigue protegiendo el pool.
+    let select_limit_set = Executor::execute(
+        &mut *conn,
+        RawStatement(&format!(
+            "SET SESSION sql_select_limit = {}",
+            options.max_rows + 1
+        )),
+    )
+    .await
+    .is_ok();
+
+    let mut outcome = read_result_set(conn, sql, &describe, options, start).await;
+
+    // La conexion vuelve al pool y la usa despues el catalogo (information_
+    // schema), que no puede quedar limitado a 501 filas. Si no se pudo
+    // restaurar, no se reutiliza.
+    if select_limit_set && outcome.connection_reusable {
+        let restored = Executor::execute(
+            &mut *conn,
+            RawStatement("SET SESSION sql_select_limit = DEFAULT"),
+        )
+        .await
+        .is_ok();
+        outcome.connection_reusable = restored;
+    }
+
+    outcome
+}
+
+async fn read_result_set(
+    conn: &mut MySqlConnection,
+    sql: &str,
+    describe: &sqlx::Describe<sqlx::MySql>,
+    options: QueryExecutionOptions,
+    start: Instant,
+) -> ExecutionOutcome {
     let columns: Vec<QueryColumn> = describe
         .columns()
         .iter()
@@ -239,35 +346,57 @@ async fn execute_on_connection(
     let mut stream = Executor::fetch(&mut *conn, RawStatement(sql));
     let mut rows: Vec<QueryRow> = Vec::new();
     let mut truncated = false;
+    let mut discarded = 0;
+    let mut stream_finished = false;
     loop {
         let row = match stream.try_next().await {
             Ok(Some(row)) => row,
-            Ok(None) => break,
-            Err(error) => return mysql_error_to_result(error),
+            Ok(None) => {
+                stream_finished = true;
+                break;
+            }
+            Err(error) => {
+                return ExecutionOutcome {
+                    result: mysql_error_to_result(error),
+                    connection_reusable: false,
+                };
+            }
         };
 
         if rows.len() >= options.max_rows {
             truncated = true;
-            break;
+            discarded += 1;
+            if discarded > MAX_ROWS_TO_DRAIN {
+                break;
+            }
+            continue;
         }
 
         let mut query_row = Vec::with_capacity(columns.len());
         for index in 0..columns.len() {
             match mysql_cell_to_query_value(&row, index) {
                 Ok(value) => query_row.push(value),
-                Err(error) => return mysql_error_to_result(error),
+                Err(error) => {
+                    return ExecutionOutcome {
+                        result: mysql_error_to_result(error),
+                        connection_reusable: false,
+                    };
+                }
             }
         }
         rows.push(query_row);
     }
     drop(stream);
 
-    QueryExecutionResult::ResultSet {
-        row_count: rows.len() as u64,
-        columns,
-        rows,
-        execution_time_ms: start.elapsed().as_millis() as u64,
-        truncated,
+    ExecutionOutcome {
+        result: QueryExecutionResult::ResultSet {
+            row_count: rows.len() as u64,
+            columns,
+            rows,
+            execution_time_ms: start.elapsed().as_millis() as u64,
+            truncated,
+        },
+        connection_reusable: stream_finished,
     }
 }
 
@@ -346,7 +475,13 @@ mod tests {
             .await;
 
         match result {
-            QueryExecutionResult::ResultSet { columns, rows, row_count, truncated, .. } => {
+            QueryExecutionResult::ResultSet {
+                columns,
+                rows,
+                row_count,
+                truncated,
+                ..
+            } => {
                 assert_eq!(columns.len(), 3);
                 assert_eq!(row_count, 1);
                 assert!(!truncated);
@@ -372,12 +507,68 @@ mod tests {
             .await;
 
         match result {
-            QueryExecutionResult::ResultSet { row_count, truncated, .. } => {
+            QueryExecutionResult::ResultSet {
+                row_count,
+                truncated,
+                ..
+            } => {
                 assert_eq!(row_count, 2);
                 assert!(truncated);
             }
             other => panic!("expected a ResultSet, got {other:?}"),
         }
+    }
+
+    async fn raw_connection(config: &ConnectionConfig) -> MySqlConnection {
+        use sqlx::Connection;
+        let options = MySqlConnectOptions::new()
+            .host(&config.host)
+            .port(config.port)
+            .username(&config.username)
+            .password(&config.password)
+            .database(&config.database);
+        MySqlConnection::connect_with(&options)
+            .await
+            .expect("connect should succeed against a reachable MySQL instance")
+    }
+
+    // El servidor corta en max_rows + 1 (sql_select_limit), asi que tras
+    // truncar no queda nada pendiente en la conexion; y el limite se
+    // restaura, porque la misma conexion la usa despues el catalogo.
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn truncated_query_leaves_connection_reusable_and_unlimited() {
+        let mut conn = raw_connection(&config_from_env()).await;
+
+        let outcome = execute_on_connection(
+            &mut conn,
+            "WITH RECURSIVE s(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM s WHERE n < 900) SELECT n FROM s",
+            QueryExecutionOptions { max_rows: 2 },
+        )
+        .await;
+
+        match outcome.result {
+            QueryExecutionResult::ResultSet {
+                row_count,
+                truncated,
+                ..
+            } => {
+                assert_eq!(row_count, 2);
+                assert!(truncated);
+            }
+            other => panic!("expected a ResultSet, got {other:?}"),
+        }
+        assert!(outcome.connection_reusable);
+
+        let limit: u64 = sqlx::query_scalar("SELECT @@SESSION.sql_select_limit")
+            .fetch_one(&mut conn)
+            .await
+            .expect("reading sql_select_limit should succeed");
+        assert_eq!(
+            limit,
+            u64::MAX,
+            "sql_select_limit must be back to its default"
+        );
     }
 
     #[tokio::test]
@@ -408,12 +599,18 @@ mod tests {
             .expect("connect should succeed against a reachable MySQL instance");
 
         let result = connector
-            .execute_query("SELECT * FROM this_table_does_not_exist", QueryExecutionOptions { max_rows: 500 })
+            .execute_query(
+                "SELECT * FROM this_table_does_not_exist",
+                QueryExecutionOptions { max_rows: 500 },
+            )
             .await;
 
         match result {
             QueryExecutionResult::Error { code, .. } => {
-                assert!(code.is_some(), "expected MySQL to report a numeric error code");
+                assert!(
+                    code.is_some(),
+                    "expected MySQL to report a numeric error code"
+                );
             }
             other => panic!("expected an Error result, got {other:?}"),
         }

@@ -7,11 +7,15 @@
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import ExecutionGuard from "$lib/components/ExecutionGuard.svelte";
   import ResultPane from "$lib/components/results/ResultPane.svelte";
+  import TableDefinitionModal from "$lib/components/TableDefinitionModal.svelte";
+  import type { CatalogTableRef } from "$lib/sqlDefinitionLink";
   import type { ContextMenuItem } from "$lib/contextMenu";
-  import { connection } from "$lib/stores/connection";
+  import { catalogTables, connection } from "$lib/stores/connection";
+  import { connectionProfiles } from "$lib/stores/connectionProfiles";
   import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
+  import { extractFromContext } from "$lib/sqlSchema";
   import { executeQuery } from "$lib/queryExecution";
-  import type { ExecuteQueryResponse } from "$lib/types";
+  import type { CatalogColumn, CatalogTable, ColumnCatalogInfo, ExecuteQueryResponse } from "$lib/types";
   import {
     activateQueryConsole,
     beginQueryExecution,
@@ -35,7 +39,72 @@
   const execution = $derived(
     activeConsole
       ? executionForConsole($queryConsoles, activeConsole.id)
-      : { isExecuting: false, result: null, pendingConfirmation: null },
+      : { isExecuting: false, result: null, resultSql: null, pendingConfirmation: null },
+  );
+  const activeProfile = $derived($connectionProfiles.find((profile) => profile.id === profileId));
+  // Tabla principal (primer FROM) de la consulta que produjo el resultado
+  // vigente — no la del texto actual del editor, que puede haber cambiado
+  // desde la ejecucion. Solo resuelve el caso simple (sin JOIN); con varias
+  // tablas se toma la primera, igual que el resto de heuristicas de
+  // sqlSchema.ts.
+  const resultTableName = $derived.by(() => {
+    const sql = execution.resultSql;
+    return sql ? extractFromContext(sql, sql.length)?.table : undefined;
+  });
+  // Rotula el resultado con esa tabla: "schema.tabla", al estilo DataGrip.
+  // Si no hay un FROM reconocible (p.ej. "SELECT 1"), cae al schema solo.
+  const resultSourceLabel = $derived.by(() => {
+    if (!execution.resultSql || !activeProfile) return null;
+    const schema = activeProfile.database || activeProfile.name;
+    return resultTableName ? `${schema}.${resultTableName}` : schema;
+  });
+  // Para cada columna del resultado que coincide (por nombre) con una
+  // columna del catalogo ya cargado, expone si es PK/FK y su comentario —
+  // sin pedirle nada nuevo al backend, reusando el catalogo que ya existe
+  // para el arbol de tablas y el autocompletado.
+  //
+  // Busca en TODAS las tablas, no solo en resultTableName: con un JOIN
+  // (USING/ON), columnas como "clie_codi" vienen de la tabla unida, no de
+  // la primera del FROM, y resultTableName solo resuelve esa primera. Si
+  // el mismo nombre de columna existe en mas de una tabla, gana
+  // resultTableName cuando aplica (es la señal mas confiable de a que
+  // tabla pertenece), y si no, la primera tabla del catalogo que la tenga.
+  const resultColumnCatalogInfo = $derived.by((): Map<string, ColumnCatalogInfo> | null => {
+    const tables = $catalogTables;
+    if (tables.length === 0) return null;
+
+    function toColumnInfo(column: CatalogColumn, table: CatalogTable): ColumnCatalogInfo {
+      const fkColumns = new Set(table.foreignKeys.map((fk) => fk.column.toLowerCase()));
+      return {
+        isPrimaryKey: column.isPrimaryKey,
+        isForeignKey: fkColumns.has(column.name.toLowerCase()),
+        comment: column.comment,
+      };
+    }
+
+    const map = new Map<string, ColumnCatalogInfo>();
+    for (const table of tables) {
+      for (const column of table.columns) {
+        const key = column.name.toLowerCase();
+        if (!map.has(key)) map.set(key, toColumnInfo(column, table));
+      }
+    }
+
+    const mainTable = tables.find((t) => t.name.toLowerCase() === resultTableName?.toLowerCase());
+    if (mainTable) {
+      for (const column of mainTable.columns) {
+        map.set(column.name.toLowerCase(), toColumnInfo(column, mainTable));
+      }
+    }
+
+    return map;
+  });
+  let tableDefinitionRequest = $state<CatalogTableRef | null>(null);
+  // "schema@host", igual que resultSourceLabel usa "database || name" como
+  // nombre de schema (ver mas abajo) - la misma convencion para las dos
+  // etiquetas de origen que puede ver el usuario.
+  const dataSourceLabel = $derived(
+    activeProfile ? `${activeProfile.database || activeProfile.name}@${activeProfile.host}` : "",
   );
   let editorFraction = $state(0.6);
   let workspaceBody = $state<HTMLElement>();
@@ -158,7 +227,7 @@
       requireQueryConfirmation(consoleId, { sql, statement: response.statement });
       return;
     }
-    finishQueryExecution(consoleId, response.result);
+    finishQueryExecution(consoleId, sql, response.result);
   }
 
   // Solicita una ejecucion nueva (Ctrl+Enter o el boton "Ejecutar"). No hace
@@ -286,6 +355,7 @@
             onchange={(sql) => updateQueryConsoleSql(activeConsole.id, sql)}
             onexecute={(sql) => requestExecution(activeConsole.id, sql)}
             executing={execution.isExecuting}
+            onopentabledefinition={(ref) => (tableDefinitionRequest = ref)}
           />
         {/key}
       {/if}
@@ -311,10 +381,24 @@
       onkeydown={onSplitterKeydown}
     ></div>
     <div class="result-region">
-      <ResultPane isExecuting={execution.isExecuting} result={execution.result} />
+      <ResultPane
+        isExecuting={execution.isExecuting}
+        result={execution.result}
+        sourceLabel={resultSourceLabel}
+        columnCatalogInfo={resultColumnCatalogInfo}
+      />
     </div>
   </section>
 </div>
+
+{#if tableDefinitionRequest}
+  <TableDefinitionModal
+    dataSource={dataSourceLabel}
+    schema={tableDefinitionRequest.schema}
+    table={tableDefinitionRequest.table}
+    onclose={() => (tableDefinitionRequest = null)}
+  />
+{/if}
 
 {#if tabMenu}
   <ContextMenu
@@ -461,19 +545,33 @@
     overflow: hidden;
   }
 
+  /* Una franja de 6px para agarrar comodo con el mouse, pero solo pinta una
+     linea de 1px centrada adentro (no un bloque con borde arriba y abajo:
+     dos lineas a 4px de distancia se leen como una "linea doblada", no
+     como una barra). El resto de la franja es hit-area invisible. */
   .splitter {
+    position: relative;
     flex-shrink: 0;
     height: 6px;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    background: transparent;
     cursor: row-resize;
     touch-action: none;
   }
 
-  .splitter:hover,
-  .splitter:focus-visible {
-    background: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  .splitter::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border);
+    transform: translateY(-50%);
+  }
+
+  .splitter:hover::after,
+  .splitter:focus-visible::after {
+    background: var(--accent);
   }
 
   .splitter:focus-visible {

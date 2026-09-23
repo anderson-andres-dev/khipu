@@ -4,7 +4,9 @@ use khipu_driver_core::{
     ColumnInfo, ConnectionConfig, DbConnector, DriverError, ForeignKeyInfo, QueryColumn,
     QueryExecutionOptions, QueryExecutionResult, QueryRow, QueryValue, TableInfo,
 };
-use sqlx::postgres::{PgConnectOptions, PgConnection, PgDatabaseError, PgErrorPosition, PgPoolOptions};
+use sqlx::postgres::{
+    PgConnectOptions, PgConnection, PgDatabaseError, PgErrorPosition, PgPoolOptions,
+};
 use sqlx::{Column, Executor, PgPool, Row, TypeInfo};
 use std::collections::HashMap;
 use std::future::Future;
@@ -106,7 +108,11 @@ impl DbConnector for PostgresConnector {
               JOIN information_schema.key_column_usage kcu \
                 ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema \
               WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = c.table_schema \
-                AND tc.table_name = c.table_name AND kcu.column_name = c.column_name) > 0 AS is_pk \
+                AND tc.table_name = c.table_name AND kcu.column_name = c.column_name) > 0 AS is_pk, \
+             col_description( \
+               (quote_ident(c.table_schema) || '.' || quote_ident(c.table_name))::regclass::oid, \
+               c.ordinal_position \
+             ) AS column_comment \
              FROM information_schema.columns c WHERE table_schema = $1 ORDER BY table_name, ordinal_position",
         )
         .bind(schema)
@@ -132,6 +138,11 @@ impl DbConnector for PostgresConnector {
                     == "YES",
                 is_primary_key: row
                     .try_get("is_pk")
+                    .map_err(|e| DriverError::Query(e.to_string()))?,
+                // col_description() da NULL de por si cuando no hay
+                // comentario (a diferencia de MySQL, que da "").
+                comment: row
+                    .try_get("column_comment")
                     .map_err(|e| DriverError::Query(e.to_string()))?,
             };
 
@@ -190,6 +201,87 @@ impl DbConnector for PostgresConnector {
         Ok(tables)
     }
 
+    // Postgres no tiene un equivalente de una sola sentencia a `SHOW CREATE
+    // TABLE` de MySQL; se reconstruye a mano desde pg_catalog. `quote_ident`
+    // (mismo patron que list_tables mas arriba) hace la resolucion segura
+    // sin tener que armar el SQL con el nombre interpolado a mano.
+    async fn table_definition(&self, schema: &str, table: &str) -> Result<String, DriverError> {
+        let column_rows = sqlx::query(
+            "SELECT a.attname, format_type(a.atttypid, a.atttypmod), a.attnotnull, \
+             pg_get_expr(d.adbin, d.adrelid) \
+             FROM pg_attribute a \
+             LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum \
+             WHERE a.attrelid = (quote_ident($1) || '.' || quote_ident($2))::regclass \
+               AND a.attnum > 0 AND NOT a.attisdropped \
+             ORDER BY a.attnum",
+        )
+        .bind(schema)
+        .bind(table)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DriverError::Query(e.to_string()))?;
+
+        if column_rows.is_empty() {
+            return Err(DriverError::Query(format!(
+                "no se encontraron columnas para {schema}.{table}"
+            )));
+        }
+
+        let pk_rows = sqlx::query(
+            "SELECT a.attname FROM pg_index i \
+             JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) \
+             WHERE i.indrelid = (quote_ident($1) || '.' || quote_ident($2))::regclass AND i.indisprimary \
+             ORDER BY array_position(i.indkey, a.attnum)",
+        )
+        .bind(schema)
+        .bind(table)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DriverError::Query(e.to_string()))?;
+
+        let mut primary_key = Vec::with_capacity(pk_rows.len());
+        for row in &pk_rows {
+            let name: String = row
+                .try_get(0)
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+            primary_key.push(name);
+        }
+
+        let mut lines = Vec::with_capacity(column_rows.len());
+        for row in &column_rows {
+            let name: String = row
+                .try_get(0)
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+            let data_type: String = row
+                .try_get(1)
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+            let not_null: bool = row
+                .try_get(2)
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+            let default_value: Option<String> = row
+                .try_get(3)
+                .map_err(|e| DriverError::Query(e.to_string()))?;
+
+            let mut line = format!("    {name} {data_type}");
+            if let Some(default_value) = default_value {
+                line.push_str(&format!(" DEFAULT {default_value}"));
+            }
+            if not_null {
+                line.push_str(" NOT NULL");
+            }
+            lines.push(line);
+        }
+
+        if !primary_key.is_empty() {
+            lines.push(format!("    PRIMARY KEY ({})", primary_key.join(", ")));
+        }
+
+        Ok(format!(
+            "CREATE TABLE {schema}.{table} (\n{}\n);",
+            lines.join(",\n")
+        ))
+    }
+
     // Matches the `Pin<Box<dyn Future>>` shape the trait declares (see the
     // doc comment on `DbConnector::execute_query` for why this isn't `async
     // fn`/`#[async_trait]` like the other methods).
@@ -204,8 +296,43 @@ impl DbConnector for PostgresConnector {
                 Err(error) => return postgres_error_to_result(error),
             };
 
-            execute_on_connection(&mut conn, sql, options).await
+            let outcome = execute_on_connection(&mut conn, sql, options).await;
+            if !outcome.connection_reusable {
+                // Devolverla al pool haria que sqlx la "limpie" leyendo (y
+                // tirando) todo lo que el servidor todavia tenga para mandar
+                // — ver MAX_ROWS_TO_DRAIN. Cerrar el socket corta el envio
+                // en seco; el pool abre otra conexion cuando haga falta.
+                drop(conn.detach());
+            }
+            outcome.result
         })
+    }
+}
+
+/// Rows past `max_rows` that are still read (and discarded) so the
+/// connection can go back to the pool clean. The simple query protocol
+/// streams the whole result set and can't be stopped midway: whatever isn't
+/// read here, sqlx reads on release (`ping`) before reusing the connection.
+/// Without a bound, a `SELECT * FROM big_table` that shows 500 rows
+/// downloads the whole table in the background, and a few of those in a row
+/// starve the pool — every later query waits up to `acquire_timeout`. Past
+/// this bound the connection is discarded instead (see
+/// `ExecutionOutcome::connection_reusable`).
+const MAX_ROWS_TO_DRAIN: usize = 1000;
+
+struct ExecutionOutcome {
+    result: QueryExecutionResult,
+    /// `false` when the connection still has unread rows pending and must
+    /// not go back to the pool.
+    connection_reusable: bool,
+}
+
+impl From<QueryExecutionResult> for ExecutionOutcome {
+    fn from(result: QueryExecutionResult) -> Self {
+        Self {
+            result,
+            connection_reusable: true,
+        }
     }
 }
 
@@ -213,23 +340,24 @@ async fn execute_on_connection(
     conn: &mut PgConnection,
     sql: &str,
     options: QueryExecutionOptions,
-) -> QueryExecutionResult {
+) -> ExecutionOutcome {
     let start = Instant::now();
 
     let describe = match conn.describe(sql).await {
         Ok(describe) => describe,
-        Err(error) => return postgres_error_to_result(error),
+        Err(error) => return postgres_error_to_result(error).into(),
     };
 
     if describe.columns().is_empty() {
         let outcome = match Executor::execute(&mut *conn, RawStatement(sql)).await {
             Ok(outcome) => outcome,
-            Err(error) => return postgres_error_to_result(error),
+            Err(error) => return postgres_error_to_result(error).into(),
         };
         return QueryExecutionResult::Command {
             affected_rows: outcome.rows_affected(),
             execution_time_ms: start.elapsed().as_millis() as u64,
-        };
+        }
+        .into();
     }
 
     let columns: Vec<QueryColumn> = describe
@@ -246,16 +374,30 @@ async fn execute_on_connection(
     let mut stream = Executor::fetch(&mut *conn, RawStatement(sql));
     let mut rows: Vec<QueryRow> = Vec::new();
     let mut truncated = false;
+    let mut discarded = 0;
+    let mut stream_finished = false;
     loop {
         let row = match stream.try_next().await {
             Ok(Some(row)) => row,
-            Ok(None) => break,
-            Err(error) => return postgres_error_to_result(error),
+            Ok(None) => {
+                stream_finished = true;
+                break;
+            }
+            Err(error) => {
+                return ExecutionOutcome {
+                    result: postgres_error_to_result(error),
+                    connection_reusable: false,
+                };
+            }
         };
 
         if rows.len() >= options.max_rows {
             truncated = true;
-            break;
+            discarded += 1;
+            if discarded > MAX_ROWS_TO_DRAIN {
+                break;
+            }
+            continue;
         }
 
         let mut query_row: QueryRow = Vec::with_capacity(columns.len());
@@ -263,19 +405,27 @@ async fn execute_on_connection(
             let value: Result<QueryValue, sqlx::Error> = row.try_get_unchecked(index);
             match value {
                 Ok(value) => query_row.push(value),
-                Err(error) => return postgres_error_to_result(error),
+                Err(error) => {
+                    return ExecutionOutcome {
+                        result: postgres_error_to_result(error),
+                        connection_reusable: false,
+                    };
+                }
             }
         }
         rows.push(query_row);
     }
     drop(stream);
 
-    QueryExecutionResult::ResultSet {
-        row_count: rows.len() as u64,
-        columns,
-        rows,
-        execution_time_ms: start.elapsed().as_millis() as u64,
-        truncated,
+    ExecutionOutcome {
+        result: QueryExecutionResult::ResultSet {
+            row_count: rows.len() as u64,
+            columns,
+            rows,
+            execution_time_ms: start.elapsed().as_millis() as u64,
+            truncated,
+        },
+        connection_reusable: stream_finished,
     }
 }
 
@@ -354,7 +504,13 @@ mod tests {
             .await;
 
         match result {
-            QueryExecutionResult::ResultSet { columns, rows, row_count, truncated, .. } => {
+            QueryExecutionResult::ResultSet {
+                columns,
+                rows,
+                row_count,
+                truncated,
+                ..
+            } => {
                 assert_eq!(columns.len(), 3);
                 assert_eq!(row_count, 1);
                 assert!(!truncated);
@@ -380,12 +536,77 @@ mod tests {
             .await;
 
         match result {
-            QueryExecutionResult::ResultSet { row_count, truncated, .. } => {
+            QueryExecutionResult::ResultSet {
+                row_count,
+                truncated,
+                ..
+            } => {
                 assert_eq!(row_count, 2);
                 assert!(truncated);
             }
             other => panic!("expected a ResultSet, got {other:?}"),
         }
+    }
+
+    async fn raw_connection(config: &ConnectionConfig) -> PgConnection {
+        use sqlx::Connection;
+        let options = PgConnectOptions::new()
+            .host(&config.host)
+            .port(config.port)
+            .username(&config.username)
+            .password(&config.password)
+            .database(&config.database);
+        PgConnection::connect_with(&options)
+            .await
+            .expect("connect should succeed against a reachable Postgres instance")
+    }
+
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn truncated_query_with_few_extra_rows_leaves_connection_reusable() {
+        let mut conn = raw_connection(&config_from_env()).await;
+
+        let outcome = execute_on_connection(
+            &mut conn,
+            "SELECT n FROM generate_series(1, 900) AS n",
+            QueryExecutionOptions { max_rows: 2 },
+        )
+        .await;
+
+        assert!(matches!(
+            outcome.result,
+            QueryExecutionResult::ResultSet {
+                row_count: 2,
+                truncated: true,
+                ..
+            }
+        ));
+        assert!(outcome.connection_reusable);
+    }
+
+    // Con muchas filas pendientes la conexion no debe volver al pool: sqlx
+    // la "limpiaria" descargando el resto del resultado en segundo plano.
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn truncated_query_with_many_extra_rows_discards_connection() {
+        let mut conn = raw_connection(&config_from_env()).await;
+
+        let outcome = execute_on_connection(
+            &mut conn,
+            "SELECT n FROM generate_series(1, 1000000) AS n",
+            QueryExecutionOptions { max_rows: 2 },
+        )
+        .await;
+
+        assert!(matches!(
+            outcome.result,
+            QueryExecutionResult::ResultSet {
+                row_count: 2,
+                truncated: true,
+                ..
+            }
+        ));
+        assert!(!outcome.connection_reusable);
     }
 
     #[tokio::test]
@@ -416,12 +637,18 @@ mod tests {
             .expect("connect should succeed against a reachable PostgreSQL instance");
 
         let result = connector
-            .execute_query("SELECT * FROM this_table_does_not_exist", QueryExecutionOptions { max_rows: 500 })
+            .execute_query(
+                "SELECT * FROM this_table_does_not_exist",
+                QueryExecutionOptions { max_rows: 500 },
+            )
             .await;
 
         match result {
             QueryExecutionResult::Error { code, .. } => {
-                assert!(code.is_some(), "expected Postgres to report a SQLSTATE code");
+                assert!(
+                    code.is_some(),
+                    "expected Postgres to report a SQLSTATE code"
+                );
             }
             other => panic!("expected an Error result, got {other:?}"),
         }

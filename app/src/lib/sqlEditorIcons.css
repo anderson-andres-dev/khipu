@@ -16,10 +16,13 @@
  * mask-image y se colorea via background-color para que siga el tema activo
  * en vez de quedar fijo a un color.
  *
- * Todos los iconos usan el mismo gris (--text-secondary), sin distincion de
- * color por tipo: la forma ya distingue tabla/columna/keyword-por-grupo (ver
- * KEYWORD_ICON_TYPES en sqlSchema.ts), y un solo gris consistente se ve mas
- * pulido que una fila de colores sueltos.
+ * La mayoria de los iconos usan el mismo gris (--text-secondary), sin
+ * distincion de color por tipo: la forma ya distingue tabla/columna/keyword-
+ * por-grupo (ver KEYWORD_ICON_TYPES en sqlSchema.ts). La excepcion es
+ * columna PK/FK ("column-pk"/"column-fk", ver buildSqlSchema): mismo icono
+ * (Lucide "key") que el header del grid de resultados, con el mismo color -
+ * dorado para PK, accent para FK - para que se reconozcan igual en los dos
+ * lugares de la app.
  *
  * @codemirror/autocomplete trae su propio baseTheme para ".cm-completionIcon"
  * (padding-right, opacity, box-sizing: content-box, font-size, text-align)
@@ -34,6 +37,8 @@
  */
 .sql-editor .cm-completionIcon-table,
 .sql-editor .cm-completionIcon-column,
+.sql-editor .cm-completionIcon-column-pk,
+.sql-editor .cm-completionIcon-column-fk,
 .sql-editor .cm-completionIcon-keyword,
 .sql-editor .cm-completionIcon-type,
 .sql-editor .cm-completionIcon-function,
@@ -71,6 +76,8 @@
 
 .sql-editor .cm-completionIcon-table::after,
 .sql-editor .cm-completionIcon-column::after,
+.sql-editor .cm-completionIcon-column-pk::after,
+.sql-editor .cm-completionIcon-column-fk::after,
 .sql-editor .cm-completionIcon-keyword::after,
 .sql-editor .cm-completionIcon-type::after,
 .sql-editor .cm-completionIcon-function::after,
@@ -111,6 +118,22 @@
 .sql-editor .cm-completionIcon-column::after {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M9 3v18'/%3E%3Cpath d='M15 3v18'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='M9 3v18'/%3E%3Cpath d='M15 3v18'/%3E%3C/svg%3E");
+}
+
+/* columna PK/FK -> lucide "key" (mismo svg en las dos, el color distingue -
+   ver DataGrid.svelte para el mismo criterio en el header del grid) */
+.sql-editor .cm-completionIcon-column-pk {
+  --completion-icon-color: #e8b339;
+}
+
+.sql-editor .cm-completionIcon-column-fk {
+  --completion-icon-color: var(--accent);
+}
+
+.sql-editor .cm-completionIcon-column-pk::after,
+.sql-editor .cm-completionIcon-column-fk::after {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 21 9.6-9.6'/%3E%3Cpath d='m7.5 15.5 2.3 2.3a1 1 0 0 1 0 1.4l-2.1 2.1a1 1 0 0 1-1.4 0L4 19'/%3E%3Ccircle cx='15.5' cy='7.5' r='5.5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 21 9.6-9.6'/%3E%3Cpath d='m7.5 15.5 2.3 2.3a1 1 0 0 1 0 1.4l-2.1 2.1a1 1 0 0 1-1.4 0L4 19'/%3E%3Ccircle cx='15.5' cy='7.5' r='5.5'/%3E%3C/svg%3E");
 }
 
 /* keyword generico (fallback: AS, AND, OR, NOT, IN, LIKE, IS, NULL, DISTINCT, ASC, DESC, ALL, EXISTS, INTO, SET, BY...) */
@@ -298,4 +321,17 @@
 
 .sql-editor li:has(.cm-completionIcon-table) .cm-completionDetail::after {
   content: ")";
+}
+
+/*
+ * Ctrl/Cmd + hover sobre el nombre de una tabla conocida (ver
+ * sqlDefinitionLink.ts): subrayado azul al estilo "ir a definicion" de un
+ * IDE. Ctrl/Cmd + clic sobre esto abre el modal de estructura en vez de
+ * mover el cursor.
+ */
+.sql-editor .cm-tableDefinitionLink {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  color: var(--accent);
+  cursor: pointer;
 }

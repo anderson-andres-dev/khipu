@@ -1,11 +1,30 @@
 <script lang="ts">
-  import type { QueryExecutionResult } from "$lib/types";
+  import { Table } from "@lucide/svelte";
+  import type { ColumnCatalogInfo, QueryExecutionResult } from "$lib/types";
   import DataGrid from "$lib/components/results/DataGrid.svelte";
 
-  let { isExecuting, result }: { isExecuting: boolean; result: QueryExecutionResult | null } = $props();
+  let {
+    isExecuting,
+    result,
+    sourceLabel = null,
+    columnCatalogInfo = null,
+  }: {
+    isExecuting: boolean;
+    result: QueryExecutionResult | null;
+    sourceLabel?: string | null;
+    columnCatalogInfo?: Map<string, ColumnCatalogInfo> | null;
+  } = $props();
 </script>
 
 <div class="result-pane">
+  {#if sourceLabel && (isExecuting || result !== null)}
+    <div class="result-tabs">
+      <div class="result-tab">
+        <Table size={12} aria-hidden="true" />
+        <span>{sourceLabel}</span>
+      </div>
+    </div>
+  {/if}
   {#if isExecuting}
     <div class="placeholder">Ejecutando…</div>
   {:else if result === null}
@@ -36,7 +55,7 @@
   {:else}
     <div class="grid-region">
       <div class="grid-scroll">
-        <DataGrid columns={result.columns} rows={result.rows} />
+        <DataGrid columns={result.columns} rows={result.rows} {columnCatalogInfo} />
       </div>
       <div class="status-bar">
         {result.rowCount} rows · {result.columns.length} columns · {result.executionTimeMs} ms
@@ -84,11 +103,46 @@
     color: var(--text-secondary);
   }
 
+  /* Misma pinta que las pestañas de consola del workspace (.console-tab):
+     una "pestaña de resultado" al estilo DataGrip. Todavía no es fijable/
+     cerrable — hoy solo hay un resultado a la vez — pero ya representa el
+     lugar donde vivirán esas pestañas cuando existan varias. */
+  .result-tabs {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 2.25rem;
+    padding: var(--space-1) var(--space-2);
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .result-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 1.75rem;
+    padding: 0 var(--space-3);
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--accent) 72%, var(--border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface-elevated));
+    color: var(--text-primary);
+    font-size: 0.75rem;
+  }
+
+  .result-tab :global(svg) {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+  }
+
   .empty,
   .grid-region {
     display: flex;
     min-height: 0;
-    height: 100%;
+    flex: 1;
     flex-direction: column;
   }
 

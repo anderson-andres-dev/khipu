@@ -24,12 +24,17 @@ export interface PendingQueryConfirmation {
 export interface QueryExecutionState {
   isExecuting: boolean;
   result: QueryExecutionResult | null;
+  // El SQL que produjo `result`, capturado en la ejecucion — no el texto
+  // vigente del editor, que puede haber cambiado desde entonces. Sirve para
+  // rotular a que consulta pertenece el resultado (p.ej. de que tabla es).
+  resultSql: string | null;
   pendingConfirmation: PendingQueryConfirmation | null;
 }
 
 const EMPTY_EXECUTION_STATE: QueryExecutionState = {
   isExecuting: false,
   result: null,
+  resultSql: null,
   pendingConfirmation: null,
 };
 
@@ -176,9 +181,9 @@ export function beginQueryExecution(consoleId: string): boolean {
   return true;
 }
 
-export function finishQueryExecution(consoleId: string, result: QueryExecutionResult): void {
+export function finishQueryExecution(consoleId: string, sql: string, result: QueryExecutionResult): void {
   queryConsoles.update((state) =>
-    withExecution(state, consoleId, { isExecuting: false, result, pendingConfirmation: null }),
+    withExecution(state, consoleId, { isExecuting: false, result, resultSql: sql, pendingConfirmation: null }),
   );
 }
 

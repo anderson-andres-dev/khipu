@@ -30,6 +30,7 @@ pub struct ColumnInfo {
     pub data_type: String,
     pub nullable: bool,
     pub is_primary_key: bool,
+    pub comment: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,6 +129,15 @@ pub trait DbConnector: Send + Sync {
     async fn list_schemas(&self) -> Result<Vec<String>, DriverError>;
 
     async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError>;
+
+    /// The DDL text for one table, fetched live from the engine (`SHOW
+    /// CREATE TABLE` on MySQL; reconstructed from `pg_catalog` on Postgres,
+    /// which has no single-statement equivalent). A real round trip on
+    /// purpose, not a client-side rendering of the already-loaded catalog:
+    /// this is what lets a missing grant (e.g. `SHOW VIEW` on MySQL) surface
+    /// as a normal `DriverError::Query` instead of silently succeeding with
+    /// stale/incomplete data.
+    async fn table_definition(&self, schema: &str, table: &str) -> Result<String, DriverError>;
 
     /// Runs a single SQL statement. Never returns `DriverError`: a SQL error
     /// from the server is `QueryExecutionResult::Error`, a renderable state

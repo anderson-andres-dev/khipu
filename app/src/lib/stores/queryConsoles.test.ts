@@ -81,7 +81,7 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
   it("editar el SQL de la consola limpia su pending pero conserva el resultado anterior", async () => {
     const mod = await freshQueryConsoles();
     const id = mod.createQueryConsole("profile-a");
-    mod.finishQueryExecution(id, { type: "command", affectedRows: 1, executionTimeMs: 5 });
+    mod.finishQueryExecution(id, "UPDATE users SET active = false", { type: "command", affectedRows: 1, executionTimeMs: 5 });
     mod.requireQueryConfirmation(id, { sql: "UPDATE users SET active = false", statement: "updateWithoutWhere" });
 
     mod.updateQueryConsoleSql(id, "UPDATE users SET active = false WHERE id = 1");
@@ -106,7 +106,7 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
     const mod = await freshQueryConsoles();
     const id = mod.createQueryConsole("profile-a");
     mod.requireQueryConfirmation(id, { sql: "DELETE FROM users", statement: "deleteWithoutWhere" });
-    mod.finishQueryExecution(id, { type: "error", message: "boom" });
+    mod.finishQueryExecution(id, "DELETE FROM users", { type: "error", message: "boom" });
 
     const raw = localStorage.getItem("khipu:query-consoles:v1");
     expect(raw).not.toBeNull();
@@ -122,7 +122,7 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
     expect(mod.beginQueryExecution(id)).toBe(true);
     expect(mod.beginQueryExecution(id)).toBe(false);
 
-    mod.finishQueryExecution(id, { type: "command", affectedRows: 0, executionTimeMs: 1 });
+    mod.finishQueryExecution(id, "TRUNCATE users", { type: "command", affectedRows: 0, executionTimeMs: 1 });
     expect(mod.beginQueryExecution(id)).toBe(true);
 
     mod.requireQueryConfirmation(id, { sql: "TRUNCATE users", statement: "truncate" });
@@ -134,7 +134,7 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
     const id = mod.createQueryConsole("profile-a");
     mod.beginQueryExecution(id);
 
-    mod.finishQueryExecution(id, { type: "command", affectedRows: 2, executionTimeMs: 9 });
+    mod.finishQueryExecution(id, "SELECT 1", { type: "command", affectedRows: 2, executionTimeMs: 9 });
 
     const execution = mod.executionForConsole(get(mod.queryConsoles), id);
     expect(execution.isExecuting).toBe(false);

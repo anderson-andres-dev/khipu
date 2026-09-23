@@ -158,6 +158,29 @@ async fn execute_query(
 }
 
 #[tauri::command]
+async fn table_definition(
+    schema: String,
+    table: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let connector = {
+        let guard = state
+            .active_connection
+            .lock()
+            .expect("active connection mutex poisoned");
+        match guard.as_ref() {
+            Some(active) => Arc::clone(&active.connector),
+            None => return Err("No hay ninguna conexión activa.".to_string()),
+        }
+    };
+
+    connector
+        .table_definition(&schema, &table)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn test_connection(
     kind: drivers::DatabaseKind,
     config: ConnectionConfig,
@@ -191,6 +214,7 @@ pub fn run() {
             connect,
             disconnect,
             execute_query,
+            table_definition,
             test_connection,
             save_connection_password,
             load_connection_password,

@@ -13,14 +13,20 @@
   import { catalogTables, connection } from "$lib/stores/connection";
   import { connectionProfiles } from "$lib/stores/connectionProfiles";
   import type { ConnectionDriver } from "$lib/connections";
-  import { buildCompletionSource, buildSqlSchema, dialectFor, extractDefaultTable } from "$lib/sqlSchema";
+  import {
+    buildCompletionSource,
+    buildSqlSchema,
+    dialectFor,
+    extractDefaultTable,
+    resolveCatalogTable,
+  } from "$lib/sqlSchema";
+  import { definitionLinkExtension, type CatalogTableRef } from "$lib/sqlDefinitionLink";
   import { shortcuts, toCodeMirrorKey } from "$lib/stores/shortcuts";
   import { editorSettings } from "$lib/stores/editorSettings";
   import { formatSqlBlock } from "$lib/sqlFormatter";
   import { activeStatementHighlight, autoUppercaseSqlKeywords } from "$lib/sqlEditorBehavior";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
-  import { Play } from "@lucide/svelte";
   import "$lib/sqlEditorIcons.css";
 
   let {
@@ -28,11 +34,13 @@
     onchange,
     onexecute,
     executing = false,
+    onopentabledefinition,
   }: {
     value?: string;
     onchange?: (sql: string) => void;
     onexecute?: (sql: string) => void;
     executing?: boolean;
+    onopentabledefinition?: (ref: CatalogTableRef) => void;
   } = $props();
 
   let container: HTMLDivElement;
@@ -40,6 +48,7 @@
   const themeCompartment = new Compartment();
   const sqlCompartment = new Compartment();
   const completionCompartment = new Compartment();
+  const definitionLinkCompartment = new Compartment();
   const keymapCompartment = new Compartment();
   const behaviorCompartment = new Compartment();
   const tabCompletionCompartment = new Compartment();
@@ -236,6 +245,13 @@
     );
   }
 
+  function buildDefinitionLink() {
+    return definitionLinkExtension({
+      resolveTable: (word) => resolveCatalogTable(sqlSchema.schema, sqlSchema.defaultSchema, word),
+      onOpen: (ref) => onopentabledefinition?.(ref),
+    });
+  }
+
   function reconfigureCompletion() {
     if (!view) return;
     view.dispatch({
@@ -255,6 +271,7 @@
             ],
           }),
         ),
+        definitionLinkCompartment.reconfigure(buildDefinitionLink()),
       ],
     });
   }
@@ -267,6 +284,7 @@
         basicSetup,
         sqlCompartment.of(sql({ dialect: sqlDialect, upperCaseKeywords: true })),
         completionCompartment.of(autocompletion()),
+        definitionLinkCompartment.of(buildDefinitionLink()),
         keymapCompartment.of(buildEditorKeymap()),
         tabCompletionCompartment.of(buildTabCompletionKeymap(get(editorSettings).tabNavigatesCompletion)),
         activeStatementHighlight,
@@ -340,27 +358,13 @@
   onDestroy(() => view?.destroy());
 </script>
 
-<div class="sql-editor-shell">
-  <div class="sql-editor-toolbar">
-    <button
-      type="button"
-      class="execute-button"
-      disabled={executing}
-      title={`Ejecutar (${$shortcuts.find((shortcut) => shortcut.id === "execute-query")?.keys ?? ""})`}
-      onclick={() => executeCurrentSql()}
-    >
-      <Play size={13} aria-hidden="true" />
-      <span>{executing ? "Ejecutando…" : "Ejecutar"}</span>
-    </button>
-  </div>
-  <div
-    class="sql-editor"
-    role="group"
-    aria-label="Editor SQL"
-    bind:this={container}
-    oncontextmenu={openContextMenu}
-  ></div>
-</div>
+<div
+  class="sql-editor"
+  role="group"
+  aria-label="Editor SQL"
+  bind:this={container}
+  oncontextmenu={openContextMenu}
+></div>
 
 {#if contextMenu}
   <ContextMenu
@@ -372,58 +376,9 @@
 {/if}
 
 <style>
-  .sql-editor-shell {
-    display: flex;
-    min-height: 0;
-    height: 100%;
-    flex-direction: column;
-  }
-
-  .sql-editor-toolbar {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: flex-end;
-    min-height: 1.75rem;
-    padding: var(--space-1) var(--space-2);
-    box-sizing: border-box;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .execute-button {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: 1.5rem;
-    padding: 0 var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-
-  .execute-button:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
-  }
-
-  .execute-button:disabled {
-    color: var(--text-secondary);
-    cursor: default;
-  }
-
-  .execute-button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: -2px;
-  }
-
   .sql-editor {
     text-align: left;
-    min-height: 0;
-    flex: 1;
+    height: 100%;
   }
 
   .sql-editor :global(.cm-editor) {

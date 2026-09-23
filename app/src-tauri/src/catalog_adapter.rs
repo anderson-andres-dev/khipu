@@ -18,6 +18,7 @@ pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
                     data_type: column.data_type,
                     nullable: column.nullable,
                     is_primary_key: column.is_primary_key,
+                    comment: column.comment,
                 })
                 .collect(),
             foreign_keys: table
@@ -50,6 +51,7 @@ mod tests {
                 data_type: "integer".to_string(),
                 nullable: false,
                 is_primary_key: true,
+                comment: Some("Identificador unico".to_string()),
             }],
             foreign_keys: vec![],
         }];
@@ -62,6 +64,7 @@ mod tests {
         assert_eq!(column.data_type, "integer");
         assert!(!column.nullable);
         assert!(column.is_primary_key);
+        assert_eq!(column.comment.as_deref(), Some("Identificador unico"));
     }
 
     #[test]
