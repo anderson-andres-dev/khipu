@@ -49,6 +49,12 @@ export const shortcutDefinitions: ShortcutDefinition[] = [
     description: "Formatea la seleccion o la consulta donde esta el cursor.",
     defaultKeys: "Ctrl+L",
   },
+  {
+    id: "execute-query",
+    label: "Ejecutar consulta",
+    description: "Ejecuta la seleccion o la sentencia donde esta el cursor.",
+    defaultKeys: "Ctrl+Enter",
+  },
 ];
 
 const STORAGE_KEY = "khipu:shortcut-overrides";

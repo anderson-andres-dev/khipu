@@ -5,16 +5,26 @@
   import { Plus, X } from "@lucide/svelte";
   import SqlEditor from "$lib/SqlEditor.svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
+  import ExecutionGuard from "$lib/components/ExecutionGuard.svelte";
+  import ResultPane from "$lib/components/results/ResultPane.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
   import { connection } from "$lib/stores/connection";
   import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
+  import { executeQuery } from "$lib/queryExecution";
+  import type { ExecuteQueryResponse } from "$lib/types";
   import {
     activateQueryConsole,
+    beginQueryExecution,
+    cancelQueryConfirmation,
     closeQueryConsole,
     createQueryConsole,
     ensureQueryConsole,
+    executionForConsole,
+    finishQueryExecution,
     queryConsoles,
     renameQueryConsole,
+    requireQueryConfirmation,
+    takeQueryConfirmation,
     updateQueryConsoleSql,
   } from "$lib/stores/queryConsoles";
 
@@ -22,6 +32,13 @@
   const consoles = $derived($queryConsoles.consoles.filter((item) => item.profileId === profileId));
   const activeId = $derived($queryConsoles.activeByProfile[profileId]);
   const activeConsole = $derived(consoles.find((item) => item.id === activeId));
+  const execution = $derived(
+    activeConsole
+      ? executionForConsole($queryConsoles, activeConsole.id)
+      : { isExecuting: false, result: null, pendingConfirmation: null },
+  );
+  let editorFraction = $state(0.6);
+  let workspaceBody = $state<HTMLElement>();
   let tabMenu = $state<{ x: number; y: number; id: string } | null>(null);
   let renamingId = $state<string | null>(null);
   let renameValue = $state("");
@@ -135,6 +152,72 @@
       void requestClose(activeConsole.id);
     }
   }
+
+  function applyExecuteQueryResponse(consoleId: string, sql: string, response: ExecuteQueryResponse) {
+    if (response.type === "confirmationRequired") {
+      requireQueryConfirmation(consoleId, { sql, statement: response.statement });
+      return;
+    }
+    finishQueryExecution(consoleId, response.result);
+  }
+
+  // Solicita una ejecucion nueva (Ctrl+Enter o el boton "Ejecutar"). No hace
+  // nada si esa consola ya esta ejecutando o tiene un guard visible —
+  // beginQueryExecution() ya contempla ambos casos, asi que repetir
+  // Ctrl+Enter mientras el guard esta arriba no dispara una segunda
+  // invocacion ni confirma nada por si solo.
+  async function requestExecution(consoleId: string, sql: string) {
+    if (!beginQueryExecution(consoleId)) return;
+    const response = await executeQuery(sql, null);
+    applyExecuteQueryResponse(consoleId, sql, response);
+  }
+
+  // Unica via de confirmacion: el click explicito en "Ejecutar de todos
+  // modos" del guard. takeQueryConfirmation() retira el pendiente de forma
+  // atomica antes del await, asi que un doble click no puede confirmar dos
+  // veces.
+  async function confirmPendingExecution(consoleId: string) {
+    const pending = takeQueryConfirmation(consoleId);
+    if (!pending || !beginQueryExecution(consoleId)) return;
+    const response = await executeQuery(pending.sql, pending.statement);
+    applyExecuteQueryResponse(consoleId, pending.sql, response);
+  }
+
+  function cancelPendingExecution(consoleId: string) {
+    cancelQueryConfirmation(consoleId);
+  }
+
+  function startResize(event: PointerEvent) {
+    event.preventDefault();
+    const handle = event.currentTarget as HTMLElement;
+    handle.setPointerCapture(event.pointerId);
+
+    function onMove(moveEvent: PointerEvent) {
+      if (!workspaceBody) return;
+      const rect = workspaceBody.getBoundingClientRect();
+      const fraction = (moveEvent.clientY - rect.top) / rect.height;
+      editorFraction = Math.min(0.85, Math.max(0.15, fraction));
+    }
+
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  function onSplitterKeydown(event: KeyboardEvent) {
+    const step = 0.02;
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      editorFraction = Math.max(0.15, editorFraction - step);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      editorFraction = Math.min(0.85, editorFraction + step);
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleConsoleShortcut} />
@@ -194,15 +277,42 @@
       <Plus size={14} aria-hidden="true" />
     </button>
   </div>
-  <section class="editor">
-    {#if activeConsole}
-      {#key activeConsole.id}
-        <SqlEditor
-          value={activeConsole.sql}
-          onchange={(sql) => updateQueryConsoleSql(activeConsole.id, sql)}
-        />
-      {/key}
+  <section class="workspace-body" bind:this={workspaceBody}>
+    <div class="editor-pane" style={`flex-basis: ${editorFraction * 100}%`}>
+      {#if activeConsole}
+        {#key activeConsole.id}
+          <SqlEditor
+            value={activeConsole.sql}
+            onchange={(sql) => updateQueryConsoleSql(activeConsole.id, sql)}
+            onexecute={(sql) => requestExecution(activeConsole.id, sql)}
+            executing={execution.isExecuting}
+          />
+        {/key}
+      {/if}
+    </div>
+    {#if execution.pendingConfirmation && activeConsole}
+      <ExecutionGuard
+        statement={execution.pendingConfirmation.statement}
+        oncancel={() => cancelPendingExecution(activeConsole.id)}
+        onconfirm={() => confirmPendingExecution(activeConsole.id)}
+      />
     {/if}
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="splitter"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-valuenow={Math.round(editorFraction * 100)}
+      aria-valuemin={15}
+      aria-valuemax={85}
+      tabindex="0"
+      onpointerdown={startResize}
+      onkeydown={onSplitterKeydown}
+    ></div>
+    <div class="result-region">
+      <ResultPane isExecuting={execution.isExecuting} result={execution.result} />
+    </div>
   </section>
 </div>
 
@@ -337,9 +447,44 @@
     background: transparent;
   }
 
-  .editor {
+  .workspace-body {
+    display: flex;
     min-height: 0;
     flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .editor-pane {
+    min-height: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .splitter {
+    flex-shrink: 0;
+    height: 6px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    cursor: row-resize;
+    touch-action: none;
+  }
+
+  .splitter:hover,
+  .splitter:focus-visible {
+    background: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  }
+
+  .splitter:focus-visible {
+    outline: none;
+  }
+
+  .result-region {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
     overflow: hidden;
   }
 

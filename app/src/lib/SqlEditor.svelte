@@ -20,9 +20,20 @@
   import { activeStatementHighlight, autoUppercaseSqlKeywords } from "$lib/sqlEditorBehavior";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
+  import { Play } from "@lucide/svelte";
   import "$lib/sqlEditorIcons.css";
 
-  let { value = $bindable(""), onchange }: { value?: string; onchange?: (sql: string) => void } = $props();
+  let {
+    value = $bindable(""),
+    onchange,
+    onexecute,
+    executing = false,
+  }: {
+    value?: string;
+    onchange?: (sql: string) => void;
+    onexecute?: (sql: string) => void;
+    executing?: boolean;
+  } = $props();
 
   let container: HTMLDivElement;
   let view: EditorView | undefined;
@@ -175,6 +186,23 @@
     return true;
   }
 
+  // Ejecuta la seleccion o la sentencia bajo el cursor. Ignorado mientras
+  // esta consola ya esta ejecutando (el boton se deshabilita, pero el atajo
+  // de teclado no pasa por el DOM del boton) — evita disparar una segunda
+  // ejecucion superpuesta desde aqui; Workspace hace la misma comprobacion
+  // otra vez del lado del store antes de invocar el backend.
+  function executeCurrentSql(): boolean {
+    if (!view || executing) return true;
+    const range = currentSqlRange();
+    if (!range) return true;
+
+    const sql = view.state.sliceDoc(range.from, range.to).trim();
+    if (!sql) return true;
+
+    onexecute?.(sql);
+    return true;
+  }
+
   // El keymap por defecto de basicSetup ya deberia traer Mod-a -> selectAll,
   // pero en este webview no estaba disparando de forma confiable; se arma
   // explicito con Prec.highest para que gane sobre cualquier otro keymap, y
@@ -182,12 +210,16 @@
   function buildEditorKeymap() {
     const selectAllShortcut = get(shortcuts).find((shortcut) => shortcut.id === "select-all");
     const formatShortcut = get(shortcuts).find((shortcut) => shortcut.id === "format-sql");
+    const executeShortcut = get(shortcuts).find((shortcut) => shortcut.id === "execute-query");
     const bindings = [];
     if (selectAllShortcut) {
       bindings.push({ key: toCodeMirrorKey(selectAllShortcut.keys), run: selectAll, preventDefault: true });
     }
     if (formatShortcut) {
       bindings.push({ key: toCodeMirrorKey(formatShortcut.keys), run: formatCurrentSql, preventDefault: true });
+    }
+    if (executeShortcut) {
+      bindings.push({ key: toCodeMirrorKey(executeShortcut.keys), run: executeCurrentSql, preventDefault: true });
     }
 
     return Prec.highest(keymap.of(bindings));
@@ -308,13 +340,27 @@
   onDestroy(() => view?.destroy());
 </script>
 
-<div
-  class="sql-editor"
-  role="group"
-  aria-label="Editor SQL"
-  bind:this={container}
-  oncontextmenu={openContextMenu}
-></div>
+<div class="sql-editor-shell">
+  <div class="sql-editor-toolbar">
+    <button
+      type="button"
+      class="execute-button"
+      disabled={executing}
+      title={`Ejecutar (${$shortcuts.find((shortcut) => shortcut.id === "execute-query")?.keys ?? ""})`}
+      onclick={() => executeCurrentSql()}
+    >
+      <Play size={13} aria-hidden="true" />
+      <span>{executing ? "Ejecutando…" : "Ejecutar"}</span>
+    </button>
+  </div>
+  <div
+    class="sql-editor"
+    role="group"
+    aria-label="Editor SQL"
+    bind:this={container}
+    oncontextmenu={openContextMenu}
+  ></div>
+</div>
 
 {#if contextMenu}
   <ContextMenu
@@ -326,9 +372,58 @@
 {/if}
 
 <style>
+  .sql-editor-shell {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+  }
+
+  .sql-editor-toolbar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 1.75rem;
+    padding: var(--space-1) var(--space-2);
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .execute-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 1.5rem;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .execute-button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  }
+
+  .execute-button:disabled {
+    color: var(--text-secondary);
+    cursor: default;
+  }
+
+  .execute-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
   .sql-editor {
     text-align: left;
-    height: 100%;
+    min-height: 0;
+    flex: 1;
   }
 
   .sql-editor :global(.cm-editor) {
