@@ -31,8 +31,15 @@ hay feature flags de Cargo que las hagan opcionales.
 2. **`crates/engine-lsp`** — expone `khipu-engine` como servidor LSP
    (`tower-lsp`) para que cualquier editor lo consuma.
 3. **`crates/driver-core`** — el contrato (`DbConnector`) que todo motor de
-   base de datos debe implementar: conectar, listar schemas, listar tablas y
-   columnas. El engine y la app solo dependen de este trait.
+   base de datos debe implementar: conectar, listar schemas, introspectar un
+   schema completo (`introspect_schema`: tablas, vistas, claves, índices,
+   triggers, rutinas, secuencias, eventos) y ejecutar consultas. También trae
+   `assembly::TableSet`, que agrupa las filas del catálogo en esa estructura
+   para que cada driver solo traduzca las filas de su motor. El modo SSL/TLS
+   lo elige cada perfil (`TlsMode` en `ConnectionConfig`) y lo resuelve cada
+   driver en su `tls.rs`; ver
+   [`docs/design/explorador-base-de-datos.md`](design/explorador-base-de-datos.md).
+   El engine y la app solo dependen de este trait.
 4. **`crates/drivers/*`** — un crate por motor de base de datos
    (`khipu-driver-mysql`, `khipu-driver-postgres`, ...), cada uno implementando
    `DbConnector` sobre `sqlx`.
@@ -46,7 +53,10 @@ hay feature flags de Cargo que las hagan opcionales.
 Para un motor con un dialecto ya soportado por `sqlparser`:
 
 1. Crear `crates/drivers/<motor>` (`cargo new --lib`).
-2. Implementar `DbConnector` para ese motor.
+2. Implementar `DbConnector` para ese motor. Para `introspect_schema`, ver
+   [`docs/design/explorador-base-de-datos.md`](design/explorador-base-de-datos.md):
+   qué va en cada categoría, cómo manejar versiones del servidor y qué hacer
+   cuando una categoría no se puede leer.
 3. Agregarlo como miembro del workspace y como dependencia de `app/src-tauri`
    (hoy no es opcional: no hay feature flags de Cargo para desactivar drivers).
 4. Agregar la rama correspondiente en la fábrica de drivers de

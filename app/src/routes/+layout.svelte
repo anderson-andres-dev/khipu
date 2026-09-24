@@ -2,15 +2,31 @@
   import { onMount, onDestroy } from "svelte";
   import type { Snippet } from "svelte";
   import "$lib/styles/tokens.css";
-  import { connection, catalogTables, connectToProfile, pendingEdit, reset } from "$lib/stores/connection";
+  import {
+    connection,
+    connectToProfile,
+    databaseExplorer,
+    explorerLoading,
+    pendingEdit,
+    reset,
+    setVisibleSchemas,
+  } from "$lib/stores/connection";
   import { connectionProfiles } from "$lib/stores/connectionProfiles";
   import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
+  import {
+    DEFAULT_SIDEBAR_WIDTH,
+    MAX_SIDEBAR_WIDTH,
+    MIN_SIDEBAR_WIDTH,
+    clampSidebarWidth,
+    releaseSidebarDrag,
+    sidebarWidth,
+  } from "$lib/stores/sidebarLayout";
   import { initThemeEffects } from "$lib/theming/theme";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { fade } from "svelte/transition";
   import {
     ArrowLeft,
     Minus,
-    PanelLeftClose,
     PanelLeftOpen,
     Settings,
     Square,
@@ -24,6 +40,18 @@
   let settingsOpen = $state(false);
   let sidebarCollapsed = $state(false);
   let refreshingTables = $state(false);
+  let sidebar = $state<HTMLElement>();
+  // Ancho en vivo mientras se arrastra el borde del sidebar; null fuera del
+  // arrastre. Puede bajar de MIN_SIDEBAR_WIDTH (hasta 0) para que el panel
+  // siga al mouse; al soltar, releaseSidebarDrag() decide si queda o cierra.
+  let dragWidth = $state<number | null>(null);
+  const liveSidebarWidth = $derived(dragWidth ?? $sidebarWidth);
+  const toggleSidebarKeys = $derived($shortcuts.find((shortcut) => shortcut.id === "toggle-sidebar")?.keys ?? "");
+  const activeProfile = $derived($connectionProfiles.find((profile) => profile.id === $connection.profileId));
+  // Misma convencion "schema@host" que dataSourceLabel en Workspace.svelte.
+  const connectionLabel = $derived(
+    activeProfile ? `${activeProfile.database || activeProfile.name}@${activeProfile.host}` : "",
+  );
   let { children }: { children: Snippet } = $props();
   const appWindow = getCurrentWindow();
 
@@ -32,7 +60,7 @@
   // reset() en connection.ts), asi que connectToProfile ya hace exactamente
   // lo que un refresh necesita, sin agregar ningun comando nuevo en Rust.
   async function handleRefreshTables() {
-    const profile = $connectionProfiles.find((candidate) => candidate.id === $connection.profileId);
+    const profile = activeProfile;
     if (!profile || refreshingTables) return;
 
     refreshingTables = true;
@@ -58,6 +86,50 @@
     }
   }
 
+  // El colapso usa la misma transicion de width que Alt+1: al soltar por
+  // debajo del minimo, .resizing (que la apaga) se quita en el mismo frame
+  // en que el width pasa a 0, asi que el panel anima lo que le falta desde
+  // donde lo dejo el mouse. $sidebarWidth no se toca: al reabrir vuelve al
+  // ultimo ancho util.
+  function startSidebarResize(event: PointerEvent) {
+    if (event.button !== 0 || !sidebar) return;
+    event.preventDefault();
+    const handle = event.currentTarget as HTMLElement;
+    handle.setPointerCapture(event.pointerId);
+    const left = sidebar.getBoundingClientRect().left;
+    dragWidth = $sidebarWidth;
+
+    function onMove(moveEvent: PointerEvent) {
+      dragWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(0, moveEvent.clientX - left));
+    }
+
+    function onUp() {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+      const release = releaseSidebarDrag(dragWidth ?? $sidebarWidth);
+      if (release.collapse) sidebarCollapsed = true;
+      else sidebarWidth.set(release.width);
+      dragWidth = null;
+    }
+
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  }
+
+  function onSidebarHandleKeydown(event: KeyboardEvent) {
+    const step = event.shiftKey ? 40 : 10;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      if ($sidebarWidth <= MIN_SIDEBAR_WIDTH) sidebarCollapsed = true;
+      else sidebarWidth.set(clampSidebarWidth($sidebarWidth - step));
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      sidebarWidth.set(clampSidebarWidth($sidebarWidth + step));
+    }
+  }
+
   onMount(() => {
     cleanupThemeEffects = initThemeEffects();
     document.addEventListener("keydown", handleGlobalKeydown);
@@ -69,23 +141,30 @@
   });
 </script>
 
-<div class="shell" class:with-sidebar={$connection.connected}>
-  <header class="topbar">
+<div class="shell" class:with-sidebar={$connection.connected} class:resizing-sidebar={dragWidth !== null}>
+  <!-- El color de la conexion activa tiñe la barra con un degradado que
+       nace a la izquierda y se desvanece, como la fila de la vista de lista
+       en la pantalla de conexiones. -->
+  <header
+    class="topbar"
+    class:tinted={$connection.connected && !!activeProfile?.color}
+    style:--identity={$connection.connected ? activeProfile?.color : undefined}
+  >
     {#if $connection.connected}
-      <button
-        class="icon-button"
-        type="button"
-        title={sidebarCollapsed ? "Mostrar panel de tablas" : "Ocultar panel de tablas"}
-        aria-label={sidebarCollapsed ? "Mostrar panel de tablas" : "Ocultar panel de tablas"}
-        aria-pressed={!sidebarCollapsed}
-        onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
-      >
-        {#if sidebarCollapsed}
+      <!-- Con el panel visible, ocultarlo vive en su propia barra
+           (SchemaTree); aca solo queda la forma de volver a abrirlo. -->
+      {#if sidebarCollapsed}
+        <button
+          class="icon-button"
+          type="button"
+          title={toggleSidebarKeys ? `Mostrar panel de tablas (${toggleSidebarKeys})` : "Mostrar panel de tablas"}
+          aria-label="Mostrar panel de tablas"
+          onclick={() => (sidebarCollapsed = false)}
+          in:fade={{ duration: 120 }}
+        >
           <PanelLeftOpen size={16} aria-hidden="true" />
-        {:else}
-          <PanelLeftClose size={16} aria-hidden="true" />
-        {/if}
-      </button>
+        </button>
+      {/if}
       <div class="connection-nav">
         <button
           class="icon-button"
@@ -148,14 +227,45 @@
   <aside
     class="sidebar"
     class:collapsed={sidebarCollapsed}
+    class:resizing={dragWidth !== null}
+    style:--sidebar-width={`${liveSidebarWidth}px`}
     aria-hidden={!$connection.connected || sidebarCollapsed}
+    bind:this={sidebar}
   >
     {#if $connection.connected}
-      <SchemaTree
-        tables={$catalogTables}
-        refreshing={refreshingTables}
-        onrefresh={handleRefreshTables}
-      />
+      <!-- El contenido no baja de MIN_SIDEBAR_WIDTH: al cerrar (o arrastrar
+           por debajo del minimo) se recorta en vez de reacomodarse, asi el
+           arbol se desliza fuera sin saltos de layout. -->
+      <div class="sidebar-content" style:width={`${Math.max(liveSidebarWidth, MIN_SIDEBAR_WIDTH)}px`}>
+        <SchemaTree
+          explorer={$databaseExplorer}
+          {connectionLabel}
+          refreshing={refreshingTables}
+          loadingSchemas={$explorerLoading}
+          hideShortcut={toggleSidebarKeys}
+          onrefresh={handleRefreshTables}
+          onhide={() => (sidebarCollapsed = true)}
+          onschemaschange={(schemas) => void setVisibleSchemas(schemas).catch(() => {})}
+        />
+      </div>
+      {#if !sidebarCollapsed}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+          class="sidebar-resize-handle"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Redimensionar panel de tablas"
+          aria-valuenow={$sidebarWidth}
+          aria-valuemin={MIN_SIDEBAR_WIDTH}
+          aria-valuemax={MAX_SIDEBAR_WIDTH}
+          tabindex="0"
+          title="Arrastra para cambiar el ancho · doble clic para restablecer"
+          onpointerdown={startSidebarResize}
+          ondblclick={() => sidebarWidth.set(DEFAULT_SIDEBAR_WIDTH)}
+          onkeydown={onSidebarHandleKeydown}
+        ></div>
+      {/if}
     {/if}
   </aside>
 
@@ -201,6 +311,7 @@
   }
 
   .topbar {
+    position: relative;
     grid-area: topbar;
     display: flex;
     align-items: center;
@@ -210,6 +321,61 @@
     padding: var(--space-1) var(--space-3);
     border-bottom: 1px solid var(--border);
     background: var(--topbar-background);
+  }
+
+  /* Degradado en un pseudo-elemento para que aparezca con un fundido al
+     conectar (los gradientes no se interpolan con transition).
+     - bottom: -1px lo extiende sobre el borde inferior de la barra: con
+       inset 0 el borde quedaba gris debajo del color y se leia como un
+       margen sin cubrir.
+     - Muchos puntos de paso con una caida tipo ease-out: con solo dos o
+       tres se nota donde termina el degradado. */
+  .topbar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 -1px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--identity, transparent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--identity, transparent) 19%, transparent) 8%,
+      color-mix(in srgb, var(--identity, transparent) 15%, transparent) 17%,
+      color-mix(in srgb, var(--identity, transparent) 11%, transparent) 27%,
+      color-mix(in srgb, var(--identity, transparent) 7%, transparent) 38%,
+      color-mix(in srgb, var(--identity, transparent) 4%, transparent) 50%,
+      color-mix(in srgb, var(--identity, transparent) 1.5%, transparent) 63%,
+      transparent 78%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+
+  .topbar.tinted::before {
+    opacity: 1;
+  }
+
+  /* Sobre la barra clara el mismo porcentaje de color satura mucho mas que
+     sobre la oscura: en claro el degradado va a ~60% de intensidad. */
+  :global(:root[data-scheme="light"]) .topbar::before {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--identity, transparent) 13%, transparent) 0%,
+      color-mix(in srgb, var(--identity, transparent) 11%, transparent) 8%,
+      color-mix(in srgb, var(--identity, transparent) 9%, transparent) 17%,
+      color-mix(in srgb, var(--identity, transparent) 6.5%, transparent) 27%,
+      color-mix(in srgb, var(--identity, transparent) 4%, transparent) 38%,
+      color-mix(in srgb, var(--identity, transparent) 2.5%, transparent) 50%,
+      color-mix(in srgb, var(--identity, transparent) 1%, transparent) 63%,
+      transparent 78%
+    );
+  }
+
+  :global(:root[data-scheme="light"]) .topbar.tinted .icon-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--identity) 7%, transparent);
+  }
+
+  .topbar > :global(*) {
+    position: relative;
   }
 
   .connection-nav {
@@ -241,8 +407,16 @@
 
   .icon-button:hover {
     color: var(--text-primary);
-    background: var(--surface-elevated);
+    background: var(--surface-hover);
     border-color: var(--border);
+  }
+
+  /* Sobre la barra teñida con el color de la conexion, el realce gris se
+     lee como un hueco: los botones toman un acento sutil del mismo color,
+     igual que el selector de conexion (ConnectionSwitcher). */
+  .topbar.tinted .icon-button:hover:not(:disabled) {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--identity) 10%, transparent);
   }
 
   .icon-button:focus-visible {
@@ -279,7 +453,7 @@
   }
 
   .window-controls button:hover {
-    background: var(--surface-elevated);
+    background: var(--surface-hover);
     color: var(--text-primary);
   }
 
@@ -295,24 +469,76 @@
   }
 
   .sidebar {
+    position: relative;
     grid-area: sidebar;
     overflow: hidden;
     min-width: 0;
     min-height: 0;
     border-right: 1px solid transparent;
     transition:
-      width var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
+      width var(--sidebar-duration) cubic-bezier(0.22, 1, 0.36, 1),
+      border-color var(--sidebar-duration) ease;
+    --sidebar-duration: calc(var(--duration-fast) * 1.6);
+  }
+
+  .sidebar.resizing {
+    transition: none;
   }
 
   .shell.with-sidebar .sidebar {
-    width: 220px;
+    width: var(--sidebar-width);
     border-right-color: var(--border);
   }
 
   .shell.with-sidebar .sidebar.collapsed {
     width: 0;
     border-right-color: transparent;
+  }
+
+  .sidebar-content {
+    height: 100%;
+  }
+
+  /* Zona de agarre sobre el borde derecho: mas ancha que la linea visible
+     para que sea facil de tomar; la linea de acento solo aparece al pasar
+     el mouse o mientras se arrastra. */
+  .sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .sidebar-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background-color var(--duration-fast) ease;
+  }
+
+  .sidebar-resize-handle:hover::after,
+  .sidebar.resizing .sidebar-resize-handle::after {
+    background: var(--accent);
+  }
+
+  .sidebar-resize-handle:focus-visible {
+    outline: none;
+  }
+
+  .sidebar-resize-handle:focus-visible::after {
+    background: var(--focus-ring);
+  }
+
+  .shell.resizing-sidebar {
+    cursor: col-resize;
+    user-select: none;
   }
 
   .main {

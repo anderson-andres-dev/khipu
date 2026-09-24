@@ -2,86 +2,248 @@ mod catalog_adapter;
 mod credentials;
 mod drivers;
 
-use khipu_driver_core::{ConnectionConfig, DbConnector, QueryExecutionOptions, QueryExecutionResult};
-use khipu_engine::catalog::{CatalogTable, SchemaCatalog};
-use khipu_engine::execution_guard::{classify_destructive_sql, DestructiveClassification, DestructiveStatement};
+use khipu_driver_core::{
+    ConnectionConfig, DbConnector, QueryExecutionOptions, QueryExecutionResult, SchemaObjects,
+    TlsStatus,
+};
 use khipu_engine::Dialect;
+use khipu_engine::catalog::CatalogTable;
+use khipu_engine::execution_guard::{
+    DestructiveClassification, DestructiveStatement, classify_destructive_sql,
+};
 use serde::Serialize;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
+use tauri::Manager;
 
 /// How many rows `execute_query` returns before reporting `truncated: true`.
 /// Not configurable from the frontend yet: accepting an arbitrary value from
 /// the WebView would let it opt out of the protection entirely.
 const DEFAULT_QUERY_ROW_LIMIT: usize = 500;
 
-/// The connector and catalog from the most recent successful `connect`, kept
-/// alive so `execute_query` has something to run statements against instead
-/// of the connection being dropped right after introspection.
+/// The connector from the most recent successful `connect` and every schema
+/// introspected through it, kept alive so `execute_query` and the database
+/// explorer have something to work against.
 struct ActiveConnection {
     connector: Arc<dyn DbConnector>,
-    catalog: SchemaCatalog,
     dialect: Dialect,
+    server_version: String,
+    tls: TlsStatus,
+    default_schema: String,
+    available_schemas: Vec<String>,
+    /// Schemas currently shown in the explorer. Always includes
+    /// `default_schema`; the others come and go via `set_visible_schemas`.
+    schemas: BTreeMap<String, SchemaObjects>,
 }
 
-#[derive(Default)]
-struct AppState {
-    active_connection: Mutex<Option<ActiveConnection>>,
+impl ActiveConnection {
+    fn explorer(&self) -> DatabaseExplorer {
+        // El schema por defecto primero, el resto en orden alfabetico.
+        let mut schemas: Vec<SchemaObjects> = Vec::with_capacity(self.schemas.len());
+        if let Some(default) = self.schemas.get(&self.default_schema) {
+            schemas.push(default.clone());
+        }
+        schemas.extend(
+            self.schemas
+                .values()
+                .filter(|objects| objects.schema != self.default_schema)
+                .cloned(),
+        );
+
+        DatabaseExplorer {
+            server_version: self.server_version.clone(),
+            tls: self.tls.clone(),
+            default_schema: self.default_schema.clone(),
+            available_schemas: self.available_schemas.clone(),
+            schemas,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(rename_all = "camelCase")]
+struct DatabaseExplorer {
+    server_version: String,
+    tls: TlsStatus,
+    default_schema: String,
+    available_schemas: Vec<String>,
+    schemas: Vec<SchemaObjects>,
+}
+
+/// One active connection per window, keyed by the window label: each window
+/// ("main", or a "connection-*" one opened from the connection switcher)
+/// works against its own database, so connecting in one never replaces the
+/// connection another window is using. A window's entry is dropped when the
+/// window is destroyed (see `run`).
+#[derive(Default)]
+struct AppState {
+    connections: Mutex<HashMap<String, ActiveConnection>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 enum ExecuteQueryResponse {
     ConfirmationRequired { statement: DestructiveStatement },
     Completed { result: QueryExecutionResult },
 }
 
+/// Tables and views of every loaded schema, for completion: adding a schema
+/// in the explorer also makes its tables completable.
 #[tauri::command]
-fn list_tables(state: tauri::State<'_, AppState>) -> Vec<CatalogTable> {
+fn list_tables(window: tauri::Window, state: tauri::State<'_, AppState>) -> Vec<CatalogTable> {
     state
-        .active_connection
+        .connections
         .lock()
-        .expect("active connection mutex poisoned")
-        .as_ref()
-        .map(|active| active.catalog.tables.clone())
+        .expect("connections mutex poisoned")
+        .get(window.label())
+        .map(|active| {
+            catalog_adapter::tables_to_catalog(
+                active
+                    .schemas
+                    .values()
+                    .flat_map(|objects| objects.tables.iter().cloned()),
+            )
+            .tables
+        })
         .unwrap_or_default()
+}
+
+#[tauri::command]
+fn database_explorer(
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Option<DatabaseExplorer> {
+    state
+        .connections
+        .lock()
+        .expect("connections mutex poisoned")
+        .get(window.label())
+        .map(ActiveConnection::explorer)
+}
+
+/// Makes `names` (plus the default schema, always) the schemas shown in the
+/// explorer: introspects the ones not loaded yet and drops the rest. Names
+/// the server doesn't list are ignored, so a stale selection saved in the
+/// frontend can't make it introspect arbitrary input.
+///
+/// A schema that fails to load is still added, empty, with the error in its
+/// `warnings`, instead of failing the whole selection.
+#[tauri::command]
+async fn set_visible_schemas(
+    names: Vec<String>,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<DatabaseExplorer, String> {
+    let (connector, wanted, missing) = {
+        let guard = state
+            .connections
+            .lock()
+            .expect("connections mutex poisoned");
+        let active = guard
+            .get(window.label())
+            .ok_or_else(|| "No hay ninguna conexión activa.".to_string())?;
+
+        let mut wanted: Vec<String> = names
+            .into_iter()
+            .filter(|name| active.available_schemas.contains(name))
+            .collect();
+        if !wanted.contains(&active.default_schema) {
+            wanted.push(active.default_schema.clone());
+        }
+        let missing: Vec<String> = wanted
+            .iter()
+            .filter(|name| !active.schemas.contains_key(*name))
+            .cloned()
+            .collect();
+        (Arc::clone(&active.connector), wanted, missing)
+    };
+
+    let mut loaded = Vec::with_capacity(missing.len());
+    for name in missing {
+        let objects = match connector.introspect_schema(&name).await {
+            Ok(objects) => objects,
+            Err(error) => {
+                let mut objects = SchemaObjects::new(&name);
+                objects
+                    .warnings
+                    .push(format!("No se pudo cargar el schema: {error}"));
+                objects
+            }
+        };
+        loaded.push(objects);
+    }
+
+    let mut guard = state
+        .connections
+        .lock()
+        .expect("connections mutex poisoned");
+    let active = guard
+        .get_mut(window.label())
+        .ok_or_else(|| "No hay ninguna conexión activa.".to_string())?;
+    // Si mientras se introspectaba se conecto a otra base, lo cargado es de
+    // la conexion anterior y no se mezcla con la nueva.
+    if !Arc::ptr_eq(&active.connector, &connector) {
+        return Err("La conexión cambió mientras se cargaban los schemas.".to_string());
+    }
+    active.schemas.retain(|name, _| wanted.contains(name));
+    for objects in loaded {
+        active.schemas.insert(objects.schema.clone(), objects);
+    }
+    Ok(active.explorer())
 }
 
 #[tauri::command]
 async fn connect(
     kind: drivers::DatabaseKind,
     config: ConnectionConfig,
+    window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<usize, String> {
     let connected = drivers::connect(kind, &config)
         .await
         .map_err(|e| e.to_string())?;
-    let catalog = catalog_adapter::tables_to_catalog(connected.tables);
-    let table_count = catalog.tables.len();
+    let table_count = connected.default_objects.tables.len();
+    let mut schemas = BTreeMap::new();
+    schemas.insert(connected.default_schema.clone(), connected.default_objects);
 
-    *state
-        .active_connection
+    state
+        .connections
         .lock()
-        .expect("active connection mutex poisoned") = Some(ActiveConnection {
-        connector: connected.connector,
-        catalog,
-        dialect: kind.dialect(),
-    });
+        .expect("connections mutex poisoned")
+        .insert(
+            window.label().to_string(),
+            ActiveConnection {
+                connector: connected.connector,
+                dialect: kind.dialect(),
+                server_version: connected.server_version,
+                tls: connected.tls,
+                default_schema: connected.default_schema,
+                available_schemas: connected.available_schemas,
+                schemas,
+            },
+        );
 
     Ok(table_count)
 }
 
 #[tauri::command]
-fn disconnect(state: tauri::State<'_, AppState>) {
-    *state
-        .active_connection
+fn disconnect(window: tauri::Window, state: tauri::State<'_, AppState>) {
+    state
+        .connections
         .lock()
-        .expect("active connection mutex poisoned") = None;
+        .expect("connections mutex poisoned")
+        .remove(window.label());
 }
 
 #[tauri::command]
 async fn execute_query(
     sql: String,
     confirmed_statement: Option<DestructiveStatement>,
+    window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<ExecuteQueryResponse, String> {
     let sql = sql.trim();
@@ -97,10 +259,10 @@ async fn execute_query(
 
     let (connector, dialect) = {
         let guard = state
-            .active_connection
+            .connections
             .lock()
-            .expect("active connection mutex poisoned");
-        match guard.as_ref() {
+            .expect("connections mutex poisoned");
+        match guard.get(window.label()) {
             Some(active) => (Arc::clone(&active.connector), active.dialect),
             None => {
                 return Ok(ExecuteQueryResponse::Completed {
@@ -161,14 +323,15 @@ async fn execute_query(
 async fn table_definition(
     schema: String,
     table: String,
+    window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let connector = {
         let guard = state
-            .active_connection
+            .connections
             .lock()
-            .expect("active connection mutex poisoned");
-        match guard.as_ref() {
+            .expect("connections mutex poisoned");
+        match guard.get(window.label()) {
             Some(active) => Arc::clone(&active.connector),
             None => return Err("No hay ninguna conexión activa.".to_string()),
         }
@@ -184,7 +347,7 @@ async fn table_definition(
 async fn test_connection(
     kind: drivers::DatabaseKind,
     config: ConnectionConfig,
-) -> Result<(), String> {
+) -> Result<drivers::TestConnectionReport, String> {
     drivers::test_connection(kind, &config)
         .await
         .map_err(|e| e.to_string())
@@ -209,8 +372,21 @@ async fn delete_connection_password(profile_id: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                if let Some(state) = window.try_state::<AppState>() {
+                    state
+                        .connections
+                        .lock()
+                        .expect("connections mutex poisoned")
+                        .remove(window.label());
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             list_tables,
+            database_explorer,
+            set_visible_schemas,
             connect,
             disconnect,
             execute_query,

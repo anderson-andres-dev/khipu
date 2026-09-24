@@ -208,7 +208,7 @@
     overflow: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: var(--surface);
+    background: var(--surface-content);
   }
 
   .placeholder,

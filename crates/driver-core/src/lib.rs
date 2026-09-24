@@ -1,15 +1,70 @@
+pub mod assembly;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 
+/// How a connection negotiates TLS. Chosen per connection profile.
+///
+/// `Auto` is the default because it connects to the widest range of
+/// servers: it asks for TLS, and if negotiation fails (e.g. MySQL 5.7 only
+/// offers DHE cipher suites, which rustls doesn't implement) it retries
+/// unencrypted and reports that through `TlsStatus::fell_back`, so the UI
+/// can say the connection isn't encrypted. Anyone who needs a guarantee
+/// picks `Required` or one of the verifying modes, which never fall back.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TlsMode {
+    #[default]
+    Auto,
+    /// TLS or fail; the certificate isn't validated.
+    Required,
+    /// TLS with a certificate signed by the given (or a well-known) CA.
+    VerifyCa,
+    /// `VerifyCa` plus the certificate must match the host name.
+    VerifyIdentity,
+    Disabled,
+}
+
+impl TlsMode {
+    pub fn verifies_certificate(self) -> bool {
+        matches!(self, TlsMode::VerifyCa | TlsMode::VerifyIdentity)
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConnectionConfig {
     pub host: String,
     pub port: u16,
     pub database: String,
     pub username: String,
     pub password: String,
+    /// Missing in profiles saved before TLS was configurable: those keep
+    /// working as `Auto`.
+    #[serde(default)]
+    pub tls_mode: TlsMode,
+    /// PEM file with the CA to verify the server certificate against. Without
+    /// it, the verifying modes use the Mozilla root set (webpki-roots), which
+    /// doesn't include private CAs such as AWS RDS's or Azure's.
+    #[serde(default)]
+    pub ca_certificate_path: Option<String>,
+}
+
+/// What TLS a connection actually ended up with, measured on the server
+/// right after connecting.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TlsStatus {
+    /// `None` when the server couldn't be asked (missing privileges on the
+    /// status views): unknown, not assumed either way.
+    pub encrypted: Option<bool>,
+    /// Protocol and cipher, e.g. `"TLSv1.3 · TLS_AES_256_GCM_SHA384"`.
+    pub detail: Option<String>,
+    /// TLS was attempted (`TlsMode::Auto`), failed to negotiate, and the
+    /// connection was re-established unencrypted.
+    pub fell_back: bool,
 }
 
 impl std::fmt::Debug for ConnectionConfig {
@@ -20,11 +75,14 @@ impl std::fmt::Debug for ConnectionConfig {
             .field("database", &self.database)
             .field("username", &self.username)
             .field("password", &"***")
+            .field("tls_mode", &self.tls_mode)
+            .field("ca_certificate_path", &self.ca_certificate_path)
             .finish()
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ColumnInfo {
     pub name: String,
     pub data_type: String,
@@ -33,19 +91,167 @@ pub struct ColumnInfo {
     pub comment: Option<String>,
 }
 
+/// One column of a foreign key. A multi-column constraint yields one entry
+/// per column, all sharing `name`: completion wants the per-column pairs,
+/// the database explorer groups them back by `name`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ForeignKeyInfo {
+    pub name: String,
     pub column: String,
     pub referenced_table: String,
     pub referenced_column: String,
 }
 
+/// What kind of relation a `TableInfo` is. Views are listed alongside tables
+/// because both have columns and can be queried (completion wants both), but
+/// the database explorer shows them under separate folders.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RelationKind {
+    Table,
+    View,
+    MaterializedView,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TableInfo {
     pub schema: String,
     pub name: String,
+    pub kind: RelationKind,
+    pub comment: Option<String>,
     pub columns: Vec<ColumnInfo>,
     pub foreign_keys: Vec<ForeignKeyInfo>,
+    pub keys: Vec<KeyInfo>,
+    pub indexes: Vec<IndexInfo>,
+    pub triggers: Vec<TriggerInfo>,
+    pub checks: Vec<CheckInfo>,
+}
+
+impl TableInfo {
+    /// A relation with no columns or constraints yet; drivers fill it in as
+    /// they read each category of the catalog.
+    pub fn new(schema: &str, name: String, kind: RelationKind, comment: Option<String>) -> Self {
+        Self {
+            schema: schema.to_string(),
+            name,
+            kind,
+            comment,
+            columns: Vec::new(),
+            foreign_keys: Vec::new(),
+            keys: Vec::new(),
+            indexes: Vec::new(),
+            triggers: Vec::new(),
+            checks: Vec::new(),
+        }
+    }
+}
+
+/// A primary key or unique constraint.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyInfo {
+    pub name: String,
+    pub columns: Vec<String>,
+    pub primary: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexInfo {
+    pub name: String,
+    /// Column names, or the expression text for expression indexes.
+    pub columns: Vec<String>,
+    pub unique: bool,
+    pub primary: bool,
+    /// Access method as the engine names it (`BTREE`, `HASH`, `gin`, ...).
+    pub method: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TriggerInfo {
+    pub name: String,
+    /// `BEFORE`, `AFTER` or `INSTEAD OF`.
+    pub timing: String,
+    /// `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE` — more than one on Postgres.
+    pub events: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CheckInfo {
+    pub name: String,
+    pub expression: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RoutineKind {
+    Procedure,
+    Function,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoutineInfo {
+    pub name: String,
+    pub kind: RoutineKind,
+    /// The parameter list as it would appear in a signature, without the
+    /// surrounding parentheses (`"p_id int, OUT p_total decimal"`).
+    pub arguments: String,
+    /// `None` for procedures.
+    pub return_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SequenceInfo {
+    pub name: String,
+    pub data_type: Option<String>,
+}
+
+/// A scheduled event (MySQL/MariaDB only).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EventInfo {
+    pub name: String,
+    /// `ENABLED`, `DISABLED` or `SLAVESIDE_DISABLED`, as the server reports it.
+    pub status: String,
+    /// Human-readable schedule: `"EVERY 1 DAY"` or `"AT 2026-01-01 00:00:00"`.
+    pub schedule: String,
+}
+
+/// Everything the database explorer shows for one schema.
+///
+/// Introspection is best effort past the relations themselves: if a
+/// secondary category (triggers, routines, events, checks...) can't be read
+/// — missing privileges, a server version without that catalog view — that
+/// category stays empty and a human-readable note goes to `warnings`,
+/// instead of the whole schema failing to load.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SchemaObjects {
+    pub schema: String,
+    pub tables: Vec<TableInfo>,
+    pub routines: Vec<RoutineInfo>,
+    pub sequences: Vec<SequenceInfo>,
+    pub events: Vec<EventInfo>,
+    pub warnings: Vec<String>,
+}
+
+impl SchemaObjects {
+    pub fn new(schema: &str) -> Self {
+        Self {
+            schema: schema.to_string(),
+            tables: Vec::new(),
+            routines: Vec::new(),
+            sequences: Vec::new(),
+            events: Vec::new(),
+            warnings: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -91,7 +297,11 @@ pub type QueryRow = Vec<QueryValue>;
 /// because the caller (the result panel) renders it as normal output, not as
 /// a transport failure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum QueryExecutionResult {
     ResultSet {
         columns: Vec<QueryColumn>,
@@ -126,9 +336,28 @@ pub trait DbConnector: Send + Sync {
     where
         Self: Sized;
 
+    /// Server product and version as detected on connect, for display
+    /// (`"MySQL 8.0.35"`, `"MariaDB 10.6.12"`, `"PostgreSQL 16.2"`).
+    fn server_version(&self) -> String;
+
+    /// TLS negotiated on connect (see `TlsStatus`).
+    fn tls_status(&self) -> TlsStatus;
+
     async fn list_schemas(&self) -> Result<Vec<String>, DriverError>;
 
-    async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError>;
+    /// The schema unqualified names resolve against for this connection:
+    /// the database of the profile on MySQL, `current_schema()` on Postgres.
+    async fn current_schema(&self) -> Result<String, DriverError>;
+
+    /// Every object the database explorer shows for `schema`. Fails only if
+    /// the relations themselves can't be listed; see `SchemaObjects` for how
+    /// secondary categories degrade.
+    async fn introspect_schema(&self, schema: &str) -> Result<SchemaObjects, DriverError>;
+
+    /// Tables and views of `schema` with their columns and constraints.
+    async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError> {
+        Ok(self.introspect_schema(schema).await?.tables)
+    }
 
     /// The DDL text for one table, fetched live from the engine (`SHOW
     /// CREATE TABLE` on MySQL; reconstructed from `pg_catalog` on Postgres,
@@ -164,6 +393,52 @@ mod tests {
     use super::*;
 
     #[test]
+    fn table_info_serializes_to_camel_case() {
+        let mut table = TableInfo::new(
+            "core",
+            "orders".to_string(),
+            RelationKind::MaterializedView,
+            None,
+        );
+        table.foreign_keys.push(ForeignKeyInfo {
+            name: "fk_orders_user".to_string(),
+            column: "user_id".to_string(),
+            referenced_table: "users".to_string(),
+            referenced_column: "id".to_string(),
+        });
+
+        let value = serde_json::to_value(&table).unwrap();
+
+        assert_eq!(value["kind"], "materializedView");
+        assert_eq!(value["foreignKeys"][0]["referencedTable"], "users");
+        assert!(value["keys"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn config_without_tls_fields_defaults_to_auto() {
+        let config: ConnectionConfig = serde_json::from_value(serde_json::json!({
+            "host": "db", "port": 3306, "database": "core", "username": "u", "password": "p"
+        }))
+        .unwrap();
+
+        assert_eq!(config.tls_mode, TlsMode::Auto);
+        assert_eq!(config.ca_certificate_path, None);
+    }
+
+    #[test]
+    fn config_reads_camel_case_tls_fields() {
+        let config: ConnectionConfig = serde_json::from_value(serde_json::json!({
+            "host": "db", "port": 3306, "database": "core", "username": "u", "password": "p",
+            "tlsMode": "verifyIdentity", "caCertificatePath": "/etc/ca.pem"
+        }))
+        .unwrap();
+
+        assert_eq!(config.tls_mode, TlsMode::VerifyIdentity);
+        assert!(config.tls_mode.verifies_certificate());
+        assert_eq!(config.ca_certificate_path.as_deref(), Some("/etc/ca.pem"));
+    }
+
+    #[test]
     fn debug_output_redacts_password() {
         let config = ConnectionConfig {
             host: "db.example.com".to_string(),
@@ -171,6 +446,8 @@ mod tests {
             database: "mydb".to_string(),
             username: "myuser".to_string(),
             password: "supersecreto123".to_string(),
+            tls_mode: TlsMode::Auto,
+            ca_certificate_path: None,
         };
 
         let debug_output = format!("{config:?}");
@@ -190,10 +467,7 @@ mod tests {
 
         let value = serde_json::to_value(&column).unwrap();
 
-        assert_eq!(
-            value,
-            serde_json::json!({ "name": "id", "type": "int4" })
-        );
+        assert_eq!(value, serde_json::json!({ "name": "id", "type": "int4" }));
     }
 
     #[test]

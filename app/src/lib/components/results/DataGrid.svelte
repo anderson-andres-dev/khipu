@@ -922,13 +922,13 @@
   .scrollbar-thumb {
     position: absolute;
     z-index: 4;
-    background: color-mix(in srgb, var(--control-border) 65%, transparent);
+    background: var(--scrollbar-thumb);
     border-radius: var(--radius-sm);
     cursor: pointer;
   }
 
   .scrollbar-thumb:hover {
-    background: var(--text-secondary);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .scrollbar-thumb.vertical {
@@ -969,7 +969,7 @@
     box-sizing: border-box;
     padding: 0 var(--space-2);
     height: var(--row-height);
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--grid-line);
     white-space: nowrap;
     text-align: left;
     /* Evita que arrastrar para seleccionar celdas dispare ademas la
@@ -1031,7 +1031,7 @@
      metaforo "llave"); el accent de la app para FK, para que se lea como
      "tambien es una clave, pero de otro tipo" sin confundirse con la PK. */
   .column-header :global(.column-type-icon.pk) {
-    color: #e8b339;
+    color: var(--key-primary);
   }
 
   .column-header :global(.column-type-icon.fk) {
@@ -1055,7 +1055,7 @@
   }
 
   .grid-body-table :global(td) {
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--grid-line);
     color: var(--text-primary);
     cursor: default;
     outline: none;

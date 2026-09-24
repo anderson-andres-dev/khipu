@@ -3,9 +3,9 @@
 //! nothing about execution, Tauri or SQLx: it only looks at the parsed AST.
 
 use crate::Dialect;
+use serde::{Deserialize, Serialize};
 use sqlparser::ast::{AlterTableOperation, ObjectType, Query, SetExpr, Statement};
 use sqlparser::parser::{Parser, ParserError};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -208,7 +208,11 @@ mod tests {
 
     #[test]
     fn truncate_requires_confirmation() {
-        requires("TRUNCATE users", Dialect::Postgres, DestructiveStatement::Truncate);
+        requires(
+            "TRUNCATE users",
+            Dialect::Postgres,
+            DestructiveStatement::Truncate,
+        );
         requires(
             "TRUNCATE TABLE users",
             Dialect::Postgres,
@@ -355,7 +359,10 @@ mod tests {
 
     #[test]
     fn add_column_insert_create_select_are_not_destructive() {
-        not_destructive("ALTER TABLE users ADD COLUMN enabled boolean", Dialect::Postgres);
+        not_destructive(
+            "ALTER TABLE users ADD COLUMN enabled boolean",
+            Dialect::Postgres,
+        );
         not_destructive("INSERT INTO users (id) VALUES (1)", Dialect::Postgres);
         not_destructive("CREATE TABLE users (id INT)", Dialect::Postgres);
         not_destructive("SELECT 1", Dialect::Postgres);
@@ -379,10 +386,12 @@ mod tests {
             classify_destructive_sql("DELETE FROM users; DELETE FROM orders", Dialect::Postgres)
                 .is_err()
         );
-        assert!(classify_destructive_sql(
-            "DELETE FROM users; /* comentario */ DELETE FROM orders",
-            Dialect::Postgres
-        )
-        .is_err());
+        assert!(
+            classify_destructive_sql(
+                "DELETE FROM users; /* comentario */ DELETE FROM orders",
+                Dialect::Postgres
+            )
+            .is_err()
+        );
     }
 }

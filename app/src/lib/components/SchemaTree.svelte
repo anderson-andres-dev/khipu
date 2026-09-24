@@ -1,80 +1,355 @@
 <script lang="ts">
-  import { RefreshCw, Search, Table, X } from "@lucide/svelte";
-  import type { CatalogTable } from "$lib/types";
+  import {
+    CalendarClock,
+    Check,
+    ChevronDown,
+    ChevronRight,
+    ChevronsDownUp,
+    ChevronsUpDown,
+    CircleCheck,
+    Columns2,
+    Database,
+    Eye,
+    Folder,
+    Grid2x2,
+    Key,
+    Layers,
+    ListOrdered,
+    ListTree,
+    LoaderCircle,
+    LockOpen,
+    Minus,
+    RefreshCw,
+    Search,
+    SquareCode,
+    SquareFunction,
+    Table,
+    TriangleAlert,
+    X,
+    Zap,
+  } from "@lucide/svelte";
+  import { buildExplorerTree, expandableKeys, type ExplorerIcon, type ExplorerNode } from "$lib/explorerTree";
+  import type { DatabaseExplorer } from "$lib/types";
 
   let {
-    tables,
+    explorer,
+    connectionLabel,
     refreshing = false,
+    loadingSchemas = false,
+    hideShortcut = "",
     onrefresh,
+    onhide,
+    onschemaschange,
   }: {
-    tables: CatalogTable[];
+    explorer: DatabaseExplorer | null;
+    // "schema@host", la misma etiqueta de origen que usa Workspace.svelte.
+    connectionLabel: string;
     refreshing?: boolean;
+    loadingSchemas?: boolean;
+    hideShortcut?: string;
     onrefresh: () => void;
+    onhide: () => void;
+    // Schemas extra a mostrar (el por defecto se incluye siempre).
+    onschemaschange: (schemas: string[]) => void;
   } = $props();
 
-  let filter = $state("");
+  type IconComponent = typeof Table;
 
-  const groups = $derived.by(() => {
-    const query = filter.trim().toLowerCase();
-    const bySchema = new Map<string, CatalogTable[]>();
-    for (const table of tables) {
-      if (query && !table.name.toLowerCase().includes(query)) continue;
-      const list = bySchema.get(table.schema) ?? [];
-      list.push(table);
-      bySchema.set(table.schema, list);
-    }
-    return [...bySchema.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const ICONS: Record<ExplorerIcon, IconComponent> = {
+    schema: Grid2x2,
+    folder: Folder,
+    table: Table,
+    view: Eye,
+    materializedView: Layers,
+    column: Columns2,
+    // Misma forma (Key) para PK, unique y FK, como en el header del grid de
+    // resultados: la diferencia es el color (ver estilos .icon-*).
+    columnPrimaryKey: Key,
+    key: Key,
+    primaryKey: Key,
+    foreignKey: Key,
+    index: ListTree,
+    trigger: Zap,
+    check: CircleCheck,
+    procedure: SquareCode,
+    function: SquareFunction,
+    sequence: ListOrdered,
+    event: CalendarClock,
+  };
+
+  const CONNECTION_KEY = "connection";
+
+  let filter = $state("");
+  // Estado explicito de cada nodo que el usuario abrio o cerro; lo que no
+  // esta aca usa el default del nodo (defaultOpen, u openOnFilter con un
+  // filtro activo). Sobrevive a recargas del arbol porque las claves son
+  // estables (ver ExplorerNode.key).
+  let expanded = $state(new Map<string, boolean>());
+  let schemaPickerOpen = $state(false);
+  let schemaPicker = $state<HTMLElement>();
+
+  const filtering = $derived(filter.trim() !== "");
+  // Solo se avisa cuando se sabe que NO esta cifrada: el caso cifrado no
+  // agrega ruido al arbol (el detalle va en el tooltip de la conexion), y
+  // "desconocido" no es motivo de alarma.
+  const unencrypted = $derived(explorer?.tls.encrypted === false);
+  const connectionTitle = $derived.by(() => {
+    if (!explorer) return connectionLabel;
+    const tls =
+      explorer.tls.encrypted === true
+        ? `TLS: ${explorer.tls.detail ?? "cifrada"}`
+        : explorer.tls.encrypted === false
+          ? "Sin cifrar"
+          : "TLS: desconocido";
+    return `${connectionLabel}\n${explorer.serverVersion} · ${tls}`;
   });
+  const nodes = $derived(explorer ? buildExplorerTree(explorer, filter) : []);
+  const visibleSchemas = $derived(new Set(explorer?.schemas.map((objects) => objects.schema) ?? []));
+
+  function isOpen(node: ExplorerNode): boolean {
+    const explicit = expanded.get(node.key);
+    if (explicit !== undefined) return explicit;
+    return filtering ? !!node.openOnFilter : !!node.defaultOpen;
+  }
+
+  function isConnectionOpen(): boolean {
+    return expanded.get(CONNECTION_KEY) ?? true;
+  }
+
+  function toggle(key: string, open: boolean) {
+    const next = new Map(expanded);
+    next.set(key, !open);
+    expanded = next;
+  }
+
+  // Un solo boton alterna entre colapsar y expandir. "Expandir" llega hasta
+  // las carpetas por tipo (tables, views...) sin abrir el interior de cada
+  // tabla, que con cientos de tablas seria ilegible.
+  const anyOpen = $derived(
+    isConnectionOpen() && nodes.some((node) => isOpen(node) && node.children?.some((child) => isOpen(child))),
+  );
+
+  function collapseAll() {
+    filter = "";
+    const next = new Map<string, boolean>([[CONNECTION_KEY, false]]);
+    for (const key of expandableKeys(nodes)) next.set(key, false);
+    expanded = next;
+  }
+
+  function expandAll() {
+    const next = new Map<string, boolean>([[CONNECTION_KEY, true]]);
+    for (const key of expandableKeys(nodes, 1)) next.set(key, true);
+    expanded = next;
+  }
+
+  function toggleSchema(schema: string) {
+    if (!explorer || schema === explorer.defaultSchema) return;
+    const extra = explorer.schemas
+      .map((objects) => objects.schema)
+      .filter((name) => name !== explorer.defaultSchema && name !== schema);
+    if (!visibleSchemas.has(schema)) extra.push(schema);
+    onschemaschange(extra);
+  }
+
+  function closeSchemaPickerOnOutsideClick(event: PointerEvent) {
+    if (schemaPickerOpen && schemaPicker && !schemaPicker.contains(event.target as Node)) {
+      schemaPickerOpen = false;
+    }
+  }
 </script>
 
+<svelte:window onpointerdown={closeSchemaPickerOnOutsideClick} />
+
+{#snippet chevron(open: boolean)}
+  <ChevronRight size={14} class={open ? "chevron open" : "chevron"} aria-hidden="true" />
+{/snippet}
+
+{#snippet treeNode(node: ExplorerNode, depth: number)}
+  {@const Icon = ICONS[node.icon]}
+  {@const hasChildren = !!node.children && node.children.length > 0}
+  {@const open = hasChildren && isOpen(node)}
+  <li role="treeitem" aria-expanded={hasChildren ? open : undefined} aria-selected="false">
+    {#if hasChildren}
+      <button
+        type="button"
+        class="row"
+        style:--depth={depth}
+        title={node.title ?? (node.detail ? `${node.label} ${node.detail}` : node.label)}
+        onclick={() => toggle(node.key, open)}
+      >
+        {@render chevron(open)}
+        {@render nodeContent(node, Icon)}
+      </button>
+    {:else}
+      <div
+        class="row leaf"
+        style:--depth={depth}
+        title={node.title ?? (node.detail ? `${node.label} ${node.detail}` : node.label)}
+      >
+        {@render nodeContent(node, Icon)}
+      </div>
+    {/if}
+
+    {#if open}
+      <ul role="group">
+        {#each node.children ?? [] as child (child.key)}
+          {@render treeNode(child, depth + 1)}
+        {/each}
+      </ul>
+    {/if}
+  </li>
+{/snippet}
+
+{#snippet nodeContent(node: ExplorerNode, Icon: IconComponent)}
+  <Icon size={node.icon === "folder" ? 14 : 13} class={`node-icon icon-${node.icon}`} aria-hidden="true" />
+  <span class="label">{node.label}</span>
+  {#if node.count !== undefined}
+    <span class="count">{node.count}</span>
+  {/if}
+  {#if node.detail}
+    <span class="detail">{node.detail}</span>
+  {/if}
+  {#if node.warnings}
+    <span class="warning" title={node.warnings.join("\n")}>
+      <TriangleAlert size={12} aria-label="Avisos al cargar el schema" />
+    </span>
+  {/if}
+{/snippet}
+
 <div class="schema-tree">
-  <div class="toolbar">
-    <div class="filter">
-      <Search size={13} class="filter-icon" aria-hidden="true" />
-      <input
-        type="text"
-        placeholder="Filtrar tablas..."
-        aria-label="Filtrar tablas"
-        bind:value={filter}
-      />
-      {#if filter}
-        <button type="button" class="clear-filter" aria-label="Limpiar filtro" onclick={() => (filter = "")}>
-          <X size={12} aria-hidden="true" />
-        </button>
-      {/if}
+  <header class="explorer-header">
+    <span class="explorer-title">Explorador</span>
+    <div class="explorer-actions">
+      <button
+        type="button"
+        class="action"
+        title={anyOpen ? "Colapsar todo" : "Expandir todo"}
+        aria-label={anyOpen ? "Colapsar todo" : "Expandir todo"}
+        onclick={() => (anyOpen ? collapseAll() : expandAll())}
+      >
+        {#if anyOpen}
+          <ChevronsDownUp size={14} aria-hidden="true" />
+        {:else}
+          <ChevronsUpDown size={14} aria-hidden="true" />
+        {/if}
+      </button>
+      <button
+        type="button"
+        class="action"
+        class:spinning={refreshing}
+        title="Recargar"
+        aria-label="Recargar objetos de la base de datos"
+        disabled={refreshing}
+        onclick={onrefresh}
+      >
+        <RefreshCw size={13} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="action"
+        title={hideShortcut ? `Ocultar (${hideShortcut})` : "Ocultar"}
+        aria-label="Ocultar panel de tablas"
+        onclick={onhide}
+      >
+        <Minus size={14} aria-hidden="true" />
+      </button>
     </div>
-    <button
-      type="button"
-      class="refresh-button"
-      class:spinning={refreshing}
-      aria-label="Recargar tablas"
-      title="Recargar tablas"
-      disabled={refreshing}
-      onclick={onrefresh}
-    >
-      <RefreshCw size={13} aria-hidden="true" />
-    </button>
+  </header>
+
+  <div class="filter">
+    <Search size={13} class="filter-icon" aria-hidden="true" />
+    <input type="text" placeholder="Filtrar objetos..." aria-label="Filtrar objetos" bind:value={filter} />
+    {#if filter}
+      <button type="button" class="clear-filter" aria-label="Limpiar filtro" onclick={() => (filter = "")}>
+        <X size={12} aria-hidden="true" />
+      </button>
+    {/if}
   </div>
 
-  <nav class="tree-scroll" aria-label="Tablas de la base de datos">
-    {#each groups as [schema, schemaTables] (schema)}
-      <details open>
-        <summary>
-          <span class="schema-name">{schema}</span>
-          <span class="count">{schemaTables.length}</span>
-        </summary>
-        <ul>
-          {#each schemaTables as table (table.name)}
-            <li title={table.name}>
-              <Table size={13} class="table-icon" aria-hidden="true" />
-              <span class="table-name">{table.name}</span>
-            </li>
-          {/each}
-        </ul>
-      </details>
-    {:else}
-      <p class="empty">{filter ? "Sin coincidencias." : "Sin tablas."}</p>
-    {/each}
+  <nav class="tree-scroll" aria-label="Objetos de la base de datos">
+    <ul class="tree" role="tree">
+      <li role="treeitem" aria-expanded={isConnectionOpen()} aria-selected="false">
+        <div class="connection-row">
+          <button
+            type="button"
+            class="row"
+            style:--depth={0}
+            title={connectionTitle}
+            onclick={() => toggle(CONNECTION_KEY, isConnectionOpen())}
+          >
+            {@render chevron(isConnectionOpen())}
+            <Database size={14} class="node-icon icon-connection" aria-hidden="true" />
+            <span class="label strong">{connectionLabel}</span>
+            {#if unencrypted}
+              <span
+                class="warning"
+                title={explorer?.tls.fellBack
+                  ? "Conexión sin cifrar: el servidor ofrece TLS con un cifrado que Khipu no admite. Usa SSL «Requerido» en la conexión para que falle en vez de conectar así."
+                  : "Conexión sin cifrar: el servidor no tiene TLS habilitado."}
+              >
+                <LockOpen size={12} aria-label="Conexión sin cifrar" />
+              </span>
+            {/if}
+          </button>
+
+          {#if explorer && explorer.availableSchemas.length > 1}
+            <div class="schema-picker" bind:this={schemaPicker}>
+              <button
+                type="button"
+                class="schema-count"
+                aria-haspopup="true"
+                aria-expanded={schemaPickerOpen}
+                title="Elegir schemas visibles"
+                onclick={() => (schemaPickerOpen = !schemaPickerOpen)}
+              >
+                {#if loadingSchemas}
+                  <LoaderCircle size={11} class="spin" aria-label="Cargando schemas" />
+                {/if}
+                {visibleSchemas.size} de {explorer.availableSchemas.length}
+                <ChevronDown size={11} aria-hidden="true" />
+              </button>
+
+              {#if schemaPickerOpen}
+                <div class="schema-menu" role="menu" aria-label="Schemas visibles">
+                  {#each explorer.availableSchemas as schema (schema)}
+                    {@const isDefault = schema === explorer.defaultSchema}
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={visibleSchemas.has(schema)}
+                      class="schema-option"
+                      disabled={isDefault || loadingSchemas}
+                      title={isDefault ? "Schema de la conexión: siempre visible" : undefined}
+                      onclick={() => toggleSchema(schema)}
+                    >
+                      <span class="checkbox" class:checked={visibleSchemas.has(schema)}>
+                        {#if visibleSchemas.has(schema)}
+                          <Check size={11} aria-hidden="true" />
+                        {/if}
+                      </span>
+                      <span class="label">{schema}</span>
+                      {#if isDefault}
+                        <span class="detail">por defecto</span>
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+
+        {#if isConnectionOpen()}
+          <ul role="group">
+            {#each nodes as node (node.key)}
+              {@render treeNode(node, 1)}
+            {:else}
+              <li class="empty">{filtering ? "Sin coincidencias." : "Sin objetos."}</li>
+            {/each}
+          </ul>
+        {/if}
+      </li>
+    </ul>
   </nav>
 </div>
 
@@ -86,24 +361,100 @@
     font-size: 0.8rem;
   }
 
-  .toolbar {
+  /* Barra de titulo al estilo "Database Explorer": las acciones solo se ven
+     con el cursor sobre el panel (o con foco dentro, para teclado), asi el
+     sidebar queda limpio mientras no se usa. */
+  .explorer-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2);
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-height: 2rem;
+    padding: 0 var(--space-2) 0 var(--space-3);
+  }
+
+  .explorer-title {
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .explorer-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .schema-tree:hover .explorer-actions,
+  .explorer-actions:focus-within {
+    opacity: 1;
+  }
+
+  .action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color var(--duration-fast),
+      background-color var(--duration-fast);
+  }
+
+  .action:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .action:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .action:disabled {
+    cursor: not-allowed;
+  }
+
+  .action.spinning :global(svg),
+  :global(.spin) {
+    animation: explorer-spin 0.7s linear infinite;
+  }
+
+  @keyframes explorer-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .action.spinning :global(svg),
+    :global(.spin) {
+      animation: none;
+    }
   }
 
   .filter {
     position: relative;
-    min-width: 0;
-    flex: 1;
+    flex-shrink: 0;
+    padding: 0 var(--space-2) var(--space-2);
   }
 
   .filter :global(.filter-icon) {
     position: absolute;
-    top: 50%;
-    left: var(--space-2);
+    top: calc(50% - var(--space-2) / 2);
+    left: calc(var(--space-2) * 2);
     color: var(--text-secondary);
     transform: translateY(-50%);
   }
@@ -129,8 +480,8 @@
 
   .clear-filter {
     position: absolute;
-    top: 50%;
-    right: calc(var(--space-2) + 2px);
+    top: calc(50% - var(--space-2) / 2);
+    right: calc(var(--space-2) * 2 + 2px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -147,131 +498,230 @@
     color: var(--text-primary);
   }
 
-  .refresh-button {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    min-height: 1.75rem;
-    width: 1.75rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition:
-      color var(--duration-fast),
-      background-color var(--duration-fast),
-      border-color var(--duration-fast);
-  }
-
-  .refresh-button:hover:not(:disabled) {
-    color: var(--text-primary);
-    border-color: var(--control-border);
-  }
-
-  .refresh-button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
-  }
-
-  .refresh-button:disabled {
-    cursor: not-allowed;
-  }
-
-  .refresh-button.spinning :global(svg) {
-    animation: refresh-spin 0.7s linear infinite;
-  }
-
-  @keyframes refresh-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .refresh-button.spinning :global(svg) {
-      animation: none;
-    }
-  }
-
   .tree-scroll {
     overflow-y: auto;
     min-height: 0;
-    padding: 0 var(--space-2) var(--space-2);
+    padding: 0 var(--space-1) var(--space-2);
     box-sizing: border-box;
-  }
-
-  summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
-  }
-
-  summary::-webkit-details-marker {
-    display: none;
-  }
-
-  summary:hover {
-    background: var(--surface-elevated);
-  }
-
-  .schema-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .count {
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    font-size: 0.7rem;
   }
 
   ul {
     list-style: none;
     margin: 0;
-    padding: 0 0 0 var(--space-2);
+    padding: 0;
   }
 
-  li {
+  /* Cada nivel indenta 16px; las hojas no tienen chevron, asi que suman su
+     ancho para quedar alineadas con el texto de sus hermanas con hijos. */
+  .row {
+    --indent: 16px;
     display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     align-items: center;
-    gap: var(--space-1);
-    padding: 0.2rem var(--space-2);
+    gap: 5px;
+    min-height: 1.5rem;
+    padding: 0 var(--space-2) 0 calc(var(--space-1) + var(--depth) * var(--indent));
+    border: 0;
     border-radius: var(--radius-sm);
+    background: transparent;
     color: var(--text-primary);
+    font: inherit;
+    text-align: left;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    cursor: default;
   }
 
-  li:hover {
-    background: var(--surface-elevated);
+  button.row {
+    cursor: pointer;
   }
 
-  li :global(.table-icon) {
+  .row:hover {
+    background: var(--surface-hover);
+  }
+
+  .row:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .row.leaf {
+    padding-left: calc(var(--space-1) + var(--depth) * var(--indent) + 19px);
+  }
+
+  .row :global(.chevron) {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    transition: transform var(--duration-fast) ease;
+  }
+
+  .row :global(.chevron.open) {
+    transform: rotate(90deg);
+  }
+
+  .row :global(.node-icon) {
     flex-shrink: 0;
     color: var(--text-secondary);
   }
 
-  .table-name {
+  .row :global(.icon-connection),
+  .row :global(.icon-folder),
+  .row :global(.icon-foreignKey) {
+    color: var(--accent);
+  }
+
+  /* Mismo token (--key-primary) que la PK en el header del grid de
+     resultados (DataGrid.svelte) y en el autocompletado (sqlEditorIcons.css). */
+  .row :global(.icon-primaryKey),
+  .row :global(.icon-columnPrimaryKey) {
+    color: var(--key-primary);
+  }
+
+  .label {
+    flex-shrink: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .empty {
+  .label.strong {
+    font-weight: 600;
+  }
+
+  .count,
+  .detail {
     color: var(--text-secondary);
-    padding: var(--space-2);
+    font-size: 0.7rem;
+  }
+
+  .count {
+    flex-shrink: 0;
+  }
+
+  .detail {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .warning {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--warning);
+  }
+
+  .connection-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .connection-row > .row {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .schema-picker {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  .schema-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-right: var(--space-1);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color var(--duration-fast),
+      border-color var(--duration-fast);
+  }
+
+  .schema-count:hover {
+    border-color: var(--control-border);
+    color: var(--text-primary);
+  }
+
+  .schema-count:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  .schema-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 2px);
+    right: var(--space-1);
+    left: var(--space-2);
+    overflow-y: auto;
+    max-height: 18rem;
+    padding: var(--space-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .schema-option {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 3px var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .schema-option:hover:not(:disabled) {
+    background: var(--surface);
+  }
+
+  .schema-option:disabled {
+    cursor: default;
+  }
+
+  .schema-option:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .checkbox {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--control-border);
+    border-radius: 3px;
+    color: var(--text-on-accent);
+  }
+
+  .checkbox.checked {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .schema-option:disabled .checkbox.checked {
+    opacity: 0.6;
+  }
+
+  .empty {
+    padding: var(--space-2) var(--space-2) var(--space-2) calc(var(--space-1) + 2 * 16px);
+    color: var(--text-secondary);
   }
 </style>

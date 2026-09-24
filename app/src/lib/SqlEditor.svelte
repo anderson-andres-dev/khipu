@@ -25,8 +25,16 @@
   import { editorSettings } from "$lib/stores/editorSettings";
   import { formatSqlBlock } from "$lib/sqlFormatter";
   import { activeStatementHighlight, autoUppercaseSqlKeywords } from "$lib/sqlEditorBehavior";
+  import {
+    executionMarker,
+    executionMarkerField,
+    markerFromResult,
+    setExecutionMarker,
+  } from "$lib/sqlExecutionMarker";
+  import type { QueryExecutionResult } from "$lib/types";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
+  import { writeClipboard as copyToClipboard } from "$lib/clipboard";
   import "$lib/sqlEditorIcons.css";
 
   let {
@@ -34,12 +42,14 @@
     onchange,
     onexecute,
     executing = false,
+    result = null,
     onopentabledefinition,
   }: {
     value?: string;
     onchange?: (sql: string) => void;
     onexecute?: (sql: string) => void;
     executing?: boolean;
+    result?: QueryExecutionResult | null;
     onopentabledefinition?: (ref: CatalogTableRef) => void;
   } = $props();
 
@@ -60,6 +70,10 @@
   let sqlDialect = dialectFor("mysql");
   let driver: ConnectionDriver = "mysql";
   let defaultTable: string | undefined;
+  // Ejecucion lanzada desde este editor cuyo resultado todavia no llego:
+  // `result` es el que habia al lanzarla, para reconocer cuando cambia (ver
+  // el $effect de mas abajo que actualiza el marcador de ejecucion).
+  let awaitingResult: { result: QueryExecutionResult | null } | null = null;
   let contextMenu = $state<{ x: number; y: number; hasSelection: boolean } | null>(null);
 
   const contextMenuItems = $derived.by((): ContextMenuItem[] => [
@@ -91,21 +105,9 @@
   }
 
   async function writeClipboard(text: string): Promise<boolean> {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      const copied = document.execCommand("copy");
-      textarea.remove();
-      view?.focus();
-      return copied;
-    }
+    const copied = await copyToClipboard(text);
+    view?.focus();
+    return copied;
   }
 
   async function copySelection() {
@@ -205,9 +207,13 @@
     const range = currentSqlRange();
     if (!range) return true;
 
-    const sql = view.state.sliceDoc(range.from, range.to).trim();
+    const raw = view.state.sliceDoc(range.from, range.to);
+    const sql = raw.trim();
     if (!sql) return true;
 
+    const from = range.from + (raw.length - raw.trimStart().length);
+    view.dispatch({ effects: setExecutionMarker.of({ from, to: from + sql.length, status: "pending" }) });
+    awaitingResult = { result };
     onexecute?.(sql);
     return true;
   }
@@ -288,6 +294,7 @@
         keymapCompartment.of(buildEditorKeymap()),
         tabCompletionCompartment.of(buildTabCompletionKeymap(get(editorSettings).tabNavigatesCompletion)),
         activeStatementHighlight,
+        executionMarker,
         behaviorCompartment.of(get(editorSettings).autoUppercaseKeywords ? autoUppercaseSqlKeywords : []),
         themeCompartment.of(buildCmTheme(get(editorPalette), get(effectiveScheme))),
         EditorView.updateListener.of((update) => {
@@ -312,6 +319,33 @@
         }),
       ],
     });
+  });
+
+  // Sigue la ejecucion lanzada en executeCurrentSql(). Arranca en
+  // "pending" (sin icono) y pasa a "running" solo cuando Workspace
+  // realmente la inicia: si beginQueryExecution() la descarta (p.ej. hay un
+  // guard abierto) no queda un "ejecutando" colgado. Si el guard la frena
+  // vuelve a "pending" hasta que se confirme o se lance otra, y cuando llega
+  // un resultado nuevo pasa a ok/error con su tiempo.
+  $effect(() => {
+    const isExecuting = executing;
+    const current = result;
+    if (!view || !awaitingResult) return;
+
+    const marker = view.state.field(executionMarkerField);
+    if (!marker) {
+      awaitingResult = null;
+      return;
+    }
+
+    if (!isExecuting && current && current !== awaitingResult.result) {
+      awaitingResult = null;
+      view.dispatch({ effects: setExecutionMarker.of(markerFromResult(marker.from, marker.to, current)) });
+      return;
+    }
+
+    const status = isExecuting ? "running" : "pending";
+    if (marker.status !== status) view.dispatch({ effects: setExecutionMarker.of({ ...marker, status }) });
   });
 
   $effect(() => {

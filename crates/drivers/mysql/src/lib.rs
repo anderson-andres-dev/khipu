@@ -1,21 +1,46 @@
+mod introspect;
+mod tls;
+mod version;
+
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use khipu_driver_core::{
-    ColumnInfo, ConnectionConfig, DbConnector, DriverError, ForeignKeyInfo, QueryColumn,
-    QueryExecutionOptions, QueryExecutionResult, QueryRow, QueryValue, TableInfo,
+    ConnectionConfig, DbConnector, DriverError, QueryColumn, QueryExecutionOptions,
+    QueryExecutionResult, QueryRow, QueryValue, SchemaObjects, TlsMode, TlsStatus,
 };
 use sqlx::mysql::{
     MySqlConnectOptions, MySqlConnection, MySqlDatabaseError, MySqlPoolOptions, MySqlRow,
 };
 use sqlx::{Column, Executor, MySqlPool, Row, TypeInfo};
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
 
 pub struct MySqlConnector {
     pool: MySqlPool,
+    version: version::ServerVersion,
+    tls: TlsStatus,
 }
+
+async fn open_pool(config: &ConnectionConfig, mode: TlsMode) -> Result<MySqlPool, sqlx::Error> {
+    let options = MySqlConnectOptions::new()
+        .host(&config.host)
+        .port(config.port)
+        .username(&config.username)
+        .password(&config.password)
+        .database(&config.database);
+    MySqlPoolOptions::new()
+        .connect_with(tls::apply(
+            options,
+            mode,
+            config.ca_certificate_path.as_deref(),
+        ))
+        .await
+}
+
+/// Schemas every MySQL/MariaDB server has, skipped when picking a default
+/// schema for a profile that doesn't name one.
+const SYSTEM_SCHEMAS: [&str; 4] = ["information_schema", "mysql", "performance_schema", "sys"];
 
 fn text_column(row: &MySqlRow, index: usize) -> Result<String, DriverError> {
     let bytes: Vec<u8> = row
@@ -75,6 +100,17 @@ impl<'q> sqlx::Execute<'q, sqlx::MySql> for RawStatement<'q> {
     }
 }
 
+/// MySQL error 1295, ER_UNSUPPORTED_PS: "This command is not supported in
+/// the prepared statement protocol yet".
+const ER_UNSUPPORTED_PS: u16 = 1295;
+
+fn is_unsupported_in_prepared_protocol(error: &sqlx::Error) -> bool {
+    matches!(error, sqlx::Error::Database(database_error)
+        if database_error
+            .try_downcast_ref::<MySqlDatabaseError>()
+            .is_some_and(|mysql_error| mysql_error.number() == ER_UNSUPPORTED_PS))
+}
+
 fn mysql_error_to_result(error: sqlx::Error) -> QueryExecutionResult {
     if let sqlx::Error::Database(database_error) = &error {
         if let Some(mysql_error) = database_error.try_downcast_ref::<MySqlDatabaseError>() {
@@ -96,21 +132,43 @@ fn mysql_error_to_result(error: sqlx::Error) -> QueryExecutionResult {
 #[async_trait]
 impl DbConnector for MySqlConnector {
     async fn connect(config: &ConnectionConfig) -> Result<Self, DriverError> {
-        let options = MySqlConnectOptions::new()
-            .host(&config.host)
-            .port(config.port)
-            .username(&config.username)
-            .password(&config.password)
-            .database(&config.database);
-        let pool = MySqlPoolOptions::new()
-            .connect_with(options)
+        // En Automatico, un fallo de negociacion TLS (no de login ni de red:
+        // ver tls::is_tls_failure) se reintenta sin cifrar. El pool entero
+        // queda con esas opciones, asi que las conexiones que abra despues
+        // no vuelven a intentar TLS.
+        let (pool, fell_back) = match open_pool(config, config.tls_mode).await {
+            Ok(pool) => (pool, false),
+            Err(error) if config.tls_mode == TlsMode::Auto && tls::is_tls_failure(&error) => {
+                match open_pool(config, TlsMode::Disabled).await {
+                    Ok(pool) => (pool, true),
+                    Err(_) => return Err(tls::connection_error(error, config.tls_mode)),
+                }
+            }
+            Err(error) => return Err(tls::connection_error(error, config.tls_mode)),
+        };
+        let raw_version = sqlx::query("SELECT VERSION()")
+            .fetch_one(&pool)
             .await
-            .map_err(|e| DriverError::Connection(e.to_string()))?;
-        Ok(Self { pool })
+            .map_err(|e| DriverError::Connection(e.to_string()))
+            .and_then(|row| text_column(&row, 0))?;
+        let tls = tls::read_status(&pool, fell_back).await;
+        Ok(Self {
+            pool,
+            version: version::ServerVersion::parse(&raw_version),
+            tls,
+        })
+    }
+
+    fn server_version(&self) -> String {
+        self.version.display()
+    }
+
+    fn tls_status(&self) -> TlsStatus {
+        self.tls.clone()
     }
 
     async fn list_schemas(&self) -> Result<Vec<String>, DriverError> {
-        sqlx::query("SELECT schema_name FROM information_schema.schemata")
+        sqlx::query("SELECT schema_name FROM information_schema.schemata ORDER BY schema_name")
             .fetch_all(&self.pool)
             .await
             .map_err(|e| DriverError::Query(e.to_string()))?
@@ -119,79 +177,43 @@ impl DbConnector for MySqlConnector {
             .collect()
     }
 
-    async fn list_tables(&self, schema: &str) -> Result<Vec<TableInfo>, DriverError> {
-        let rows = sqlx::query(
-            "SELECT table_name, column_name, data_type, is_nullable, column_key, column_comment \
-             FROM information_schema.columns WHERE table_schema = ? ORDER BY table_name, ordinal_position",
-        )
-        .bind(schema)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| DriverError::Query(e.to_string()))?;
-
-        let mut tables: Vec<TableInfo> = Vec::new();
-        for row in rows {
-            let table_name = text_column(&row, 0)?;
-            // MySQL nunca devuelve NULL en column_comment, usa "" cuando no
-            // hay comentario — se normaliza a None para no mostrar un
-            // tooltip con una segunda linea vacia.
-            let comment = text_column(&row, 5)?;
-            let column = ColumnInfo {
-                name: text_column(&row, 1)?,
-                data_type: text_column(&row, 2)?,
-                nullable: text_column(&row, 3)? == "YES",
-                is_primary_key: row
-                    .try_get::<Option<Vec<u8>>, _>(4)
-                    .map_err(|e| DriverError::Query(e.to_string()))?
-                    .as_deref()
-                    == Some(b"PRI"),
-                comment: if comment.is_empty() {
-                    None
-                } else {
-                    Some(comment)
-                },
-            };
-
-            match tables.last_mut() {
-                Some(t) if t.name == table_name => t.columns.push(column),
-                _ => tables.push(TableInfo {
-                    schema: schema.to_string(),
-                    name: table_name,
-                    columns: vec![column],
-                    foreign_keys: Vec::new(),
-                }),
-            }
+    async fn current_schema(&self) -> Result<String, DriverError> {
+        let row = sqlx::query("SELECT DATABASE()")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| DriverError::Query(e.to_string()))?;
+        let selected: Option<Vec<u8>> = row
+            .try_get_unchecked(0)
+            .map_err(|e| DriverError::Query(e.to_string()))?;
+        if let Some(bytes) = selected {
+            return Ok(String::from_utf8_lossy(&bytes).into_owned());
         }
 
-        let table_index: HashMap<String, usize> = tables
+        // Perfil sin base: se toma el primer schema de usuario, igual que
+        // haria alguien abriendo el servidor por primera vez.
+        let schemas = self.list_schemas().await?;
+        Ok(schemas
             .iter()
-            .enumerate()
-            .map(|(i, t)| (t.name.clone(), i))
-            .collect();
+            .find(|schema| !SYSTEM_SCHEMAS.contains(&schema.as_str()))
+            .or_else(|| schemas.first())
+            .cloned()
+            .unwrap_or_else(|| "information_schema".to_string()))
+    }
 
-        let fk_rows = sqlx::query(
-            "SELECT table_name, column_name, referenced_table_name, referenced_column_name \
-             FROM information_schema.key_column_usage \
-             WHERE table_schema = ? AND referenced_table_name IS NOT NULL",
-        )
-        .bind(schema)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| DriverError::Query(e.to_string()))?;
-
-        for row in fk_rows {
-            let table_name = text_column(&row, 0)?;
-            let Some(&index) = table_index.get(table_name.as_str()) else {
-                continue;
-            };
-            tables[index].foreign_keys.push(ForeignKeyInfo {
-                column: text_column(&row, 1)?,
-                referenced_table: text_column(&row, 2)?,
-                referenced_column: text_column(&row, 3)?,
-            });
+    async fn introspect_schema(&self, schema: &str) -> Result<SchemaObjects, DriverError> {
+        let mut objects =
+            introspect::introspect_schema(&self.pool, schema, self.version.capabilities()).await?;
+        if self.version.is_below_minimum() {
+            objects.warnings.insert(
+                0,
+                format!(
+                    "{} es anterior a las versiones soportadas (MySQL 5.7, MariaDB 10.3): \
+                     algunos objetos pueden faltar.",
+                    self.version.display()
+                ),
+            );
         }
-
-        Ok(tables)
+        Ok(objects)
     }
 
     async fn table_definition(&self, schema: &str, table: &str) -> Result<String, DriverError> {
@@ -273,12 +295,17 @@ async fn execute_on_connection(
 ) -> ExecutionOutcome {
     let start = Instant::now();
 
+    // describe() prepara la sentencia para saber si devuelve columnas. MySQL
+    // no deja preparar algunas (CREATE TRIGGER/PROCEDURE/FUNCTION/EVENT, entre
+    // otras: ER_UNSUPPORTED_PS); ninguna de esas devuelve filas, asi que van
+    // directo por el camino de comandos, que no usa el protocolo preparado.
     let describe = match conn.describe(sql).await {
-        Ok(describe) => describe,
+        Ok(describe) => Some(describe),
+        Err(error) if is_unsupported_in_prepared_protocol(&error) => None,
         Err(error) => return mysql_error_to_result(error).into(),
     };
 
-    if describe.columns().is_empty() {
+    let Some(describe) = describe.filter(|describe| !describe.columns().is_empty()) else {
         let outcome = match Executor::execute(&mut *conn, RawStatement(sql)).await {
             Ok(outcome) => outcome,
             Err(error) => return mysql_error_to_result(error).into(),
@@ -288,7 +315,7 @@ async fn execute_on_connection(
             execution_time_ms: start.elapsed().as_millis() as u64,
         }
         .into();
-    }
+    };
 
     // El servidor deja de producir filas en max_rows + 1 (la extra es solo
     // para saber si hubo truncado) en vez de mandar la tabla entera: es lo
@@ -424,6 +451,8 @@ mod tests {
             database,
             username,
             password,
+            tls_mode: TlsMode::Auto,
+            ca_certificate_path: None,
         }
     }
 
@@ -613,6 +642,259 @@ mod tests {
                 );
             }
             other => panic!("expected an Error result, got {other:?}"),
+        }
+    }
+
+    /// Creates one object of every kind the explorer shows in a throwaway
+    /// schema and checks `introspect_schema` finds each under the right
+    /// category. Needs CREATE/DROP DATABASE, TRIGGER, CREATE ROUTINE and
+    /// EVENT privileges. Checks are only asserted where the server has
+    /// `check_constraints` (MySQL 8.0.16+, MariaDB).
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn introspect_schema_classifies_every_object_kind() {
+        use khipu_driver_core::{RelationKind, RoutineKind};
+
+        const SCHEMA: &str = "khipu_introspect_test";
+        let connector = MySqlConnector::connect(&config_from_env())
+            .await
+            .expect("connect should succeed against a reachable MySQL instance");
+
+        let run = |sql: String| {
+            let connector = &connector;
+            async move {
+                let result = connector
+                    .execute_query(&sql, QueryExecutionOptions { max_rows: 10 })
+                    .await;
+                assert!(
+                    !matches!(result, QueryExecutionResult::Error { .. }),
+                    "{sql} failed: {result:?}"
+                );
+            }
+        };
+
+        run(format!("DROP DATABASE IF EXISTS {SCHEMA}")).await;
+        run(format!("CREATE DATABASE {SCHEMA}")).await;
+        run(format!(
+            "CREATE TABLE {SCHEMA}.customers (id INT PRIMARY KEY, email VARCHAR(100) NOT NULL, \
+             UNIQUE KEY uq_email (email))"
+        ))
+        .await;
+        run(format!(
+            "CREATE TABLE {SCHEMA}.orders (id INT, line INT, customer_id INT, total DECIMAL(10,2), \
+             PRIMARY KEY (id, line), KEY idx_total (total), \
+             CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES {SCHEMA}.customers (id), \
+             CONSTRAINT chk_total CHECK (total >= 0))"
+        ))
+        .await;
+        run(format!(
+            "CREATE VIEW {SCHEMA}.big_orders AS SELECT id, total FROM {SCHEMA}.orders WHERE total > 100"
+        ))
+        .await;
+        run(format!(
+            "CREATE TRIGGER {SCHEMA}.orders_bi BEFORE INSERT ON {SCHEMA}.orders \
+             FOR EACH ROW SET NEW.total = COALESCE(NEW.total, 0)"
+        ))
+        .await;
+        run(format!(
+            "CREATE PROCEDURE {SCHEMA}.purge(IN p_before INT, OUT p_count INT) SET p_count = p_before"
+        ))
+        .await;
+        run(format!(
+            "CREATE FUNCTION {SCHEMA}.twice(p INT) RETURNS INT DETERMINISTIC RETURN p * 2"
+        ))
+        .await;
+        run(format!(
+            "CREATE EVENT {SCHEMA}.nightly ON SCHEDULE EVERY 1 DAY DISABLE DO SELECT 1"
+        ))
+        .await;
+
+        let objects = connector.introspect_schema(SCHEMA).await;
+        run(format!("DROP DATABASE {SCHEMA}")).await;
+        let objects = objects.expect("introspect_schema should succeed");
+        assert!(objects.warnings.is_empty(), "{:?}", objects.warnings);
+
+        let table = |name: &str| {
+            objects
+                .tables
+                .iter()
+                .find(|table| table.name == name)
+                .unwrap_or_else(|| panic!("{name} missing from {:?}", objects.tables))
+        };
+        assert_eq!(table("big_orders").kind, RelationKind::View);
+
+        let orders = table("orders");
+        assert_eq!(orders.kind, RelationKind::Table);
+        let primary = orders
+            .keys
+            .iter()
+            .find(|key| key.primary)
+            .expect("orders has a PK");
+        assert_eq!(primary.columns, vec!["id", "line"]);
+        assert_eq!(orders.foreign_keys[0].name, "fk_orders_customer");
+        assert!(orders.indexes.iter().any(|index| index.name == "idx_total"));
+        assert_eq!(orders.triggers[0].timing, "BEFORE");
+        assert_eq!(orders.triggers[0].events, vec!["INSERT"]);
+        if connector.version.capabilities().check_constraints
+            != version::CheckConstraints::Unsupported
+        {
+            assert!(orders.checks.iter().any(|check| check.name == "chk_total"));
+        }
+        assert!(
+            table("customers")
+                .keys
+                .iter()
+                .any(|key| key.name == "uq_email" && !key.primary)
+        );
+
+        let purge = objects
+            .routines
+            .iter()
+            .find(|r| r.name == "purge")
+            .expect("purge");
+        assert_eq!(purge.kind, RoutineKind::Procedure);
+        // MariaDB and MySQL 5.7 keep the display width ("int(11)").
+        let arguments = purge.arguments.replace("(11)", "");
+        assert_eq!(arguments, "p_before int, OUT p_count int");
+        let twice = objects
+            .routines
+            .iter()
+            .find(|r| r.name == "twice")
+            .expect("twice");
+        assert_eq!(twice.kind, RoutineKind::Function);
+        assert_eq!(
+            twice.return_type.as_deref().map(|t| t.replace("(11)", "")),
+            Some("int".to_string())
+        );
+
+        assert_eq!(objects.events[0].name, "nightly");
+        assert_eq!(objects.events[0].schedule, "EVERY 1 DAY");
+    }
+
+    /// What the server under test is expected to negotiate in `Auto`, from
+    /// `KHIPU_TEST_MYSQL_EXPECT_TLS`: `encrypted` (a modern server with
+    /// TLS), `fallback` (offers TLS rustls can't negotiate, e.g. MySQL 5.7),
+    /// `none` (TLS not enabled on the server, e.g. the MariaDB < 11.4 image),
+    /// or unset to only check the invariants that hold for any server.
+    fn expected_tls() -> Option<String> {
+        std::env::var("KHIPU_TEST_MYSQL_EXPECT_TLS").ok()
+    }
+
+    fn config_with_tls(mode: TlsMode) -> ConnectionConfig {
+        ConnectionConfig {
+            tls_mode: mode,
+            ..config_from_env()
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn tls_auto_always_connects_and_reports_what_it_negotiated() {
+        let connector = MySqlConnector::connect(&config_with_tls(TlsMode::Auto))
+            .await
+            .expect("Auto must connect whatever TLS the server offers");
+        let status = connector.tls_status();
+
+        if status.fell_back {
+            assert_eq!(status.encrypted, Some(false));
+        }
+        match expected_tls().as_deref() {
+            Some("encrypted") => {
+                assert_eq!(status.encrypted, Some(true), "{status:?}");
+                assert!(!status.fell_back);
+                assert!(status.detail.is_some_and(|detail| detail.contains("TLS")));
+            }
+            Some("fallback") => assert!(status.fell_back, "{status:?}"),
+            Some("none") => {
+                assert_eq!(status.encrypted, Some(false), "{status:?}");
+                assert!(!status.fell_back, "nothing to fall back from: {status:?}");
+            }
+            _ => {}
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn tls_required_encrypts_or_fails_with_an_actionable_message() {
+        let result = MySqlConnector::connect(&config_with_tls(TlsMode::Required)).await;
+
+        match (result, expected_tls().as_deref()) {
+            (Ok(connector), expected) => {
+                assert!(
+                    matches!(expected, None | Some("encrypted")),
+                    "Required must not connect without TLS"
+                );
+                assert_eq!(connector.tls_status().encrypted, Some(true));
+                assert!(!connector.tls_status().fell_back);
+            }
+            (Err(DriverError::Connection(message)), expected) => {
+                assert_ne!(expected, Some("encrypted"), "{message}");
+                assert!(
+                    message.starts_with("El servidor no ofrece un cifrado TLS compatible")
+                        || message.starts_with("El servidor no tiene TLS habilitado"),
+                    "{message}"
+                );
+                if expected == Some("none") {
+                    assert!(message.starts_with("El servidor no tiene TLS habilitado"));
+                }
+            }
+            (Err(other), _) => panic!("unexpected error: {other}"),
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn tls_disabled_connects_unencrypted() {
+        let connector = MySqlConnector::connect(&config_with_tls(TlsMode::Disabled))
+            .await
+            .expect("Disabled should connect");
+
+        let status = connector.tls_status();
+        assert_eq!(status.encrypted, Some(false));
+        assert!(!status.fell_back);
+    }
+
+    /// Servers in these tests use self-signed certificates, which no public
+    /// CA vouches for: VerifyCa without a CA file must refuse them.
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn tls_verify_ca_rejects_self_signed_certificates() {
+        if expected_tls().as_deref() != Some("encrypted") {
+            return;
+        }
+        let result = MySqlConnector::connect(&config_with_tls(TlsMode::VerifyCa)).await;
+
+        match result {
+            Err(DriverError::Connection(message)) => {
+                assert!(message.starts_with("Certificado inválido:"), "{message}")
+            }
+            Ok(_) => panic!("a self-signed certificate must not pass VerifyCa"),
+            Err(other) => panic!("unexpected error: {other}"),
+        }
+    }
+
+    /// With `KHIPU_TEST_MYSQL_CA_CERT` pointing at the CA that signed the
+    /// server certificate, both verifying modes must accept it: proves the CA
+    /// file path actually reaches the TLS configuration. The certificate needs
+    /// the test host in its subjectAltName: with sqlx 0.8.6 and current
+    /// rustls, VerifyCa checks the host name too (see
+    /// docs/design/explorador-base-de-datos.md, "Limitaciones conocidas").
+    #[tokio::test]
+    #[ignore = "requires database"]
+    async fn tls_verify_ca_accepts_the_configured_ca() {
+        let Ok(ca) = std::env::var("KHIPU_TEST_MYSQL_CA_CERT") else {
+            return;
+        };
+        for mode in [TlsMode::VerifyCa, TlsMode::VerifyIdentity] {
+            let config = ConnectionConfig {
+                ca_certificate_path: Some(ca.clone()),
+                ..config_with_tls(mode)
+            };
+
+            let connector = MySqlConnector::connect(&config)
+                .await
+                .unwrap_or_else(|error| panic!("{mode:?} with the server's CA: {error}"));
+            assert_eq!(connector.tls_status().encrypted, Some(true));
         }
     }
 }

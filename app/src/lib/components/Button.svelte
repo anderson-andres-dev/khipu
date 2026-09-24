@@ -55,7 +55,7 @@
   }
 
   .btn.primary:not(:disabled):hover {
-    background: color-mix(in srgb, var(--accent) 86%, white);
+    background: var(--accent-hover);
   }
 
   .btn.secondary:not(:disabled):hover {

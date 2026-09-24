@@ -146,6 +146,12 @@
     flex-direction: column;
   }
 
+  /* El cuerpo del resultado va sobre --surface-content: en los temas
+     claros es blanco como el editor (en los oscuros, igual que surface). */
+  .grid-region {
+    background: var(--surface-content);
+  }
+
   .grid-scroll {
     min-height: 0;
     flex: 1;

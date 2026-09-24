@@ -355,6 +355,7 @@
             onchange={(sql) => updateQueryConsoleSql(activeConsole.id, sql)}
             onexecute={(sql) => requestExecution(activeConsole.id, sql)}
             executing={execution.isExecuting}
+            result={execution.result}
             onopentabledefinition={(ref) => (tableDefinitionRequest = ref)}
           />
         {/key}
@@ -479,9 +480,11 @@
     padding: 0 var(--space-2) 0 var(--space-3);
   }
 
+  /* Antes el hover repetia el fondo de reposo y no se notaba en ningun
+     tema: ahora aclara/oscurece apenas hacia el color del texto. */
   .console-tab:hover,
   .new-console:hover {
-    background: var(--surface-elevated);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, var(--text-primary));
     color: var(--text-primary);
   }
 

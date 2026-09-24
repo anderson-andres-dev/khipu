@@ -29,31 +29,51 @@
   /* Paleta cruda (DataGrip Dark) — fuente real, ver comentario arriba */
   --palette-surface: #191A1C;
   --palette-surface-elevated: #26282C;
+  --palette-surface-hover: #26282C;
+  --palette-surface-content: #191A1C;
   --palette-border: #33353B;
+  --palette-grid-line: #33353B;
   --palette-control-border: #8B8E94;
   --palette-text-primary: #D1D3D9;
   --palette-text-secondary: #9FA2A8;
   --palette-text-on-accent: #FFFFFF;
   --palette-accent: #3871E1;
+  --palette-accent-hover: #5485E5;
   --palette-danger: #F57E84;
+  --palette-success: #4CAF50;
+  --palette-warning: #E8B339;
+  --palette-key-primary: #E8B339;
   --palette-control-disabled: #4C4F56;
   --palette-focus-ring: #3871E1;
-  --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-  --palette-topbar-background: rgba(25, 26, 28, 0.72);
+  --palette-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  --palette-scrim: rgba(0,0,0,0.5);
+  --palette-scrollbar-thumb: rgba(139,142,148,0.65);
+  --palette-scrollbar-thumb-hover: #9FA2A8;
+  --palette-topbar-background: rgba(25,26,28,0.72);
 
   /* Color semántico — alias estable sobre --palette-* */
   --surface: var(--palette-surface);
   --surface-elevated: var(--palette-surface-elevated);
+  --surface-hover: var(--palette-surface-hover);
+  --surface-content: var(--palette-surface-content);
   --border: var(--palette-border);
+  --grid-line: var(--palette-grid-line);
   --control-border: var(--palette-control-border);
   --text-primary: var(--palette-text-primary);
   --text-secondary: var(--palette-text-secondary);
   --text-on-accent: var(--palette-text-on-accent);
   --accent: var(--palette-accent);
+  --accent-hover: var(--palette-accent-hover);
   --danger: var(--palette-danger);
+  --success: var(--palette-success);
+  --warning: var(--palette-warning);
+  --key-primary: var(--palette-key-primary);
   --control-disabled: var(--palette-control-disabled);
   --focus-ring: var(--palette-focus-ring);
   --shadow-elevated: var(--palette-shadow);
+  --scrim: var(--palette-scrim);
+  --scrollbar-thumb: var(--palette-scrollbar-thumb);
+  --scrollbar-thumb-hover: var(--palette-scrollbar-thumb-hover);
   --topbar-background: var(--palette-topbar-background);
 
   /* Espaciado — base 4px */
@@ -96,19 +116,29 @@
  */
 @media (prefers-color-scheme: light) {
   :root {
-    --palette-surface: #E9EAEE;
+    --palette-surface: #F7F8FA;
     --palette-surface-elevated: #FFFFFF;
-    --palette-border: #8F959B;
-    --palette-control-border: #5F6269;
-    --palette-text-primary: #000000;
-    --palette-text-secondary: #4C4F56;
+    --palette-surface-hover: #EBECF0;
+    --palette-surface-content: #FFFFFF;
+    --palette-border: #EBECF0;
+    --palette-grid-line: #EBECF0;
+    --palette-control-border: #C9CCD6;
+    --palette-text-primary: #1E1F22;
+    --palette-text-secondary: #6C707E;
     --palette-text-on-accent: #FFFFFF;
-    --palette-accent: #3871E1;
-    --palette-danger: #C54E58;
-    --palette-control-disabled: #9FA2A8;
-    --palette-focus-ring: #3871E1;
-    --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    --palette-topbar-background: rgba(233, 234, 238, 0.72);
+    --palette-accent: #3574F0;
+    --palette-accent-hover: #2B63D6;
+    --palette-danger: #DB3B4B;
+    --palette-success: #208A3C;
+    --palette-warning: #C27D04;
+    --palette-key-primary: #B98A10;
+    --palette-control-disabled: #A8ADBD;
+    --palette-focus-ring: #3574F0;
+    --palette-shadow: 0 8px 28px rgba(0,0,0,0.10);
+    --palette-scrim: rgba(0,0,0,0.28);
+    --palette-scrollbar-thumb: #C9CCD6;
+    --palette-scrollbar-thumb-hover: #A8ADBD;
+    --palette-topbar-background: rgba(247,248,250,0.8);
   }
 }
 
@@ -124,6 +154,10 @@
  * las --palette-*), para que la indirección de theme.ts nunca lo tape:
  * la escritura inline de theme.ts solo toca --palette-*, así que este
  * media query de hoja de estilo sigue ganando sobre --border/etc.
+ *
+ * El esquema sale de data-scheme (lo fijan app.html y theme.ts), no de
+ * prefers-color-scheme: con el sistema en oscuro y la app en claro, las
+ * reglas del SO darían bordes casi blancos sobre un fondo claro.
  */
 @media (prefers-contrast: more) {
   :root {
@@ -131,10 +165,8 @@
     --focus-ring: #6cb2ff;
     --control-border: #e6e6e6;
   }
-}
 
-@media (prefers-contrast: more) and (prefers-color-scheme: light) {
-  :root {
+  :root[data-scheme="light"] {
     --border: #4d4d4f;
     --focus-ring: #0060df;
     --control-border: #262626;
@@ -172,9 +204,12 @@ dialog::backdrop {
     overlay var(--duration-fast) allow-discrete;
 }
 
+/* Un solo fondo para todos los modales, del tema: negro al 50% en oscuro,
+   mucho mas liviano en claro (sobre una UI clara un velo negro fuerte se
+   ve pesado). */
 dialog[open]::backdrop {
-  background: rgb(0 0 0 / 64%);
-  backdrop-filter: blur(4px);
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
 }
 
 @starting-style {
