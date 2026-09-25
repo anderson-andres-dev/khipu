@@ -246,6 +246,8 @@ mod tests {
                 nullable: false,
                 is_primary_key: true,
                 comment: None,
+                default_value: None,
+                generated: false,
             },
         );
         set.add_key_columns([key_row("gone", "PRIMARY", "id")]);

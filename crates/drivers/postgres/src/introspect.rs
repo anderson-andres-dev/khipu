@@ -109,6 +109,8 @@ pub async fn introspect_schema(
                 nullable: get(&row, 3)?,
                 is_primary_key: get(&row, 4)?,
                 comment: get(&row, 5)?,
+                default_value: get(&row, 6)?,
+                generated: get(&row, 7)?,
             },
         );
     }
@@ -168,10 +170,15 @@ const COLUMNS_SQL: &str = "\
            NOT a.attnotnull, \
            EXISTS (SELECT 1 FROM pg_index i \
                    WHERE i.indrelid = c.oid AND i.indisprimary AND a.attnum = ANY (i.indkey)), \
-           col_description(c.oid, a.attnum) \
+           col_description(c.oid, a.attnum), \
+           pg_get_expr(d.adbin, d.adrelid), \
+           coalesce(to_jsonb(a) ->> 'attidentity', '') <> '' \
+             OR coalesce(to_jsonb(a) ->> 'attgenerated', '') <> '' \
+             OR coalesce(pg_get_expr(d.adbin, d.adrelid), '') LIKE 'nextval(%' \
     FROM pg_attribute a \
     JOIN pg_class c ON c.oid = a.attrelid \
     JOIN pg_namespace n ON n.oid = c.relnamespace \
+    LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum \
     WHERE n.nspname = $1 AND c.relkind IN ('r', 'p', 'v', 'm', 'f') {partitions} \
       AND a.attnum > 0 AND NOT a.attisdropped \
     ORDER BY c.relname, a.attnum";

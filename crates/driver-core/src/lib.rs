@@ -89,6 +89,14 @@ pub struct ColumnInfo {
     pub nullable: bool,
     pub is_primary_key: bool,
     pub comment: Option<String>,
+    /// Default expression as the server reports it (`CURRENT_TIMESTAMP`,
+    /// `'pending'`, `nextval(...)`), if the column has one.
+    #[serde(default)]
+    pub default_value: Option<String>,
+    /// The server fills the value by itself: auto_increment / identity /
+    /// serial, or a generated (computed) column. An insert leaves it out.
+    #[serde(default)]
+    pub generated: bool,
 }
 
 /// One column of a foreign key. A multi-column constraint yields one entry
@@ -386,6 +394,87 @@ pub trait DbConnector: Send + Sync {
         sql: &'a str,
         options: QueryExecutionOptions,
     ) -> Pin<Box<dyn Future<Output = QueryExecutionResult> + Send + 'a>>;
+
+    /// Runs every statement in ONE transaction, in order: either all of them
+    /// are committed or none (rollback on the first failure). Returns the
+    /// total of affected rows. Same boxed-future shape as `execute_query`.
+    fn execute_in_transaction<'a>(
+        &'a self,
+        statements: &'a [TransactionStatement],
+    ) -> Pin<Box<dyn Future<Output = Result<u64, TransactionError>> + Send + 'a>>;
+
+    /// Runs a query that returns rows and hands every row to `sink` as it
+    /// arrives, WITHOUT any row limit and without keeping them in memory:
+    /// exporting millions of rows costs the same memory as exporting ten.
+    /// Returns the number of rows streamed. Errors (SQL, or the sink failing
+    /// to write) come back as a readable message.
+    fn stream_query<'a>(
+        &'a self,
+        sql: &'a str,
+        sink: &'a mut dyn RowSink,
+    ) -> Pin<Box<dyn Future<Output = Result<u64, String>> + Send + 'a>>;
+}
+
+/// Destination of `DbConnector::stream_query` (e.g. a file being written).
+pub trait RowSink: Send {
+    /// Called once, before the first row.
+    fn begin(&mut self, columns: &[QueryColumn]) -> Result<(), String>;
+    fn row(&mut self, row: &[QueryValue]) -> Result<(), String>;
+    /// Called once after the last row (not called if streaming failed).
+    fn finish(&mut self) -> Result<(), String>;
+}
+
+/// One statement of `DbConnector::execute_in_transaction`.
+#[derive(Debug, Clone)]
+pub struct TransactionStatement {
+    pub sql: String,
+    /// It must affect exactly one row (an UPDATE/DELETE of the row being
+    /// edited): 0 means someone else changed or deleted it meanwhile, and the
+    /// whole transaction is rolled back instead of silently doing nothing.
+    pub expect_one_row: bool,
+}
+
+/// Why `execute_in_transaction` rolled back.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionError {
+    /// Index of the statement that failed (None: begin/commit failed).
+    pub statement_index: Option<usize>,
+    pub message: String,
+    pub code: Option<String>,
+}
+
+impl TransactionError {
+    /// From a driver `QueryExecutionResult::Error` (anything else becomes a
+    /// generic message).
+    pub fn from_result(statement_index: Option<usize>, result: QueryExecutionResult) -> Self {
+        match result {
+            QueryExecutionResult::Error { message, code, .. } => Self {
+                statement_index,
+                message,
+                code,
+            },
+            _ => Self {
+                statement_index,
+                message: "Error desconocido al aplicar los cambios.".to_string(),
+                code: None,
+            },
+        }
+    }
+
+    pub fn unexpected_rows(statement_index: usize, affected: u64) -> Self {
+        Self {
+            statement_index: Some(statement_index),
+            message: if affected == 0 {
+                "La fila ya no existe o su clave cambió (otra sesión la modificó). No se aplicó ningún cambio.".to_string()
+            } else {
+                format!(
+                    "La sentencia afectaría {affected} filas en lugar de 1. No se aplicó ningún cambio."
+                )
+            },
+            code: None,
+        }
+    }
 }
 
 #[cfg(test)]

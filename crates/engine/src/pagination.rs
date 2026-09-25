@@ -9,11 +9,55 @@
 //! pagina, como hasta ahora.
 
 use crate::Dialect;
+use serde::Deserialize;
 use sqlparser::ast::{
-    Expr, GroupByExpr, LimitClause, Offset, OffsetRows, Query, SelectItem, SetExpr, Statement,
-    Value,
+    Expr, GroupByExpr, LimitClause, Offset, OffsetRows, OrderBy, OrderByExpr, OrderByKind,
+    OrderByOptions, Query, SelectItem, SetExpr, Statement, Value,
 };
 use sqlparser::parser::Parser;
+
+/// Una columna por la que ordenar desde el grid: su posicion en el resultado
+/// (base 0) y el sentido.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SortKey {
+    pub column: usize,
+    pub descending: bool,
+}
+
+/// Ordena el resultado de `sql` en la BASE (no en la pagina visible: con
+/// paginacion, ordenar solo las filas cargadas seria engañoso). Se ordena
+/// por posicion (`ORDER BY 3 DESC`), que sirve igual en MySQL y Postgres
+/// aunque la columna venga de `*` o tenga alias. Reemplaza el ORDER BY de
+/// la consulta; si ella tiene su propio LIMIT (el orden decide QUE filas
+/// entran), se envuelve en una subconsulta para no cambiar cuales son.
+pub fn sort_sql(sql: &str, dialect: Dialect, keys: &[SortKey]) -> Option<String> {
+    if keys.is_empty() {
+        return None;
+    }
+    let mut query = parse_pageable_query(sql, dialect)?;
+    let order = OrderBy {
+        kind: OrderByKind::Expressions(
+            keys.iter()
+                .map(|key| OrderByExpr {
+                    expr: number(key.column as u64 + 1),
+                    options: OrderByOptions {
+                        asc: Some(!key.descending),
+                        nulls_first: None,
+                    },
+                    with_fill: None,
+                })
+                .collect(),
+        ),
+        interpolate: None,
+    };
+    if query.limit_clause.is_none() {
+        query.order_by = Some(order);
+        Some(query.to_string())
+    } else {
+        Some(format!("SELECT * FROM ({query}) AS khipu_sorted {order}"))
+    }
+}
 
 /// Pagina `sql` para traer `fetch` filas a partir de la fila `offset`.
 ///
@@ -66,6 +110,41 @@ pub fn count_sql(sql: &str, dialect: Dialect) -> Option<String> {
     }
 
     Some(format!("SELECT COUNT(*) FROM ({query}) AS khipu_count"))
+}
+
+/// La sentencia solo lee: un SELECT/UNION/VALUES (con sus CTE) sin
+/// `INTO`, sin `FOR UPDATE` y sin CTE que modifiquen datos (`WITH x AS
+/// (DELETE ... RETURNING *) SELECT ...` en Postgres). Es lo unico que se
+/// puede volver a ejecutar sin efectos, p.ej. para exportarlo entero.
+pub fn is_read_only_query(sql: &str, dialect: Dialect) -> bool {
+    let Ok(statements) = Parser::parse_sql(&*dialect.as_sqlparser_dialect(), sql) else {
+        return false;
+    };
+    match statements.as_slice() {
+        [Statement::Query(query)] => query_is_read_only(query),
+        _ => false,
+    }
+}
+
+fn query_is_read_only(query: &Query) -> bool {
+    let ctes_read_only = query.with.as_ref().is_none_or(|with| {
+        with.cte_tables
+            .iter()
+            .all(|cte| query_is_read_only(&cte.query))
+    });
+    ctes_read_only && query.locks.is_empty() && set_expr_is_read_only(&query.body)
+}
+
+fn set_expr_is_read_only(body: &SetExpr) -> bool {
+    match body {
+        SetExpr::Select(select) => select.into.is_none(),
+        SetExpr::Query(query) => query_is_read_only(query),
+        SetExpr::SetOperation { left, right, .. } => {
+            set_expr_is_read_only(left) && set_expr_is_read_only(right)
+        }
+        SetExpr::Values(_) => true,
+        _ => false,
+    }
 }
 
 fn parse_pageable_query(sql: &str, dialect: Dialect) -> Option<Query> {
@@ -178,6 +257,56 @@ mod tests {
         assert!(paginate_sql("UPDATE t SET a = 1", MYSQL, 0, 501).is_none());
         assert!(paginate_sql("SELECT 1; SELECT 2", MYSQL, 0, 501).is_none());
         assert!(paginate_sql("SELECT * FROM t LIMIT ?", MYSQL, 0, 501).is_none());
+    }
+
+    #[test]
+    fn ordena_por_posicion_reemplazando_el_order_by() {
+        let keys = [
+            SortKey {
+                column: 2,
+                descending: true,
+            },
+            SortKey {
+                column: 0,
+                descending: false,
+            },
+        ];
+        assert_eq!(
+            sort_sql("SELECT * FROM t ORDER BY id", MYSQL, &keys).unwrap(),
+            "SELECT * FROM t ORDER BY 3 DESC, 1 ASC"
+        );
+        // Con LIMIT propio se envuelve: no cambian las filas que entran.
+        assert_eq!(
+            sort_sql("SELECT * FROM t ORDER BY id LIMIT 10", MYSQL, &keys[..1]).unwrap(),
+            "SELECT * FROM (SELECT * FROM t ORDER BY id LIMIT 10) AS khipu_sorted ORDER BY 3 DESC"
+        );
+        // Y se puede paginar encima.
+        let sorted = sort_sql("SELECT * FROM t", MYSQL, &keys[..1]).unwrap();
+        assert_eq!(
+            paginate_sql(&sorted, MYSQL, 500, 501).unwrap(),
+            "SELECT * FROM t ORDER BY 3 DESC LIMIT 501 OFFSET 500"
+        );
+        assert!(sort_sql("SHOW TABLES", MYSQL, &keys).is_none());
+        assert!(sort_sql("SELECT * FROM t", MYSQL, &[]).is_none());
+    }
+
+    #[test]
+    fn solo_lectura_para_reejecutar() {
+        assert!(is_read_only_query("SELECT * FROM t", MYSQL));
+        assert!(is_read_only_query(
+            "WITH a AS (SELECT 1) SELECT * FROM a",
+            MYSQL
+        ));
+        assert!(!is_read_only_query("UPDATE t SET a = 1", MYSQL));
+        assert!(!is_read_only_query("SELECT * FROM t FOR UPDATE", MYSQL));
+        assert!(!is_read_only_query(
+            "SELECT * INTO copia FROM t",
+            Dialect::Postgres
+        ));
+        assert!(!is_read_only_query(
+            "WITH x AS (DELETE FROM t RETURNING *) SELECT * FROM x",
+            Dialect::Postgres
+        ));
     }
 
     #[test]

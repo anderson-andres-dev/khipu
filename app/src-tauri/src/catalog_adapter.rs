@@ -50,6 +50,8 @@ mod tests {
             nullable: false,
             is_primary_key: true,
             comment: Some("Identificador unico".to_string()),
+            default_value: None,
+            generated: false,
         });
         let tables = vec![table];
 

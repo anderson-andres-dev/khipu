@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use khipu_driver_core::{
     ConnectionConfig, DbConnector, DriverError, QueryColumn, QueryExecutionOptions,
-    QueryExecutionResult, QueryRow, QueryValue, SchemaObjects, TlsMode, TlsStatus,
+    QueryExecutionResult, QueryRow, QueryValue, RowSink, SchemaObjects, TlsMode, TlsStatus,
+    TransactionError, TransactionStatement,
 };
 use sqlx::mysql::{
     MySqlConnectOptions, MySqlConnection, MySqlDatabaseError, MySqlPoolOptions, MySqlRow,
@@ -237,6 +238,96 @@ impl DbConnector for MySqlConnector {
     // Matches the `Pin<Box<dyn Future>>` shape the trait declares (see the
     // doc comment on `DbConnector::execute_query` for why this isn't `async
     // fn`/`#[async_trait]` like the other methods).
+    fn stream_query<'a>(
+        &'a self,
+        sql: &'a str,
+        sink: &'a mut dyn RowSink,
+    ) -> Pin<Box<dyn Future<Output = Result<u64, String>> + Send + 'a>> {
+        Box::pin(async move {
+            let message = |error: sqlx::Error| match mysql_error_to_result(error) {
+                QueryExecutionResult::Error { message, .. } => message,
+                _ => "Error al leer las filas.".to_string(),
+            };
+            let mut conn = self.pool.acquire().await.map_err(message)?;
+            let describe = conn.describe(sql).await.map_err(message)?;
+            if describe.columns().is_empty() {
+                return Err("La sentencia no devuelve filas: no hay nada que exportar.".to_string());
+            }
+            let columns: Vec<QueryColumn> = describe
+                .columns()
+                .iter()
+                .enumerate()
+                .map(|(index, column)| QueryColumn {
+                    name: column.name().to_string(),
+                    data_type: column.type_info().name().to_string(),
+                    nullable: describe.nullable(index),
+                })
+                .collect();
+            sink.begin(&columns)?;
+
+            let mut count = 0u64;
+            let mut values: Vec<QueryValue> = Vec::with_capacity(columns.len());
+            let mut finished = false;
+            let outcome: Result<(), String> = async {
+                let mut stream = Executor::fetch(&mut *conn, RawStatement(sql));
+                while let Some(row) = stream.try_next().await.map_err(message)? {
+                    values.clear();
+                    for index in 0..columns.len() {
+                        values.push(mysql_cell_to_query_value(&row, index).map_err(message)?);
+                    }
+                    sink.row(&values)?;
+                    count += 1;
+                }
+                finished = true;
+                Ok(())
+            }
+            .await;
+            if !finished {
+                // Quedaron filas sin leer: devolver la conexion al pool
+                // haria que sqlx las drene todas. Se cierra.
+                drop(conn.detach());
+            }
+            outcome?;
+            sink.finish()?;
+            Ok(count)
+        })
+    }
+
+    fn execute_in_transaction<'a>(
+        &'a self,
+        statements: &'a [TransactionStatement],
+    ) -> Pin<Box<dyn Future<Output = Result<u64, TransactionError>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut tx = self.pool.begin().await.map_err(|error| {
+                TransactionError::from_result(None, mysql_error_to_result(error))
+            })?;
+            let mut total = 0;
+            for (index, statement) in statements.iter().enumerate() {
+                match Executor::execute(&mut *tx, RawStatement(&statement.sql)).await {
+                    Ok(done) => {
+                        let affected = done.rows_affected();
+                        if statement.expect_one_row && affected != 1 {
+                            let _ = tx.rollback().await;
+                            return Err(TransactionError::unexpected_rows(index, affected));
+                        }
+                        total += affected;
+                    }
+                    Err(error) => {
+                        let _ = tx.rollback().await;
+                        return Err(TransactionError::from_result(
+                            Some(index),
+                            mysql_error_to_result(error),
+                        ));
+                    }
+                }
+            }
+            tx.commit().await.map_err(|error| {
+                TransactionError::from_result(None, mysql_error_to_result(error))
+            })?;
+            Ok(total)
+        })
+    }
+
     fn execute_query<'a>(
         &'a self,
         sql: &'a str,

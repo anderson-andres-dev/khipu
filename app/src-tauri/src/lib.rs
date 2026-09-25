@@ -1,6 +1,8 @@
 mod catalog_adapter;
 mod credentials;
 mod drivers;
+mod export;
+mod result_editing;
 mod sql_files;
 
 use khipu_driver_core::{
@@ -25,11 +27,15 @@ const DEFAULT_QUERY_ROW_LIMIT: usize = 500;
 const MAX_QUERY_ROW_LIMIT: usize = 10_000;
 
 /// Page requested by the frontend (row offset + page size).
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PageRequest {
     offset: u64,
     page_size: usize,
+    /// Orden pedido desde los encabezados del grid (vacio = el de la
+    /// consulta).
+    #[serde(default)]
+    sort: Vec<khipu_engine::pagination::SortKey>,
 }
 
 /// How the returned rows map onto the full result. `pageable: false` means
@@ -41,6 +47,9 @@ struct PageInfo {
     offset: u64,
     page_size: usize,
     pageable: bool,
+    /// La sentencia se puede ordenar desde el grid (se puede reescribir su
+    /// ORDER BY). Si no, los encabezados no ofrecen ordenar.
+    sortable: bool,
 }
 
 /// The connector from the most recent successful `connect` and every schema
@@ -340,18 +349,36 @@ async fn execute_query(
         }
     }
 
-    let offset = page.map_or(0, |page| page.offset);
+    let offset = page.as_ref().map_or(0, |page| page.offset);
     let page_size = page
+        .as_ref()
         .map_or(DEFAULT_QUERY_ROW_LIMIT, |page| page.page_size)
         .clamp(1, MAX_QUERY_ROW_LIMIT);
     // Se piden page_size + 1 filas: si llega la extra, hay pagina siguiente
     // (el driver la descarta y marca `truncated`).
+    //
+    // Primero el orden (sobre la consulta entera) y despues la pagina.
+    let sort = page
+        .as_ref()
+        .map(|page| page.sort.clone())
+        .unwrap_or_default();
+    let sortable = khipu_engine::pagination::sort_sql(
+        sql,
+        dialect,
+        &[khipu_engine::pagination::SortKey {
+            column: 0,
+            descending: false,
+        }],
+    )
+    .is_some();
+    let sorted_sql = khipu_engine::pagination::sort_sql(sql, dialect, &sort);
+    let base_sql = sorted_sql.as_deref().unwrap_or(sql);
     let paged_sql =
-        khipu_engine::pagination::paginate_sql(sql, dialect, offset, page_size as u64 + 1);
+        khipu_engine::pagination::paginate_sql(base_sql, dialect, offset, page_size as u64 + 1);
     let pageable = paged_sql.is_some();
     let result = connector
         .execute_query(
-            paged_sql.as_deref().unwrap_or(sql),
+            paged_sql.as_deref().unwrap_or(base_sql),
             QueryExecutionOptions {
                 max_rows: page_size,
             },
@@ -362,6 +389,7 @@ async fn execute_query(
         offset: if pageable { offset } else { 0 },
         page_size,
         pageable,
+        sortable,
     });
     Ok(ExecuteQueryResponse::Completed { result, page })
 }
@@ -481,10 +509,155 @@ async fn trash_sql_file(path: String) -> Result<(), String> {
     sql_files::trash(path).await
 }
 
+/// Runs `f` against the active connection while holding the lock. Only
+/// for synchronous work (analysis, SQL generation): the catalog is read in
+/// place instead of cloned.
+fn with_active_connection<T>(
+    window: &tauri::Window,
+    state: &tauri::State<'_, AppState>,
+    f: impl FnOnce(&ActiveConnection) -> Result<T, String>,
+) -> Result<T, String> {
+    let guard = state
+        .connections
+        .lock()
+        .expect("connections mutex poisoned");
+    let active = guard
+        .get(window.label())
+        .ok_or_else(|| "No hay ninguna conexión activa.".to_string())?;
+    f(active)
+}
+
+/// Whether the rows of `sql` can be edited from the grid, and how each
+/// result column maps onto the source table. `Err` carries the reason
+/// shown to the user.
+#[tauri::command]
+fn result_edit_info(
+    sql: String,
+    column_names: Vec<String>,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<result_editing::ResultEditInfo, String> {
+    with_active_connection(&window, &state, |active| {
+        result_editing::edit_info(
+            sql.trim(),
+            active.dialect,
+            &active.default_schema,
+            &active.schemas,
+            &column_names,
+        )
+    })
+}
+
+/// The exact SQL `apply_result_changes` would run, for the preview.
+#[tauri::command]
+fn preview_result_changes(
+    target: result_editing::EditTarget,
+    changes: khipu_engine::editing::ResultChanges,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    with_active_connection(&window, &state, |active| {
+        let statements =
+            result_editing::statements(active.dialect, &active.schemas, &target, &changes)?;
+        Ok(statements
+            .into_iter()
+            .map(|statement| statement.sql)
+            .collect())
+    })
+}
+
+/// Applies the pending grid changes in one transaction (all or nothing).
+#[tauri::command]
+async fn apply_result_changes(
+    target: result_editing::EditTarget,
+    changes: khipu_engine::editing::ResultChanges,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<u64, khipu_driver_core::TransactionError> {
+    let (connector, statements) = with_active_connection(&window, &state, |active| {
+        let statements =
+            result_editing::statements(active.dialect, &active.schemas, &target, &changes)?;
+        Ok((Arc::clone(&active.connector), statements))
+    })
+    .map_err(|message| khipu_driver_core::TransactionError {
+        statement_index: None,
+        message,
+        code: None,
+    })?;
+    if statements.is_empty() {
+        return Ok(0);
+    }
+    connector.execute_in_transaction(&statements).await
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportSummary {
+    rows: u64,
+    path: String,
+    elapsed_ms: u64,
+}
+
+/// "Exportar datos": vuelve a ejecutar la consulta del resultado SIN limite
+/// de filas y la escribe al archivo fila por fila (export.rs). Solo para
+/// consultas de lectura: re-ejecutar un UPDATE ... RETURNING modificaria
+/// los datos otra vez.
+/// Lo que pide "Exportar datos" (ver export_query_to_file).
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportRequest {
+    sql: String,
+    #[serde(default)]
+    sort: Vec<khipu_engine::pagination::SortKey>,
+    format: export::ExportFormat,
+    headers: bool,
+    table_name: String,
+    path: String,
+}
+
+#[tauri::command]
+async fn export_query_to_file(
+    request: ExportRequest,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<ExportSummary, String> {
+    let ExportRequest {
+        sql,
+        sort,
+        format,
+        headers,
+        table_name,
+        path,
+    } = request;
+    let sql = sql.trim().to_string();
+    let path = export::validated_path(&path)?;
+    let (connector, export_sql) = with_active_connection(&window, &state, |active| {
+        if !khipu_engine::pagination::is_read_only_query(&sql, active.dialect) {
+            return Err("Solo se pueden exportar consultas de lectura (SELECT).".to_string());
+        }
+        // El archivo sale en el mismo orden que el grid (orden de los
+        // encabezados, aplicado en la base igual que al paginar).
+        let sorted = khipu_engine::pagination::sort_sql(&sql, active.dialect, &sort);
+        Ok((
+            Arc::clone(&active.connector),
+            sorted.unwrap_or_else(|| sql.clone()),
+        ))
+    })?;
+    let start = std::time::Instant::now();
+    let mut sink = export::FileSink::create(&path, format, headers, table_name)?;
+    let rows = connector.stream_query(&export_sql, &mut sink).await?;
+    Ok(ExportSummary {
+        rows,
+        path: path.to_string_lossy().into_owned(),
+        elapsed_ms: start.elapsed().as_millis() as u64,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(AppState::default())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
@@ -515,7 +688,11 @@ pub fn run() {
             list_sql_dir,
             create_sql_file,
             trash_sql_file,
-            count_query_rows
+            count_query_rows,
+            result_edit_info,
+            preview_result_changes,
+            apply_result_changes,
+            export_query_to_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

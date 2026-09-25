@@ -104,6 +104,16 @@ pub async fn introspect_schema(
                 is_primary_key: text(&row, 4)? == "PRI",
                 // MySQL never returns NULL here, "" means no comment.
                 comment: opt_text(&row, 5)?.filter(|comment| !comment.is_empty()),
+                default_value: opt_text(&row, 6)?,
+                // EXTRA: "auto_increment", "VIRTUAL GENERATED", "STORED
+                // GENERATED"... ("DEFAULT_GENERATED" es solo un DEFAULT con
+                // expresion: esa columna si se puede escribir).
+                generated: opt_text(&row, 7)?.is_some_and(|extra| {
+                    let extra = extra.to_ascii_lowercase();
+                    extra.contains("auto_increment")
+                        || extra.contains("virtual generated")
+                        || extra.contains("stored generated")
+                }),
             },
         );
     }
@@ -166,7 +176,8 @@ const RELATIONS_SQL: &str = "\
 // needs to know about a column.
 const COLUMNS_SQL: &str = "\
     SELECT table_name AS tbl, column_name AS name, column_type AS type, \
-           is_nullable AS nullable, column_key AS col_key, column_comment AS comment \
+           is_nullable AS nullable, column_key AS col_key, column_comment AS comment, \
+           column_default AS dflt, extra AS extra \
     FROM information_schema.columns \
     WHERE table_schema = ? \
     ORDER BY table_name, ordinal_position";
