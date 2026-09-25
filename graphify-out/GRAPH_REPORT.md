@@ -1,17 +1,17 @@
 # Graph Report - khipu  (2026-09-25)
 
 ## Corpus Check
-- 167 files · ~142,006 words
+- 167 files · ~137,077 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 10 file(s) not represented in the graph (top: (none) 6, .css 2, .icns 1)
 
 ## Summary
-- 1686 nodes · 3501 edges · 78 communities (67 shown, 11 thin omitted)
+- 1689 nodes · 3501 edges · 81 communities (68 shown, 13 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 73 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9597b7d5`
+- Built from commit: `44ab672f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -26,7 +26,7 @@
 - queryConsoles.ts
 - docs/ARCHITECTURE.md
 - theme.ts
-- svelte
+- lib/connections.ts
 - tauri.conf.json
 - sqlFiles.ts
 - sqlDefinitionLink.ts
@@ -37,7 +37,7 @@
 - package.json
 - dependencies
 - i18n/index.ts
-- super
+- sql_files.rs
 - compilerOptions
 - drivers.rs
 - mysql/src/tls.rs
@@ -67,29 +67,29 @@
 - Borrador: copiado de resultados de consulta
 - FileTree.svelte
 - Dialect
-- codemirrorTheme.ts
+- super
 - sqlSchema.test.ts
 - connectionTest.ts
 - ExportDialog.svelte
-- ResultPane.svelte
+- svelte
 - sqlExecutionMarker.ts
 - gridClipboard.ts
 - messages/index.ts
-- SettingsPanel.svelte
+- catalog.rs
 - TlsMode
 - extractFromContext
-- SqlEditor.svelte
-- palettes.test.ts
+- editorSettings.ts
 - vitest
 - ref_app
 - Workspace.svelte
 - sqlEditorBehavior.ts
 - svelte
 - reorder.ts
-- svelte.config.js
+- copyFormat.ts
 - queryConsoles.test.ts
 - StatusGutterMarker
 - notifications.ts
+- catalog_adapter.rs
 
 ## God Nodes (most connected - your core abstractions)
 1. `DriverError` - 50 edges
@@ -123,7 +123,7 @@
 - **Branch protection to tagged-release pipeline flow** — contributing_branch_flow, _github_workflows_quality_workflow, _github_workflows_release_workflow [EXTRACTED 1.00]
 - **TablePlus edit-review-commit UX pattern group** — docs_design_tableplus_ux_arquitectura_explore_inspect_modify_review_commit, docs_design_tableplus_ux_arquitectura_pending_changes_commit, docs_design_tableplus_ux_arquitectura_application_shell [INFERRED 0.85]
 
-## Communities (78 total, 11 thin omitted)
+## Communities (81 total, 13 thin omitted)
 
 ### Community 0 - "execution_guard.rs"
 Cohesion: 0.09
@@ -162,12 +162,12 @@ Cohesion: 0.07
 Nodes (41): Node job (check, build), Rust job (fmt, clippy, test), Quality CI Workflow, Release job (multi-platform build & publish), tauri-apps/tauri-action, Release CI Workflow, app/README.md (Tauri + SvelteKit + TypeScript template note), CSS_VAR_NAMES field-to-CSS-variable mapping (+33 more)
 
 ### Community 9 - "theme.ts"
-Cohesion: 0.13
-Nodes (22): ColorScheme, EditorPalette, resolveScheme(), ShellPalette, THEME_FAMILIES, ThemeFamily, themeVariant, ThemeVariants (+14 more)
+Cohesion: 0.06
+Nodes (42): BUILTIN_FUNCTIONS, builtinCallMark, TOKEN_CHROME, WORD_OPERATORS, wordClassHighlight, wordOperatorMark, ColorScheme, EditorPalette (+34 more)
 
-### Community 10 - "svelte"
-Cohesion: 0.11
-Nodes (14): neutral, editButton(), indexOf(), $t(), tinted, CONNECTION_COLORS, NEUTRAL_IDENTITY_COLOR, BackendKind (+6 more)
+### Community 10 - "lib/connections.ts"
+Cohesion: 0.10
+Nodes (13): neutral, editButton(), indexOf(), $t(), tinted, CONNECTION_COLORS, NEUTRAL_IDENTITY_COLOR, BackendKind (+5 more)
 
 ### Community 11 - "tauri.conf.json"
 Cohesion: 0.10
@@ -198,8 +198,8 @@ Cohesion: 0.16
 Nodes (13): ConnectionDriver, PasswordPolicy, ConnectionProfile, connectionProfiles, isDriver(), isHexColor(), isPasswordPolicy(), isTlsMode() (+5 more)
 
 ### Community 18 - "package.json"
-Cohesion: 0.12
-Nodes (16): description, license, name, type, version, codemirror, @codemirror/commands, @lucide/svelte (+8 more)
+Cohesion: 0.09
+Nodes (19): description, license, name, type, version, config, codemirror, @codemirror/commands (+11 more)
 
 ### Community 19 - "dependencies"
 Cohesion: 0.12
@@ -209,9 +209,9 @@ Nodes (16): dependencies, codemirror, @codemirror/autocomplete, @codemirror/comm
 Cohesion: 0.18
 Nodes (17): interpolate(), loadPreference(), locale, localePreference, lookup(), MessageParams, systemLocale(), translator() (+9 more)
 
-### Community 21 - "super"
-Cohesion: 0.06
-Nodes (48): preserves_column_metadata(), preserves_foreign_keys(), IntoIterator, Item, tables_to_catalog(), absolute_dir(), create(), is_sql_file_name() (+40 more)
+### Community 21 - "sql_files.rs"
+Cohesion: 0.31
+Nodes (15): absolute_dir(), create(), is_sql_file_name(), list_dir(), read(), rename(), PathBuf, Result (+7 more)
 
 ### Community 22 - "compilerOptions"
 Cohesion: 0.15
@@ -222,8 +222,8 @@ Cohesion: 0.16
 Nodes (20): connect(), ConnectedDatabase, DatabaseKind, open(), report(), Arc, ConnectionConfig, Option (+12 more)
 
 ### Community 24 - "mysql/src/tls.rs"
-Cohesion: 0.13
-Nodes (19): apply(), connection_error(), io_error(), is_tls_failure(), read_status(), Error, ErrorKind, MySqlPool (+11 more)
+Cohesion: 0.07
+Nodes (36): apply(), connection_error(), io_error(), is_tls_failure(), read_status(), Error, ErrorKind, MySqlPool (+28 more)
 
 ### Community 25 - "devDependencies"
 Cohesion: 0.20
@@ -254,8 +254,8 @@ Cohesion: 0.14
 Nodes (25): crate, drops_rows_for_unknown_relations(), group(), groups_multi_column_keys_in_column_order(), groups_non_adjacent_rows_of_the_same_constraint(), ignores_duplicate_relation_names(), IndexColumnRow, key_row() (+17 more)
 
 ### Community 37 - "mysql/src/version.rs"
-Cohesion: 0.07
-Nodes (19): Capabilities, check_constraints_depend_on_flavor_and_version(), CheckConstraints, Flavor, MIN_MARIADB, MIN_MYSQL, Capabilities, Self (+11 more)
+Cohesion: 0.13
+Nodes (12): Capabilities, check_constraints_depend_on_flavor_and_version(), CheckConstraints, Flavor, MIN_MARIADB, MIN_MYSQL, Capabilities, Self (+4 more)
 
 ### Community 41 - "sqlContext.ts"
 Cohesion: 0.18
@@ -263,7 +263,7 @@ Nodes (13): classifyContext(), classifyFrame(), CLAUSE_KEYWORDS, ClauseKind, Fra
 
 ### Community 42 - "+layout.svelte"
 Cohesion: 0.07
-Nodes (32): installDialogMotion(), initLocaleEffects(), reset(), eventMatchesShortcut(), formatShortcutEvent(), MODIFIER_KEYS, ResolvedShortcut, ShortcutDefinition (+24 more)
+Nodes (33): installDialogMotion(), initLocaleEffects(), reset(), eventMatchesShortcut(), formatShortcutEvent(), MODIFIER_KEYS, ResolvedShortcut, ShortcutDefinition (+25 more)
 
 ### Community 43 - "export.rs"
 Cohesion: 0.15
@@ -278,8 +278,8 @@ Cohesion: 0.23
 Nodes (10): CLAUSES_WITH_INLINE_BODY, compactStructuredLayout(), compactStructuredLayoutPass(), formatSqlBlock(), indentation(), isClause(), Quote, scanFormattedSql() (+2 more)
 
 ### Community 46 - "gridFind.ts"
-Cohesion: 0.22
-Nodes (11): buildMatcher(), cellText(), escapeRegex(), findInPage(), FindMatch, FindOptions, FindResult, MAX_MATCHES (+3 more)
+Cohesion: 0.19
+Nodes (13): for(), buildMatcher(), cellText(), escapeRegex(), findInPage(), FindMatch, FindOptions, FindResult (+5 more)
 
 ### Community 47 - "ResultPager.svelte"
 Cohesion: 0.11
@@ -291,7 +291,7 @@ Nodes (10): DEFAULT_FILE_PANEL_HEIGHT, EMPTY, listRecord(), load(), MIN_FILE_PAN
 
 ### Community 49 - "resultEditing.ts"
 Cohesion: 0.13
-Nodes (19): for(), addRow(), buildChanges(), ChangeError, ColumnValue, deleteRows(), EditableColumn, EditTarget (+11 more)
+Nodes (17): addRow(), buildChanges(), ChangeError, ColumnValue, deleteRows(), EditableColumn, EditTarget, newRowValues() (+9 more)
 
 ### Community 50 - "sqlCompletionPolicy.ts"
 Cohesion: 0.22
@@ -313,9 +313,9 @@ Nodes (13): active, editValue, fileMenuItems(), finishEdit(), folderMenuItems(),
 Cohesion: 0.05
 Nodes (73): edit_info(), EditableColumn, EditTarget, find_table(), names(), ResultEditInfo, BTreeMap, Option (+65 more)
 
-### Community 55 - "codemirrorTheme.ts"
-Cohesion: 0.20
-Nodes (7): BUILTIN_FUNCTIONS, builtinCallMark, TOKEN_CHROME, WORD_OPERATORS, wordClassHighlight, wordOperatorMark, @lezer/highlight
+### Community 55 - "super"
+Cohesion: 0.14
+Nodes (8): Capabilities, capabilities_by_version(), MIN_MAJOR, Capabilities, Self, String, ServerVersion, super
 
 ### Community 56 - "sqlSchema.test.ts"
 Cohesion: 0.20
@@ -327,11 +327,11 @@ Nodes (10): colorLabel(), describeTls(), summarizeError(), summarizeReport(), su
 
 ### Community 58 - "ExportDialog.svelte"
 Cohesion: 0.17
-Nodes (10): format(), detectJsonColumns(), escapeHtml(), highlightJson(), HTML_ESCAPES, isJsonColumnType(), looksLikeJsonDocument(), MAX_HIGHLIGHTED_CHARS (+2 more)
+Nodes (11): format(), detectJsonColumns(), escapeHtml(), highlightJson(), HTML_ESCAPES, isJsonColumnType(), looksLikeJsonDocument(), MAX_HIGHLIGHTED_CHARS (+3 more)
 
-### Community 59 - "ResultPane.svelte"
-Cohesion: 0.15
-Nodes (5): onMove(), onUp(), executionLog, LogEntry, LogKind
+### Community 59 - "svelte"
+Cohesion: 0.11
+Nodes (8): onMove(), onUp(), option(), $t(), executionLog, LogEntry, LogKind, svelte
 
 ### Community 60 - "sqlExecutionMarker.ts"
 Cohesion: 0.17
@@ -345,6 +345,10 @@ Nodes (22): writeClipboard(), CopyColumn, CopyOptions, csvField(), externalValue
 Cohesion: 0.31
 Nodes (3): defineMessages(), OtherLocale, Namespaces
 
+### Community 63 - "catalog.rs"
+Cohesion: 0.23
+Nodes (10): CatalogColumn, CatalogColumn, CatalogForeignKey, CatalogTable, CatalogTable, Option, String, Vec (+2 more)
+
 ### Community 64 - "TlsMode"
 Cohesion: 0.17
 Nodes (11): ConnectionConfig, TlsMode, TlsStatus, Compatibilidad entre versiones, Contrato del driver, Explorador de base de datos, Limitaciones conocidas, MySQL / MariaDB — `information_schema` (+3 more)
@@ -353,13 +357,9 @@ Nodes (11): ConnectionConfig, TlsMode, TlsStatus, Compatibilidad entre versiones
 Cohesion: 0.67
 Nodes (4): currentStatement(), extractFromContext(), extractFromTables(), toRelation()
 
-### Community 66 - "SqlEditor.svelte"
-Cohesion: 0.16
-Nodes (4): ContextMenuItem, table(), app_src_lib_sqleditoricons, app_src_lib_styles_editorsearch
-
-### Community 67 - "palettes.test.ts"
-Cohesion: 0.14
-Nodes (13): palettes, contrast(), DARK_BEFORE, FAMILIES, LIGHT_COMMENT_MIN, LIGHT_FAMILIES, LIGHT_SYNTAX_MIN, luminance() (+5 more)
+### Community 67 - "editorSettings.ts"
+Cohesion: 0.24
+Nodes (8): DEFAULT_FORMATTER_LINE_WIDTH, defaultEditorSettings(), editorSettings, loadEditorSettings(), MAX_FORMATTER_LINE_WIDTH, MIN_FORMATTER_LINE_WIDTH, normalizeLineWidth(), setFormatterLineWidth()
 
 ### Community 68 - "vitest"
 Cohesion: 0.43
@@ -370,28 +370,32 @@ Cohesion: 0.25
 Nodes (7): applyForwardJoin(), applyReverseJoin(), buildJoinCompletionSource(), boostFor(), recordUsage(), usage, ref_app
 
 ### Community 70 - "Workspace.svelte"
-Cohesion: 0.15
-Nodes (6): #each(), labelForKey(), onKeydown(), $t(), tabExists(), isQueryConsoleDirty()
+Cohesion: 0.08
+Nodes (11): #each(), labelForKey(), onKeydown(), $t(), tabExists(), ContextMenuItem, table(), app_src_lib_sqleditoricons (+3 more)
 
 ### Community 71 - "sqlEditorBehavior.ts"
 Cohesion: 0.24
 Nodes (9): activeStatementHighlight, autoUppercaseSqlKeywords, findStatement(), statementDecorations(), editFor(), uppercaseKeywordEdit, @codemirror/lang-sql, @codemirror/language (+1 more)
 
 ### Community 72 - "svelte"
-Cohesion: 0.10
-Nodes (21): COPY_FORMATS, CopyFormat, copySettings, DEFAULTS, DEFAULT_FORMATTER_LINE_WIDTH, defaultEditorSettings(), editorSettings, loadEditorSettings() (+13 more)
+Cohesion: 0.29
+Nodes (9): addPinnedTab(), consoleOfKey(), pinnedResults, PinnedTab, removePinnedTab(), resultKey(), setResultPinned(), unpinnedTabs() (+1 more)
 
 ### Community 73 - "reorder.ts"
 Cohesion: 0.21
 Nodes (13): reorderResultTabs(), moveItem(), prefersReducedMotion(), reorderable(), onPointerDown(), cleanup(), onMove(), onUp() (+5 more)
 
-### Community 74 - "svelte.config.js"
+### Community 74 - "copyFormat.ts"
 Cohesion: 0.40
-Nodes (3): config, @sveltejs/adapter-static, @sveltejs/vite-plugin-svelte
+Nodes (4): COPY_FORMATS, CopyFormat, copySettings, DEFAULTS
 
 ### Community 77 - "notifications.ts"
 Cohesion: 0.31
 Nodes (8): confirmTrash(), trashSqlFile(), dismissNotice(), notice, notifyError(), notifySuccess(), show(), detachQueryConsoleFile()
+
+### Community 78 - "catalog_adapter.rs"
+Cohesion: 0.47
+Nodes (5): preserves_column_metadata(), preserves_foreign_keys(), IntoIterator, Item, tables_to_catalog()
 
 ## Ambiguous Edges - Review These
 - `CSS_VAR_NAMES field-to-CSS-variable mapping` → `theme.ts SHELL_PALETTE_CSS_VARS (external reference, file not read in this chunk)`  [AMBIGUOUS]
@@ -401,8 +405,8 @@ Nodes (8): confirmTrash(), trashSqlFile(), dismissNotice(), notice, notifyError(
 
 ## Knowledge Gaps
 - **292 isolated node(s):** `name`, `version`, `description`, `license`, `type` (+287 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 575 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 578 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -411,10 +415,10 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `SHELL_PALETTES literal (datagrip/vscode x dark/light)` and `palettes.ts palette definitions (external reference, file not read in this chunk)`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **Why does `svelte` connect `svelte` to `resultEdits.ts`, `ref_app`, `queryConsoles.ts`, `reorder.ts`, `+layout.svelte`, `queryConsoles.test.ts`, `sqlFiles.ts`, `editorSearchPanel.ts`, `connection.ts`, `notifications.ts`, `ResultPager.svelte`, `connectionProfiles.ts`, `package.json`, `sqlFolders.ts`, `i18n/index.ts`, `theme.ts`, `ResultPane.svelte`?**
+- **Why does `svelte` connect `svelte` to `resultEdits.ts`, `queryConsoles.ts`, `theme.ts`, `sqlFiles.ts`, `connection.ts`, `connectionProfiles.ts`, `package.json`, `i18n/index.ts`, `+layout.svelte`, `editorSearchPanel.ts`, `ResultPager.svelte`, `sqlFolders.ts`, `svelte`, `editorSettings.ts`, `ref_app`, `reorder.ts`, `copyFormat.ts`, `queryConsoles.test.ts`, `notifications.ts`?**
   _High betweenness centrality (0.053) - this node is a cross-community bridge._
 - **Why does `Explorador de base de datos` connect `TlsMode` to `connection.ts`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **What connects `name`, `version`, `description` to the rest of the system?**
   _292 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `execution_guard.rs` be split into smaller, more focused modules?**
