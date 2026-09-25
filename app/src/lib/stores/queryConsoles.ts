@@ -132,11 +132,27 @@ function createId(): string {
     : `console-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+// El numero libre mas bajo entre las consolas abiertas de esa conexion:
+// cerrar consola_2 y abrir otra vuelve a dar consola_2, en vez de seguir
+// contando para siempre (consola_12 con una sola pestaña abierta).
+function nextConsoleOrdinal(state: QueryConsoleState, profileId: string): number {
+  const used = new Set(
+    state.consoles
+      .filter((item) => item.profileId === profileId)
+      .map((item) => /^consola_(\d+)$/.exec(item.title)?.[1])
+      .filter((ordinal): ordinal is string => ordinal !== undefined)
+      .map(Number),
+  );
+  let ordinal = 1;
+  while (used.has(ordinal)) ordinal++;
+  return ordinal;
+}
+
 function appendConsole(state: QueryConsoleState, profileId: string): { state: QueryConsoleState; id: string } {
   const item: QueryConsole = {
     id: createId(),
     profileId,
-    title: consoleTitle(state.nextOrdinal),
+    title: consoleTitle(nextConsoleOrdinal(state, profileId)),
     sql: "",
     filePath: null,
     savedSql: "",
@@ -368,12 +384,15 @@ export function closeQueryConsole(profileId: string, id: string): void {
   if (closedIndex === -1) return;
 
   const remaining = profileConsoles.filter((item) => item.id !== id);
+  // Cerrar la ultima no crea otra en su lugar: el workspace queda vacio y
+  // ofrece crear una consola o abrir un archivo.
   if (remaining.length === 0) {
-    const withoutClosed = {
+    const { [profileId]: _closed, ...activeByProfile } = state.activeByProfile;
+    queryConsoles.set({
       ...state,
       consoles: state.consoles.filter((item) => item.id !== id),
-    };
-    queryConsoles.set(appendConsole(withoutClosed, profileId).state);
+      activeByProfile,
+    });
     return;
   }
 

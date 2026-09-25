@@ -285,6 +285,10 @@
     pendingCloseId = id;
     await tick();
     closeDialog?.showModal();
+    // El foco va al dialogo y no a un boton: asi ninguno aparece con el
+    // anillo de foco al abrir y un Enter accidental no dispara nada. Esc
+    // sigue cancelando y Tab entra a los botones.
+    closeDialog?.focus();
   }
 
   function cancelClose() {
@@ -506,6 +510,21 @@
       <Plus size={14} aria-hidden="true" />
     </button>
   </div>
+  {#if !activeConsole}
+    <div class="workspace-empty" in:fade={{ duration: 150 }}>
+      <SquareTerminal size={30} strokeWidth={1.25} class="workspace-empty-icon" aria-hidden="true" />
+      <div class="workspace-empty-actions">
+        <button type="button" onclick={() => createQueryConsole(profileId)}>
+          <span>Nueva consola</span>
+          <kbd>{shortcutKeys("new-query-console")}</kbd>
+        </button>
+        <button type="button" onclick={() => void runFileAction(() => openSqlFileWithDialog(profileId))}>
+          <span>Abrir archivo</span>
+          <kbd>{shortcutKeys("open-sql-file")}</kbd>
+        </button>
+      </div>
+    </div>
+  {:else}
   <section class="workspace-body" bind:this={workspaceBody}>
     <div class="editor-pane" style={`flex-basis: ${editorFraction * 100}%`}>
       {#if activeConsole}
@@ -552,6 +571,7 @@
       />
     </div>
   </section>
+  {/if}
 </div>
 
 {#if tableDefinitionRequest}
@@ -585,6 +605,7 @@
 
 <dialog
   class="close-console-dialog"
+  tabindex="-1"
   bind:this={closeDialog}
   oncancel={(event) => {
     event.preventDefault();
@@ -592,21 +613,15 @@
   }}
   onclose={() => (pendingCloseId = null)}
 >
-  <div class="dialog-banner">
-    <div class="dialog-icon" aria-hidden="true">
-      <TriangleAlert size={20} strokeWidth={2} />
-    </div>
-    <h2>¿Cerrar {pendingCloseConsole?.title ?? "consola"}?</h2>
+  <div class="dialog-icon" aria-hidden="true">
+    <TriangleAlert size={24} strokeWidth={2} />
   </div>
-  <p class="dialog-message">
-    {pendingCloseConsole?.filePath ? "Tiene cambios sin guardar." : "Esta consola no está guardada en un archivo."}
-  </p>
+  <h2>¿Cerrar {pendingCloseConsole?.title ?? "consola"}?</h2>
+  <p class="dialog-message">Hay cambios sin guardar.</p>
   <div class="dialog-actions">
     <button type="button" class="secondary-action" onclick={cancelClose}>Cancelar</button>
-    <button type="button" class="secondary-action discard" onclick={discardAndClose}>Descartar</button>
-    <button type="button" class="primary-action" onclick={() => void saveAndClose()}>
-      {pendingCloseConsole?.filePath ? "Guardar" : "Guardar como…"}
-    </button>
+    <button type="button" class="danger-action" onclick={discardAndClose}>Descartar</button>
+    <button type="button" class="primary-action" onclick={() => void saveAndClose()}>Guardar</button>
   </div>
 </dialog>
 
@@ -812,6 +827,66 @@
     flex-shrink: 0;
   }
 
+  /* Sin pestañas abiertas: accesos directos centrados, al estilo de la
+     pantalla vacia de un editor. */
+  .workspace-empty {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-5);
+    background: var(--surface-content);
+    user-select: none;
+  }
+
+  .workspace-empty :global(.workspace-empty-icon) {
+    color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
+  }
+
+  .workspace-empty-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 15rem;
+  }
+
+  .workspace-empty-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
+  }
+
+  .workspace-empty-actions button:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .workspace-empty-actions button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .workspace-empty-actions kbd {
+    color: color-mix(in srgb, var(--text-secondary) 75%, transparent);
+    font: inherit;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
   .workspace-body {
     display: flex;
     min-height: 0;
@@ -867,19 +942,19 @@
     overflow: hidden;
   }
 
-  /* Sin padding propio: la franja superior va de borde a borde y el resto
-     del contenido lleva su padding. El color de advertencia sale de
-     --warning, asi cada tema trae su tono. */
+  /* Todo centrado: icono, titulo y mensaje apilados, y los tres botones
+     del mismo ancho en una fila. Colores planos, sin degradados. */
   .close-console-dialog {
-    width: min(24rem, calc(100vw - 2rem));
-    padding: 0;
-    overflow: hidden;
+    width: min(25rem, calc(100vw - 2rem));
+    padding: 2rem 1.75rem 1.75rem;
     box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface-elevated);
     box-shadow: var(--shadow-elevated);
     color: var(--text-primary);
+    text-align: center;
+    outline: none;
   }
 
   .close-console-dialog[open] {
@@ -899,34 +974,19 @@
     }
   }
 
-  .dialog-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-5);
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--warning) 16%, var(--surface-elevated)),
-      color-mix(in srgb, var(--warning) 7%, var(--surface-elevated))
-    );
-    box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--warning) 22%, var(--border));
-  }
-
   .dialog-icon {
     display: flex;
-    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto 1.25rem;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--warning) 20%, transparent);
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--warning) 8%, transparent);
+    background: color-mix(in srgb, var(--warning) 14%, transparent);
     color: var(--warning);
   }
 
   h2 {
-    min-width: 0;
     margin: 0;
     font-size: var(--font-size-heading);
     font-weight: var(--font-weight-heading);
@@ -935,51 +995,59 @@
   }
 
   .dialog-message {
-    margin: 0;
-    padding: var(--space-4) var(--space-5) var(--space-5);
+    margin: var(--space-2) 0 1.75rem;
     color: var(--text-secondary);
     font-size: 0.875rem;
     line-height: 1.5;
   }
 
   .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-2);
-    padding: 0 var(--space-5) var(--space-5);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
   }
 
   .dialog-actions button {
-    min-height: 2rem;
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--border);
+    /* Sin borde en ninguno: con borde, el relleno de un boton "neutro"
+       arranca 1px mas adentro que el de los de color y se ve mas bajo
+       aunque midan lo mismo. */
+    height: 2.5rem;
+    padding: 0 var(--space-3);
+    border: 0;
     border-radius: var(--radius-sm);
     font: inherit;
     font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
     transition:
       background-color 120ms ease,
-      color 120ms ease;
+      border-color 120ms ease;
   }
 
-  .secondary-action {
-    background: var(--surface);
+  .close-console-dialog .secondary-action {
+    background: color-mix(in srgb, var(--text-primary) 9%, var(--surface-elevated));
     color: var(--text-primary);
   }
 
-  .secondary-action:hover {
-    background: var(--surface-hover);
+  .close-console-dialog .secondary-action:hover {
+    background: color-mix(in srgb, var(--text-primary) 14%, var(--surface-elevated));
   }
 
-  .secondary-action.discard:hover {
-    color: var(--danger);
+  /* Rojo saturado propio: --danger en los temas oscuros es un rosado
+     pensado para texto y como relleno se ve lavado. */
+  .danger-action {
+    background: #e5484d;
+    color: #fff;
+  }
+
+  .danger-action:hover {
+    background: #ec5d5e;
   }
 
   .primary-action {
-    border-color: transparent !important;
     background: var(--accent);
     color: var(--text-on-accent);
-    font-weight: 500;
   }
 
   .primary-action:hover {

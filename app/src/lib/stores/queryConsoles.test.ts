@@ -102,6 +102,28 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
     expect(get(mod.queryConsoles).executionByConsole[idA]).toBeUndefined();
   });
 
+  it("cerrar la ultima consola deja la conexion sin pestañas", async () => {
+    const mod = await freshQueryConsoles();
+    const id = mod.createQueryConsole("profile-a");
+    mod.closeQueryConsole("profile-a", id);
+
+    const state = get(mod.queryConsoles);
+    expect(state.consoles.filter((item) => item.profileId === "profile-a")).toEqual([]);
+    expect(state.activeByProfile["profile-a"]).toBeUndefined();
+  });
+
+  it("una consola nueva toma el numero libre mas bajo", async () => {
+    const mod = await freshQueryConsoles();
+    mod.createQueryConsole("profile-a");
+    const second = mod.createQueryConsole("profile-a");
+    mod.createQueryConsole("profile-a");
+    mod.closeQueryConsole("profile-a", second);
+    const reused = mod.createQueryConsole("profile-a");
+
+    const titles = get(mod.queryConsoles).consoles.map((item) => [item.id === reused, item.title]);
+    expect(titles).toContainEqual([true, "consola_2"]);
+  });
+
   it("executionByConsole nunca se escribe en localStorage", async () => {
     const mod = await freshQueryConsoles();
     const id = mod.createQueryConsole("profile-a");
