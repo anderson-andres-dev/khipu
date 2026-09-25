@@ -1,13 +1,49 @@
 <script lang="ts">
-  import { Columns3, Key } from "@lucide/svelte";
+  import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, Key } from "@lucide/svelte";
   import { tick, untrack } from "svelte";
-  import type { ColumnCatalogInfo, QueryColumn, QueryRow } from "$lib/types";
+  import type { ColumnCatalogInfo, QueryColumn, QueryRow, SortKey } from "$lib/types";
+  import { detectJsonColumns, escapeHtml, highlightJson } from "$lib/jsonHighlight";
+  import type { FindMatch } from "$lib/gridFind";
+  import {
+    parseClipboard,
+    readClipboardText,
+    rememberCopy,
+    serializeSelection,
+    writeClipboardText,
+    type CopyFormat,
+    type PasteBlock,
+  } from "$lib/gridClipboard";
+  import {
+    EMPTY_EDITS,
+    originalValue,
+    type CellValue,
+    type PendingEdits,
+    type ResultEditInfo,
+    type RowRange,
+  } from "$lib/resultEditing";
 
   let {
     columns,
     rows,
     rowOffset = 0,
     columnCatalogInfo = null,
+    editInfo = null,
+    editBlockedReason = null,
+    edits = EMPTY_EDITS,
+    oncommitcell = () => {},
+    oneditblocked = () => {},
+    onselectionchange = () => {},
+    copyFormat = "tsv",
+    copyHeaders = false,
+    copyTableName = "",
+    onpasteblock = () => {},
+    findMatches = [],
+    findCurrent = -1,
+    hiddenRows = null,
+    onfind = () => {},
+    sort = [],
+    sortable = false,
+    onsort = () => {},
   }: {
     columns: QueryColumn[];
     rows: QueryRow[];
@@ -15,7 +51,60 @@
     // la columna # muestra la numeracion global (501, 502... en la pagina 2).
     rowOffset?: number;
     columnCatalogInfo?: Map<string, ColumnCatalogInfo> | null;
+    // Edicion del resultado (ver resultEditing.ts). Sin editInfo el grid es
+    // de solo lectura y editBlockedReason explica por que.
+    editInfo?: ResultEditInfo | null;
+    editBlockedReason?: string | null;
+    edits?: PendingEdits;
+    oncommitcell?: (row: number, col: number, value: CellValue) => void;
+    oneditblocked?: (reason: string) => void;
+    onselectionchange?: (range: RowRange | null) => void;
+    // Ctrl+C: formato para varias celdas (una sola se copia como su valor).
+    copyFormat?: CopyFormat;
+    copyHeaders?: boolean;
+    // "schema.tabla" para copiar como SQL INSERT.
+    copyTableName?: string;
+    // Ctrl+V: bloque interpretado del portapapeles, a pegar desde la celda
+    // de arriba a la izquierda de la seleccion; `fill` es la seleccion
+    // entera (un solo valor la rellena toda).
+    onpasteblock?: (anchorRow: number, anchorCol: number, block: PasteBlock, fill: RowRange) => void;
+    // Busqueda (Ctrl+F): celdas que coinciden, la actual (indice en
+    // findMatches) y, con "Filtrar filas", las filas de la pagina a ocultar.
+    findMatches?: FindMatch[];
+    findCurrent?: number;
+    hiddenRows?: ReadonlySet<number> | null;
+    onfind?: () => void;
+    // Orden desde los encabezados (se aplica en la base, ver gridSort.ts):
+    // criterios actuales, si la consulta lo admite, y el clic (Shift =
+    // agregar criterio).
+    sort?: SortKey[];
+    sortable?: boolean;
+    onsort?: (column: number, additive: boolean) => void;
   } = $props();
+
+  // --- Posicion visible de cada fila ------------------------------------
+  // Con "Filtrar filas" algunas filas se ocultan: todo lo que se posiciona
+  // por fila (seleccion, editor, efectos, scroll) usa esta posicion visible
+  // en vez de fila x alto, asi nada se desalinea. Sin filtro es fila x alto.
+  const hiddenBefore = $derived.by(() => {
+    if (!hiddenRows || hiddenRows.size === 0) return null;
+    const prefix = new Int32Array(rows.length + 1);
+    for (let row = 0; row < rows.length; row++) prefix[row + 1] = prefix[row] + (hiddenRows.has(row) ? 1 : 0);
+    return prefix;
+  });
+
+  function visualRow(row: number): number {
+    if (!hiddenBefore) return row;
+    return row - hiddenBefore[Math.min(Math.max(row, 0), rows.length)];
+  }
+
+  // Alto visible de las filas minRow..maxRow (las ocultas no cuentan).
+  function spanHeight(minRow: number, maxRow: number): number {
+    return Math.max(0, visualRow(maxRow + 1) - visualRow(minRow)) * rowHeight;
+  }
+
+  // Filas de la pagina + filas nuevas pendientes (van al final).
+  const totalRows = $derived(rows.length + edits.inserted.length);
 
   function catalogInfoFor(columnName: string): ColumnCatalogInfo | undefined {
     return columnCatalogInfo?.get(columnName.toLowerCase());
@@ -71,35 +160,370 @@
     };
   }
 
+  // Seleccion multiple (Ctrl+clic): `selection` es el rango activo (el
+  // ultimo clicado, el que se extiende con Shift o arrastrando) y
+  // `extraSelections` los que se fueron agregando antes. Un clic normal
+  // vuelve a un solo rango.
+  let extraSelections = $state<CellRange[]>([]);
+
+  function sameRange(a: CellRange, b: CellRange): boolean {
+    const x = normalized(a);
+    const y = normalized(b);
+    return x.minRow === y.minRow && x.maxRow === y.maxRow && x.minCol === y.minCol && x.maxCol === y.maxCol;
+  }
+
+  // Ctrl+clic: agrega el rango; si ya estaba seleccionado (solo), lo quita.
+  function toggleInSelection(range: CellRange) {
+    const all = selection ? [...extraSelections, selection] : [...extraSelections];
+    const existing = all.findIndex((candidate) => sameRange(candidate, range));
+    if (existing >= 0) {
+      all.splice(existing, 1);
+      selection = all.at(-1) ?? null;
+      extraSelections = all.slice(0, -1);
+      return;
+    }
+    extraSelections = all;
+    selection = range;
+  }
+
+  function setSelection(range: CellRange, event?: MouseEvent) {
+    if (event && (event.ctrlKey || event.metaKey)) {
+      toggleInSelection(range);
+      return;
+    }
+    extraSelections = [];
+    selection = range;
+  }
+
   function selectCell(row: number, col: number, extend = false) {
     if (extend && selection) {
       selection = { ...selection, endRow: row, endCol: col };
     } else {
+      extraSelections = [];
       selection = { startRow: row, startCol: col, endRow: row, endCol: col };
     }
   }
 
-  function selectColumn(col: number) {
-    selection = { startRow: 0, startCol: col, endRow: Math.max(0, rows.length - 1), endCol: col };
+  const isFullColumn = (range: CellRange) => {
+    const { minRow, maxRow } = normalized(range);
+    return minRow === 0 && maxRow >= totalRows - 1;
+  };
+  const isFullRow = (range: CellRange) => {
+    const { minCol, maxCol } = normalized(range);
+    return minCol === 0 && maxCol >= columns.length - 1;
+  };
+
+  function selectColumn(col: number, event?: MouseEvent) {
+    focusGrid();
+    const lastRow = Math.max(0, totalRows - 1);
+    // Shift: de la columna activa hasta esta.
+    if (event?.shiftKey && selection && isFullColumn(selection)) {
+      selection = { ...selection, startRow: 0, endRow: lastRow, endCol: col };
+      return;
+    }
+    setSelection({ startRow: 0, startCol: col, endRow: lastRow, endCol: col }, event);
   }
 
   // Toggle: si ya esta todo seleccionado, un segundo clic lo limpia.
   function toggleSelectAll() {
-    if (rows.length === 0 || columns.length === 0) return;
-    const lastRow = rows.length - 1;
+    focusGrid();
+    if (totalRows === 0 || columns.length === 0) return;
+    const lastRow = totalRows - 1;
     const lastCol = columns.length - 1;
-    if (selection) {
+    if (selection && extraSelections.length === 0) {
       const { minRow, maxRow, minCol, maxCol } = normalized(selection);
       if (minRow === 0 && minCol === 0 && maxRow === lastRow && maxCol === lastCol) {
         selection = null;
         return;
       }
     }
+    extraSelections = [];
     selection = { startRow: 0, startCol: 0, endRow: lastRow, endCol: lastCol };
   }
 
-  function selectRow(row: number) {
-    selection = { startRow: row, startCol: 0, endRow: row, endCol: Math.max(0, columns.length - 1) };
+  function selectRow(row: number, event?: MouseEvent) {
+    focusGrid();
+    const lastCol = Math.max(0, columns.length - 1);
+    // Shift: de la fila activa hasta esta.
+    if (event?.shiftKey && selection && isFullRow(selection)) {
+      selection = { ...selection, startCol: 0, endCol: lastCol, endRow: row };
+      return;
+    }
+    setSelection({ startRow: row, startCol: 0, endRow: row, endCol: lastCol }, event);
+  }
+
+  // Todos los rangos seleccionados, normalizados (el activo al final).
+  const allSelections = $derived(selection ? [...extraSelections, selection] : extraSelections);
+
+  $effect(() => {
+    const range = selection ? normalized(selection) : null;
+    untrack(() => onselectionchange(range));
+  });
+
+  // Quitar filas nuevas achica el total: una seleccion que apuntaba mas alla
+  // de la ultima fila se recorta (o se limpia si ya no toca ninguna).
+  $effect(() => {
+    const last = totalRows - 1;
+    untrack(() => {
+      extraSelections = extraSelections.filter((range) => Math.min(range.startRow, range.endRow) <= last);
+      if (!selection) return;
+      if (last < 0 || Math.min(selection.startRow, selection.endRow) > last) {
+        selection = null;
+      } else if (selection.startRow > last || selection.endRow > last) {
+        selection = {
+          ...selection,
+          startRow: Math.min(selection.startRow, last),
+          endRow: Math.min(selection.endRow, last),
+        };
+      }
+    });
+  });
+
+  // --- API para la barra de edicion (ResultPane, via bind:this) ---------
+  export function selectedRange(): RowRange | null {
+    return selection ? normalized(selection) : null;
+  }
+
+  export function selectedRanges(): RowRange[] {
+    return allSelections.map(normalized);
+  }
+
+  // --- Deshacer con contexto ----------------------------------------------
+  // Deshacer lleva el grid hasta el cambio, desvanece las filas nuevas que
+  // se quitan y hace un destello sobre lo restaurado: se VE que se deshizo.
+  // Todo con un par de overlays y clases, sin re-render.
+  const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Desplaza (suave) solo si el rango no esta a la vista.
+  export async function reveal(range: RowRange) {
+    const el = viewportEl;
+    if (!el) return;
+    const bodyTop = headerHeight;
+    const rowTop = bodyTop + visualRow(range.minRow) * rowHeight;
+    const rowBottom = rowTop + spanHeight(range.minRow, range.maxRow);
+    const visibleTop = el.scrollTop + bodyTop;
+    const visibleBottom = el.scrollTop + el.clientHeight;
+    let top = el.scrollTop;
+    if (rowTop < visibleTop || rowBottom > visibleBottom) {
+      top = Math.max(0, rowTop - bodyTop - (el.clientHeight - bodyTop) / 3);
+    }
+    let left = el.scrollLeft;
+    const colLeft = rowNumberWidth + (columnLefts[range.minCol] ?? 0);
+    const colRight = rowNumberWidth + (columnLefts[range.maxCol] ?? 0) + (columnWidths[range.maxCol] ?? 0);
+    if (colLeft < el.scrollLeft + rowNumberWidth || colRight > el.scrollLeft + el.clientWidth) {
+      left = Math.max(0, colLeft - rowNumberWidth - 24);
+    }
+    if (Math.abs(top - el.scrollTop) < 1 && Math.abs(left - el.scrollLeft) < 1) return;
+    const smooth = !prefersReducedMotion();
+    el.scrollTo({ top, left, behavior: smooth ? "smooth" : "auto" });
+    if (smooth) await wait(Math.min(420, 160 + Math.abs(top - el.scrollTop) / 12));
+  }
+
+  // Filas nuevas que estan por quitarse. Animar la fila (<tr>) y su numero
+  // (columna #, sticky: otra capa) por separado nunca queda sincronizado en
+  // WebKitGTK: cada capa se pinta a su ritmo y se ve la data irse antes que
+  // el numero. En vez de eso, UNA "cortina" del color del fondo cubre la
+  // fila entera (numero incluido) y se funde encima; al terminar, la fila se
+  // quita en el mismo cuadro en que la cortina desaparece. Un solo elemento
+  // animado => sincronizado por construccion.
+  //
+  // Si al quitarlas el contenido se achica tanto que el scroll tendria que
+  // saltar (estando abajo del todo), el grid se desliza durante la
+  // animacion en vez de saltar al final.
+  const LEAVE_MS = 160;
+
+  // Una por rango que sale (Ctrl+clic puede quitar varios salteados).
+  let curtains = $state<{ top: number; left: number; width: number; height: number }[]>([]);
+  let curtainTimer: ReturnType<typeof setTimeout> | null = null;
+
+  export async function fadeOutInsertedRows(range: RowRange) {
+    const first = Math.max(range.minRow, rows.length);
+    const last = Math.min(range.maxRow, totalRows - 1);
+    const el = viewportEl;
+    if (first > last || !el || prefersReducedMotion()) return;
+    const height = (last - first + 1) * rowHeight;
+    curtains = [
+      ...curtains,
+      {
+        top: headerHeight + visualRow(first) * rowHeight,
+        // La cortina va en coordenadas del contenido: cubre lo visible en
+        // horizontal (desde la columna #, que es sticky, hasta el borde).
+        left: el.scrollLeft,
+        width: el.clientWidth,
+        height,
+      },
+    ];
+    const maxScrollAfter = el.scrollHeight - height - el.clientHeight;
+    if (el.scrollTop > maxScrollAfter) el.scrollTo({ top: Math.max(0, maxScrollAfter), behavior: "smooth" });
+    await wait(LEAVE_MS);
+    // Por si el llamador no llega a quitar la fila (no deberia pasar): la
+    // cortina no puede quedar tapando datos.
+    if (curtainTimer) clearTimeout(curtainTimer);
+    curtainTimer = setTimeout(() => (curtains = []), 300);
+  }
+
+  // --- Capa de efectos ----------------------------------------------------
+  // Toda animacion de feedback del grid es UN overlay posicionado, nunca una
+  // transicion sobre las celdas: no toca el DOM de la tabla y, cuando afecta
+  // a filas enteras, un solo elemento cubre tambien su numero (columna #,
+  // que es otra capa) — asi fila y numero siempre se animan juntos. Van en
+  // coordenadas del contenido (.grid-canvas), asi acompañan al scroll.
+  //   appear: la fila nueva aparece (un velo del color del fondo que se va)
+  //   flash:  destello de acento (deshacer, restaurar)
+  //   commit: destello corto sobre la celda recien editada
+  //   delete: pulso rojo sobre la fila marcada para eliminar
+  //   copy:   contorno breve sobre lo copiado
+  type EffectKind = "appear" | "flash" | "commit" | "delete" | "copy";
+  interface GridEffect {
+    id: number;
+    kind: EffectKind;
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }
+
+  let effects = $state<GridEffect[]>([]);
+  let nextEffectId = 0;
+
+  function addEffect(range: RowRange, kind: EffectKind) {
+    const el = viewportEl;
+    if (!el || !widthsLocked || prefersReducedMotion()) return;
+    const maxRow = Math.min(range.maxRow, Math.max(0, totalRows - 1));
+    if (range.minRow > maxRow) return;
+    const wholeRow = range.minCol <= 0 && range.maxCol >= columns.length - 1;
+    const top = headerHeight + visualRow(range.minRow) * rowHeight;
+    const height = spanHeight(range.minRow, maxRow);
+    if (height <= 0) return;
+    let left: number;
+    let width: number;
+    if (wholeRow) {
+      // Todo lo visible en horizontal, desde la columna # (sticky).
+      left = el.scrollLeft;
+      width = el.clientWidth;
+    } else {
+      left = rowNumberWidth + (columnLefts[range.minCol] ?? 0);
+      width = (columnLefts[range.maxCol] ?? 0) + (columnWidths[range.maxCol] ?? 0) - (columnLefts[range.minCol] ?? 0);
+    }
+    effects = [...effects, { id: ++nextEffectId, kind, top, left, width, height }];
+  }
+
+  function removeEffect(id: number) {
+    effects = effects.filter((effect) => effect.id !== id);
+  }
+
+  export function flash(range: RowRange) {
+    addEffect(range, "flash");
+  }
+
+  export function highlight(range: RowRange, kind: "appear" | "commit" | "flash") {
+    addEffect(range, kind);
+  }
+
+  export function selectRange(range: RowRange) {
+    extraSelections = [];
+    selection = { startRow: range.minRow, startCol: range.minCol, endRow: range.maxRow, endCol: range.maxCol };
+  }
+
+  // --- Copiar y pegar (Ctrl+C / Ctrl+V) -----------------------------------
+  // La seleccion del grid ES lo que se copia: una celda, un rango, filas o
+  // columnas enteras. El foco tiene que estar en el grid para que lleguen
+  // las teclas (ver focusGrid).
+  let gridEl = $state<HTMLDivElement>();
+
+  function focusGrid(target?: Element | null) {
+    const cell = target instanceof Element ? target.closest("td") : null;
+    (cell ?? gridEl)?.focus({ preventScroll: true });
+  }
+
+  // Con varios rangos (Ctrl+clic) se copia la union de sus filas por la
+  // union de sus columnas, en orden: filas 5 y 150 enteras => esas dos
+  // filas; columnas A y D => esas dos columnas de todas las filas.
+  async function copySelection() {
+    const ranges = allSelections.map(normalized);
+    if (ranges.length === 0) return;
+    const rowSet = new Set<number>();
+    const colSet = new Set<number>();
+    for (const range of ranges) {
+      for (let row = range.minRow; row <= Math.min(range.maxRow, totalRows - 1); row++) rowSet.add(row);
+      for (let col = range.minCol; col <= range.maxCol; col++) colSet.add(col);
+    }
+    // Con "Filtrar filas", lo oculto no se copia.
+    const rowList = [...rowSet].filter((row) => !hiddenRows?.has(row)).sort((a, b) => a - b);
+    const colList = [...colSet].sort((a, b) => a - b);
+    const copyColumns = colList.map((col) => ({ name: columns[col].name, type: columns[col].type }));
+    const values: CellValue[][] = rowList.map((row) => colList.map((col) => valueAt(row, col)));
+    if (values.length === 0 || copyColumns.length === 0) return;
+    const text = serializeSelection(copyColumns, values, {
+      format: copyFormat,
+      headers: copyHeaders,
+      tableName: copyTableName || "tabla",
+    });
+    rememberCopy(text, values);
+    if (await writeClipboardText(text)) for (const range of ranges) addEffect(range, "copy");
+  }
+
+  // Se pega desde la primera celda (arriba a la izquierda) de toda la
+  // seleccion; con un solo rango, un valor unico rellena ese rango.
+  async function pasteIntoSelection() {
+    const ranges = allSelections.map(normalized);
+    if (ranges.length === 0) return;
+    const range =
+      ranges.length === 1
+        ? ranges[0]
+        : {
+            minRow: Math.min(...ranges.map((item) => item.minRow)),
+            maxRow: Math.min(...ranges.map((item) => item.minRow)),
+            minCol: Math.min(...ranges.map((item) => item.minCol)),
+            maxCol: Math.min(...ranges.map((item) => item.minCol)),
+          };
+    const block = parseClipboard(
+      await readClipboardText(),
+      columns.map((column) => column.name),
+    );
+    if (!block) return;
+    onpasteblock(range.minRow, block.alignedByName ? 0 : range.minCol, block, range);
+  }
+
+  function onGridKeydown(event: KeyboardEvent) {
+    const mod = event.ctrlKey || event.metaKey;
+    if (!mod || event.altKey || event.shiftKey || editing) return;
+    const key = event.key.toLowerCase();
+    if (key === "f") {
+      event.preventDefault();
+      onfind();
+    } else if (key === "c") {
+      event.preventDefault();
+      void copySelection();
+    } else if (key === "v") {
+      event.preventDefault();
+      void pasteIntoSelection();
+    }
+  }
+
+  export function pulseDeleted(range: RowRange) {
+    addEffect({ ...range, minCol: 0, maxCol: columns.length - 1 }, "delete");
+  }
+
+  // Tras "+": selecciona la fila nueva, la trae a la vista y abre la
+  // edicion de su primera celda editable.
+  // La fila aparece fundiendose (numero incluido) y, si esta fuera de la
+  // vista, el grid se desliza suave hasta ella.
+  export async function focusNewRow(row: number) {
+    await tick();
+    const col = editInfo?.columns.findIndex((column) => column && !column.generated) ?? -1;
+    selectCell(row, Math.max(0, col));
+    addEffect({ minRow: row, maxRow: row, minCol: 0, maxCol: columns.length - 1 }, "appear");
+    const el = viewportEl;
+    if (el) {
+      const top = headerHeight + visualRow(row) * rowHeight;
+      const visibleBottom = el.scrollTop + el.clientHeight;
+      if (top + rowHeight > visibleBottom || top < el.scrollTop + headerHeight) {
+        el.scrollTo({ top: Math.max(0, top - el.clientHeight / 2), behavior: prefersReducedMotion() ? "auto" : "smooth" });
+      }
+    }
+    if (col >= 0) startEditing(row, col);
   }
 
   // --- Tooltip de columna (nombre, tipo, comentario) ------------------
@@ -143,6 +567,8 @@
   const CELL_CHROME_WIDTH = 8 * 2 + 1 + 2;
   // Icono de tipo (12px) + gap (--space-1) del header.
   const HEADER_ICON_WIDTH = 12 + 4;
+  // Boton de orden del encabezado (icono + numero de prioridad + margen).
+  const HEADER_SORT_WIDTH = 26;
 
   let textMeasureContext: CanvasRenderingContext2D | null = null;
 
@@ -224,26 +650,34 @@
 
     context.font = fonts.header;
     const header = columns.map((column) =>
-      Math.ceil(context.measureText(column.name).width + HEADER_ICON_WIDTH + CELL_CHROME_WIDTH),
+      Math.ceil(
+        context.measureText(column.name).width +
+          HEADER_ICON_WIDTH +
+          (sortable ? HEADER_SORT_WIDTH : 0) +
+          CELL_CHROME_WIDTH,
+      ),
     );
 
     return { header, body };
   });
 
-  // Anchos ajustados a mano con el mouse, atados al resultado para el que se
-  // hicieron: un resultado nuevo vuelve a los anchos naturales sin depender
-  // de un efecto que los resetee (que correria DESPUES del primer render).
-  // $state.raw: `source` es el arreglo de filas tal cual; un proxy profundo
-  // de 500 x N valores seria caro y ademas romperia la comparacion por
-  // identidad.
-  let resizedWidths = $state.raw<{ source: QueryRow[]; widths: number[] } | null>(null);
+  // Anchos ESTABLES mientras las columnas sean las mismas. Ordenar,
+  // filtrar, paginar o recargar traen otras filas de la misma consulta: si
+  // cada vez se volvieran a medir, todas las columnas cambiarian de ancho y
+  // la grilla "saltaria". Con la misma firma de columnas (nombre + tipo) se
+  // conservan los anchos que habia —incluidos los ajustados a mano—; un
+  // valor mas largo se recorta con elipsis (clippedColumnsSelector). Solo
+  // columnas distintas (otra consulta) vuelven a medir.
+  const columnSignature = $derived(columns.map((column) => `${column.name}\u0000${column.type}`).join("\u0001"));
+  const naturalColumnWidths = $derived(
+    naturalWidths.header.map((headerWidth, index) => Math.max(headerWidth, naturalWidths.body[index], MIN_COLUMN_WIDTH)),
+  );
+  let keptWidths = $state.raw<{ signature: string; widths: number[] } | null>(null);
 
   const columnWidths = $derived(
-    resizedWidths?.source === rows
-      ? resizedWidths.widths
-      : naturalWidths.header.map((headerWidth, index) =>
-          Math.max(headerWidth, naturalWidths.body[index], MIN_COLUMN_WIDTH),
-        ),
+    keptWidths?.signature === columnSignature && keptWidths.widths.length === columns.length
+      ? keptWidths.widths
+      : naturalColumnWidths,
   );
   const widthsLocked = $derived(columnWidths.length > 0 && columnWidths.length === columns.length);
   const tableWidth = $derived(columnWidths.reduce((total, width) => total + width, 0));
@@ -279,7 +713,7 @@
     function onMove(moveEvent: PointerEvent) {
       const next = [...columnWidths];
       next[columnIndex] = Math.round(Math.max(MIN_COLUMN_WIDTH, startWidth + (moveEvent.clientX - startX)));
-      resizedWidths = { source: rows, widths: next };
+      keptWidths = { signature: columnSignature, widths: next };
     }
     function onUp() {
       window.removeEventListener("pointermove", onMove);
@@ -310,18 +744,19 @@
     return lefts;
   });
 
-  const selectionRect = $derived.by(() => {
-    if (!selection || !widthsLocked) return null;
-    const { minRow, maxRow, minCol, maxCol } = normalized(selection);
-    const left = columnLefts[minCol];
-    const right = columnLefts[maxCol] + columnWidths[maxCol];
-    if (left === undefined || Number.isNaN(right)) return null;
-    return {
-      top: minRow * rowHeight,
-      height: (maxRow - minRow + 1) * rowHeight,
-      left,
-      width: right - left,
-    };
+  // Un overlay por rango seleccionado (normalmente uno; varios con
+  // Ctrl+clic). Siguen siendo pocos elementos, sin tocar las celdas.
+  const selectionRects = $derived.by(() => {
+    if (!widthsLocked) return [];
+    return allSelections.flatMap((range, index) => {
+      const { minRow, maxRow, minCol, maxCol } = normalized(range);
+      const left = columnLefts[minCol];
+      const right = columnLefts[maxCol] + columnWidths[maxCol];
+      if (left === undefined || Number.isNaN(right)) return [];
+      const height = spanHeight(minRow, maxRow);
+      if (height <= 0) return [];
+      return [{ key: index, top: visualRow(minRow) * rowHeight, height, left, width: right - left }];
+    });
   });
 
   function onCellPointerDown(event: PointerEvent, row: number, col: number) {
@@ -330,8 +765,15 @@
     // por esta celda, pointerenter deja de dispararse en las demas celdas
     // y no hay forma de detectar sobre cual esta el mouse al arrastrar.
     event.preventDefault();
-    selectCell(row, col, event.shiftKey);
+    if (event.ctrlKey || event.metaKey) {
+      toggleInSelection({ startRow: row, startCol: col, endRow: row, endCol: col });
+    } else {
+      selectCell(row, col, event.shiftKey);
+    }
     isDragSelecting = true;
+    // preventDefault tambien evita que la celda tome el foco: se lo da a
+    // mano (sin scroll) para que Ctrl+C/V y los atajos lleguen al grid.
+    focusGrid(event.target as Element);
   }
 
   function onCellPointerEnter(row: number, col: number) {
@@ -340,10 +782,125 @@
   }
 
   function onCellKeydown(event: KeyboardEvent, row: number, col: number) {
-    if (event.key !== "Enter" && event.key !== " ") return;
+    if ((event.key === "Enter" && !event.ctrlKey && !event.altKey && !event.metaKey) || event.key === "F2") {
+      event.preventDefault();
+      selectCell(row, col);
+      requestEdit(row, col);
+      return;
+    }
+    if (event.key !== " ") return;
     event.preventDefault();
     selectCell(row, col, event.shiftKey);
   }
+
+  function onBodyDoubleClick(event: MouseEvent) {
+    const cell = cellFromEvent(event);
+    if (cell) requestEdit(cell.row, cell.col);
+  }
+
+  // --- Edicion en la celda ------------------------------------------------
+  // Un solo <input> posicionado encima de la celda (como el overlay de
+  // seleccion), no un input dentro de cada <td>: el cuerpo sigue siendo HTML
+  // estatico y editar no re-renderiza nada.
+  let editing = $state<{ row: number; col: number } | null>(null);
+  let editValue = $state("");
+  let editInput = $state<HTMLInputElement>();
+
+  function valueAt(row: number, col: number): CellValue {
+    if (row >= rows.length) return edits.inserted[row - rows.length]?.[col] ?? { kind: "null" };
+    return edits.updates.get(row)?.get(col) ?? originalValue(rows[row][col]);
+  }
+
+  function editableColumn(row: number, col: number): string | null {
+    if (!editInfo) return editBlockedReason ?? "Este resultado no se puede editar.";
+    const column = editInfo.columns[col];
+    if (!column) return `La columna ${columns[col]?.name ?? ""} es de solo lectura: no sale directamente de la tabla.`;
+    if (column.generated) return `La columna ${column.name} la genera el servidor.`;
+    if (row < rows.length && edits.deleted.has(row)) return "La fila está marcada para eliminarse.";
+    return null;
+  }
+
+  function requestEdit(row: number, col: number) {
+    const blocked = editableColumn(row, col);
+    if (blocked) {
+      oneditblocked(blocked);
+      return;
+    }
+    startEditing(row, col);
+  }
+
+  async function startEditing(row: number, col: number) {
+    const value = valueAt(row, col);
+    editing = { row, col };
+    editValue = value.kind === "text" ? value.value : "";
+    await tick();
+    editInput?.focus({ preventScroll: true });
+    editInput?.select();
+  }
+
+  function finishEditing(commit: boolean, next: -1 | 0 | 1 = 0, refocus = true) {
+    const current = editing;
+    if (!current) return;
+    editing = null;
+    if (commit) {
+      const previous = valueAt(current.row, current.col);
+      const unchanged = previous.kind === "text" ? previous.value === editValue : editValue === "";
+      if (!unchanged) {
+        oncommitcell(current.row, current.col, { kind: "text", value: editValue });
+        addEffect({ minRow: current.row, maxRow: current.row, minCol: current.col, maxCol: current.col }, "commit");
+      }
+    }
+    if (next !== 0 && editInfo) {
+      // Tab / Shift+Tab: siguiente celda editable de la misma fila.
+      for (let col = current.col + next; col >= 0 && col < columns.length; col += next) {
+        if (!editableColumn(current.row, col)) {
+          selectCell(current.row, col);
+          void startEditing(current.row, col);
+          return;
+        }
+      }
+    }
+    if (refocus) void tick().then(() => cellElement(current.row, current.col)?.focus({ preventScroll: true }));
+  }
+
+  function setEditingNull() {
+    const current = editing;
+    if (!current) return;
+    editing = null;
+    if (valueAt(current.row, current.col).kind !== "null") {
+      oncommitcell(current.row, current.col, { kind: "null" });
+      addEffect({ minRow: current.row, maxRow: current.row, minCol: current.col, maxCol: current.col }, "commit");
+    }
+    void tick().then(() => cellElement(current.row, current.col)?.focus({ preventScroll: true }));
+  }
+
+  function onEditorKeydown(event: KeyboardEvent) {
+    event.stopPropagation();
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finishEditing(true);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      finishEditing(false);
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      finishEditing(true, event.shiftKey ? -1 : 1);
+    }
+  }
+
+  const editorRect = $derived.by(() => {
+    if (!editing || !widthsLocked) return null;
+    const left = columnLefts[editing.col];
+    const width = columnWidths[editing.col];
+    if (left === undefined || width === undefined) return null;
+    return { top: visualRow(editing.row) * rowHeight, left, width, height: rowHeight };
+  });
+
+  // Un resultado nuevo (otra pagina, re-ejecucion) cierra la edicion.
+  $effect(() => {
+    rows;
+    untrack(() => (editing = null));
+  });
 
   // Un solo listener por tipo de evento en el <tbody> en vez de tres por
   // celda: la fila/columna salen de la posicion de la celda en la tabla.
@@ -360,7 +917,29 @@
     return { row: Number(section.dataset.firstRow ?? 0) + row.sectionRowIndex, col: cell.cellIndex };
   }
 
+  // selectstart es lo que dispara WebKit al empezar a seleccionar texto
+  // (arrastre, doble o triple clic); cancelarlo corta la seleccion nativa sin
+  // impedir el foco de las celdas. Si quedo texto seleccionado de antes
+  // dentro del grid, se limpia al empezar una seleccion de celdas.
+  function preventNativeSelection(event: Event) {
+    // El editor de celda si necesita seleccionar su propio texto.
+    if (event.target instanceof HTMLInputElement) return;
+    event.preventDefault();
+  }
+
+  function clearNativeSelectionInGrid() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !viewportEl) return;
+    if (viewportEl.contains(selection.anchorNode) || viewportEl.contains(selection.focusNode)) {
+      selection.removeAllRanges();
+    }
+  }
+
   function onBodyPointerDown(event: PointerEvent) {
+    // preventDefault en pointerdown tambien evita que el input pierda el
+    // foco: la edicion en curso se confirma a mano antes de seleccionar.
+    if (editing) finishEditing(true, 0, false);
+    clearNativeSelectionInGrid();
     const cell = cellFromEvent(event);
     if (cell) onCellPointerDown(event, cell.row, cell.col);
   }
@@ -384,34 +963,187 @@
   // costaba varios cientos de ms. El parser HTML del navegador arma el mismo
   // DOM de una sola vez, mucho mas rapido. Todo valor pasa por escapeHtml:
   // son datos de la base, nunca markup.
-  const HTML_ESCAPES: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
+  // Columnas que se muestran con resaltado JSON: por tipo (JSON en MySQL,
+  // json/jsonb en Postgres) o, en columnas de texto, por una muestra de sus
+  // primeras celdas (ver detectJsonColumns). Se decide una vez por
+  // resultado; el resto de las columnas no paga nada.
+  const jsonColumns = $derived(detectJsonColumns(columns, rows));
 
-  function escapeHtml(text: string): string {
-    return text.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]);
+  // Clase + contenido de una celda. La usan el render inicial (rowsHtml) y
+  // los parches de edicion (applyEditsToDom), asi una celda editada y luego
+  // revertida vuelve exactamente a como estaba.
+  function cellParts(value: string | null, columnIndex: number): { className: string; html: string } {
+    if (value === null) return { className: "null-value", html: "NULL" };
+    if (value === "") return { className: "", html: "" };
+    if (jsonColumns[columnIndex]) return { className: "json-value", html: highlightJson(value) };
+    return { className: "", html: escapeHtml(value) };
   }
 
   function rowsHtml(from: number, to: number): string {
     const parts: string[] = [];
     for (let rowIndex = from; rowIndex < to; rowIndex++) {
       parts.push(rowIndex % 2 === 1 ? '<tr class="zebra-odd">' : "<tr>");
-      for (const value of rows[rowIndex]) {
-        if (value === null) {
-          parts.push('<td tabindex="0" class="null-value">NULL</td>');
-        } else if (value === "") {
+      const row = rows[rowIndex];
+      for (let columnIndex = 0; columnIndex < row.length; columnIndex++) {
+        const value = row[columnIndex];
+        if (value === "") {
           parts.push('<td tabindex="0" aria-label="cadena vacía"></td>');
-        } else {
-          parts.push(`<td tabindex="0">${escapeHtml(value)}</td>`);
+          continue;
         }
+        const { className, html } = cellParts(value, columnIndex);
+        parts.push(className ? `<td tabindex="0" class="${className}">${html}</td>` : `<td tabindex="0">${html}</td>`);
       }
       parts.push("</tr>");
     }
     return parts.join("");
+  }
+
+  // --- Cambios pendientes sobre el DOM -------------------------------------
+  // Las celdas editadas y las filas eliminadas se marcan tocando SOLO esos
+  // <td>/<tr> (unos pocos), nunca regenerando el cuerpo. Se lleva registro de
+  // lo parchado para restaurarlo cuando el cambio se revierte.
+  let patchedCells = new Map<string, { row: number; col: number }>();
+  let patchedRows = new Set<number>();
+
+  function cellElement(row: number, col: number): HTMLTableCellElement | null {
+    const inBody = row < rows.length;
+    const container = inBody ? bodyEl : insertedEl;
+    if (!container) return null;
+    for (const tbody of container.querySelectorAll<HTMLTableSectionElement>("tbody")) {
+      const first = Number(tbody.dataset.firstRow ?? 0);
+      const index = row - first;
+      if (index >= 0 && index < tbody.rows.length) return tbody.rows[index].cells[col] ?? null;
+    }
+    return null;
+  }
+
+  function rowElement(row: number): HTMLTableRowElement | null {
+    return (cellElement(row, 0)?.parentElement as HTMLTableRowElement | null) ?? null;
+  }
+
+  function paintCell(td: HTMLTableCellElement, value: CellValue, col: number, modified: boolean) {
+    const parts = value.kind === "null" ? cellParts(null, col) : cellParts(value.kind === "text" ? value.value : "", col);
+    td.className = [parts.className, modified ? "cell-modified" : ""].filter(Boolean).join(" ");
+    td.innerHTML = parts.html;
+  }
+
+  function applyEditsToDom() {
+    // La fila que tapaba la cortina ya no esta (este efecto corre despues de
+    // actualizar el DOM, antes de pintar): se retira en el mismo cuadro.
+    if (curtains.length > 0) {
+      curtains = [];
+      if (curtainTimer) clearTimeout(curtainTimer);
+      curtainTimer = null;
+    }
+    const wanted = new Map<string, { row: number; col: number; value: CellValue }>();
+    for (const [row, cols] of edits.updates) {
+      for (const [col, value] of cols) wanted.set(`${row}:${col}`, { row, col, value });
+    }
+    for (const [key, cell] of patchedCells) {
+      if (wanted.has(key)) continue;
+      const td = cellElement(cell.row, cell.col);
+      if (td) paintCell(td, originalValue(rows[cell.row]?.[cell.col] ?? null), cell.col, false);
+      patchedCells.delete(key);
+    }
+    for (const [key, cell] of wanted) {
+      const td = cellElement(cell.row, cell.col);
+      if (!td) continue; // su tanda todavia no se inserto: se parcha al llegar
+      paintCell(td, cell.value, cell.col, true);
+      patchedCells.set(key, cell);
+    }
+    for (const row of patchedRows) {
+      if (edits.deleted.has(row)) continue;
+      rowElement(row)?.classList.remove("row-deleted");
+      patchedRows.delete(row);
+    }
+    for (const row of edits.deleted) {
+      const tr = rowElement(row);
+      if (!tr) continue;
+      tr.classList.add("row-deleted");
+      patchedRows.add(row);
+    }
+    if (findMatches.length > 0 || hiddenRows) applyFindToDom();
+  }
+
+  $effect(() => {
+    edits;
+    untrack(applyEditsToDom);
+  });
+
+  // --- Resaltado de busqueda y filas filtradas --------------------------
+  // Igual que los cambios pendientes: se marcan SOLO esas <td>/<tr>, con
+  // registro para desmarcar. applyEditsToDom reescribe el class de las
+  // celdas editadas, por eso esto se vuelve a aplicar al final de aquel.
+  let findPatched = new Set<HTMLTableCellElement>();
+  let hiddenPatched = new Set<HTMLTableRowElement>();
+
+  function applyFindToDom() {
+    const wanted = new Set<HTMLTableCellElement>();
+    const current = findMatches[findCurrent];
+    for (const match of findMatches) {
+      const td = cellElement(match.row, match.col);
+      if (!td) continue;
+      wanted.add(td);
+      td.classList.add("find-match");
+      td.classList.toggle("find-current", match === current);
+    }
+    for (const td of findPatched) {
+      if (!wanted.has(td)) td.classList.remove("find-match", "find-current");
+    }
+    findPatched = wanted;
+
+    const hidden = new Set<HTMLTableRowElement>();
+    if (hiddenRows) {
+      for (const row of hiddenRows) {
+        const tr = rowElement(row);
+        if (!tr) continue;
+        tr.classList.add("find-hidden");
+        hidden.add(tr);
+      }
+    }
+    for (const tr of hiddenPatched) if (!hidden.has(tr)) tr.classList.remove("find-hidden");
+    hiddenPatched = hidden;
+  }
+
+  $effect(() => {
+    findMatches;
+    findCurrent;
+    untrack(applyFindToDom);
+  });
+
+  // Filtrar cambia el alto del contenido: los thumbs se recalculan.
+  $effect(() => {
+    hiddenRows;
+    untrack(() => {
+      applyFindToDom();
+      void tick().then(updateThumbs);
+    });
+  });
+
+  // Devuelve el foco al grid (p.ej. al cerrar la busqueda), en la celda
+  // seleccionada si la hay.
+  export function focusCell() {
+    const range = selection ? normalized(selection) : null;
+    const td = range ? cellElement(range.minRow, range.minCol) : null;
+    (td ?? gridEl)?.focus({ preventScroll: true });
+  }
+
+  // La coincidencia actual: se selecciona y se trae a la vista.
+  export function revealMatch(match: FindMatch) {
+    selectCell(match.row, match.col);
+    void reveal({ minRow: match.row, maxRow: match.row, minCol: match.col, maxCol: match.col });
+  }
+
+  // Filas nuevas: pocas, asi que van con markup de Svelte comun.
+  let insertedEl = $state<HTMLDivElement>();
+
+  function insertedLabel(value: CellValue, col: number): string {
+    // Columna calculada por la consulta (no sale de la tabla): nada que
+    // mostrar hasta que la fila exista.
+    if (editInfo && !editInfo.columns[col]) return "";
+    if (value.kind === "text") return value.value;
+    if (value.kind === "null") return "NULL";
+    return editInfo?.columns[col]?.generated ? "<generated>" : "<default>";
   }
 
   // Aun con anchos fijos, el navegador tarda ~400ms (WebKitGTK, 500 x 43) en
@@ -457,11 +1189,19 @@
     cancelBatches();
     let rendered = Math.min(rows.length, FIRST_BATCH_ROWS);
     container.innerHTML = batchHtml(0, rendered);
+    // DOM nuevo: nada de lo parchado sigue ahi.
+    patchedCells = new Map();
+    patchedRows = new Set();
+    findPatched = new Set();
+    hiddenPatched = new Set();
+    applyEditsToDom();
     const appendNextBatch = () => {
       batchFrame = null;
       const next = Math.min(rows.length, rendered + BATCH_ROWS);
       container.insertAdjacentHTML("beforeend", batchHtml(rendered, next));
       rendered = next;
+      if (edits.updates.size > 0 || edits.deleted.size > 0) applyEditsToDom();
+      else if (findMatches.length > 0 || hiddenRows) applyFindToDom();
       if (rendered < rows.length) batchFrame = requestAnimationFrame(appendNextBatch);
     };
     if (rendered < rows.length) batchFrame = requestAnimationFrame(appendNextBatch);
@@ -578,9 +1318,33 @@
 
   let resultLayoutGeneration = 0;
 
+  // Filas/columnas del ultimo render: volver arriba y limpiar la seleccion
+  // solo tiene sentido con un resultado NUEVO. Si el efecto corre por
+  // cualquier otra razon, no se toca el scroll ni la seleccion del usuario.
+  let renderedRows: QueryRow[] | null = null;
+  let renderedColumns: QueryColumn[] | null = null;
+
   $effect(() => {
     columns;
     rows;
+    const isNewResult = untrack(() => rows !== renderedRows || columns !== renderedColumns);
+    const hadRows = renderedRows !== null;
+    renderedRows = rows;
+    renderedColumns = columns;
+    if (!isNewResult && bodyEl?.firstChild) return;
+    // Mismas columnas que antes (ordenar, filtrar, paginar): se fijan los
+    // anchos y el cuerpo nuevo entra con un fundido corto, sin saltos.
+    // Columnas nuevas: se congelan sus anchos naturales para lo que siga.
+    const sameColumns = untrack(() => keptWidths?.signature === columnSignature);
+    untrack(() => {
+      if (!sameColumns) keptWidths = { signature: columnSignature, widths: naturalColumnWidths };
+    });
+    if (hadRows && sameColumns && bodyEl && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const body = bodyEl;
+      body.classList.remove("refreshing");
+      void body.offsetWidth;
+      body.classList.add("refreshing");
+    }
     const generation = ++resultLayoutGeneration;
     // Nueva consulta ejecutada: una seleccion de la tabla anterior (p.ej.
     // una columna entera, con endRow = ultima fila de ESE resultado) ya no
@@ -588,6 +1352,7 @@
     // un rectangulo "fantasma" del tamaño de la seleccion vieja flotando
     // debajo de un resultado nuevo con menos filas.
     selection = null;
+    extraSelections = [];
     isDragSelecting = false;
     // Pagina nueva: se arranca desde la primera fila; el scroll horizontal
     // se conserva (suelen ser las mismas columnas).
@@ -599,12 +1364,25 @@
 
     // Los anchos ya vienen calculados (naturalWidths); solo falta medir
     // header/filas/scrollbars una vez que el DOM nuevo esta puesto.
-    if (bodyEl) renderBodyProgressively(bodyEl);
+    // untrack: el render solo debe depender de columns/rows (y de que
+    // bodyEl exista). Adentro se leen los cambios pendientes para pintarlos
+    // (applyEditsToDom); sin untrack, cada edicion o fila nueva volvia a
+    // generar el cuerpo entero — parpadeo en blanco y seleccion perdida.
+    const body = bodyEl;
+    if (body) untrack(() => renderBodyProgressively(body));
     void tick().then(() => {
       if (generation !== resultLayoutGeneration) return;
       measureFixedRegions();
       updateThumbs();
     });
+  });
+
+  // Agregar o quitar filas nuevas cambia el alto del contenido sin cambiar
+  // el del viewport (el ResizeObserver no se entera): se recalculan los
+  // thumbs a mano.
+  $effect(() => {
+    edits.inserted.length;
+    untrack(() => void tick().then(updateThumbs));
   });
 
   // El splitter editor/resultado y el tamaño de ventana cambian el alto y
@@ -686,7 +1464,18 @@
   {@html `<style>${clippedColumnsSelector}{overflow:hidden;text-overflow:ellipsis}</style>`}
 {/if}
 
-<div class="data-grid">
+<!-- La seleccion del grid es la de celdas (overlay); la seleccion de texto
+     nativa se bloquea en su origen (selectstart) para que nunca aparezcan
+     las dos a la vez. Un solo listener para todo el grid. -->
+<div
+  class="data-grid"
+  role="grid"
+  aria-label="Resultado de la consulta"
+  tabindex="-1"
+  bind:this={gridEl}
+  onselectstart={preventNativeSelection}
+  onkeydown={onGridKeydown}
+>
   <div
     class="grid-viewport"
     id={viewportId}
@@ -695,6 +1484,21 @@
     style={`right:${vThumb.visible ? SCROLLBAR_GUTTER : 0}px; bottom:${hThumb.visible ? SCROLLBAR_GUTTER : 0}px;`}
   >
     <div class="grid-canvas" style:--gutter-width={gutterWidth}>
+      {#each effects as effect (effect.id)}
+        <div
+          class={`grid-effect ${effect.kind}`}
+          aria-hidden="true"
+          style={`top:${effect.top}px; left:${effect.left}px; width:${effect.width}px; height:${effect.height}px;`}
+          onanimationend={() => removeEffect(effect.id)}
+        ></div>
+      {/each}
+      {#each curtains as curtain, index (index)}
+        <div
+          class="row-curtain"
+          aria-hidden="true"
+          style={`top:${curtain.top}px; left:${curtain.left}px; width:${curtain.width}px; height:${curtain.height}px;`}
+        ></div>
+      {/each}
       <!-- Esquina: hermana (no hija) del header para no anidar un sticky
            dentro de otro; el margin-bottom negativo la superpone al hueco
            que .grid-header-spacer deja libre a la izquierda del header. -->
@@ -728,7 +1532,7 @@
                 <th
                   scope="col"
                   class="column-header"
-                  onclick={() => selectColumn(columnIndex)}
+                  onclick={(event) => selectColumn(columnIndex, event)}
                   onmouseenter={(event) => showColumnTooltip(event, columnIndex)}
                   onmouseleave={hideColumnTooltip}
                   onfocusin={(event) => showColumnTooltip(event, columnIndex)}
@@ -743,6 +1547,36 @@
                       <Columns3 size={12} class="column-type-icon" aria-hidden="true" />
                     {/if}
                     <span class="column-header-label">{column.name}</span>
+                    {#if sortable}
+                      {@const sortIndex = sort.findIndex((key) => key.column === columnIndex)}
+                      {@const active = sortIndex >= 0 ? sort[sortIndex] : null}
+                      <button
+                        type="button"
+                        class="sort-button"
+                        class:active={active !== null}
+                        aria-label={active
+                          ? `Ordenado ${active.descending ? "descendente" : "ascendente"}; clic para cambiar`
+                          : `Ordenar por ${column.name}`}
+                        title={active
+                          ? `${active.descending ? "Descendente" : "Ascendente"} · Shift+clic: agregar criterio`
+                          : "Ordenar · Shift+clic: agregar criterio"}
+                        onclick={(event) => {
+                          event.stopPropagation();
+                          onsort(columnIndex, event.shiftKey);
+                        }}
+                      >
+                        {#if active?.descending}
+                          <ArrowDown size={12} aria-hidden="true" />
+                        {:else if active}
+                          <ArrowUp size={12} aria-hidden="true" />
+                        {:else}
+                          <ChevronsUpDown size={12} aria-hidden="true" />
+                        {/if}
+                        {#if active && sort.length > 1}
+                          <span class="sort-priority">{sortIndex + 1}</span>
+                        {/if}
+                      </button>
+                    {/if}
                   </span>
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -766,26 +1600,90 @@
           {#each rows as _, rowIndex (rowIndex)}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="row-number" onclick={() => selectRow(rowIndex)}>{rowOffset + rowIndex + 1}</div>
+            <div
+              class="row-number"
+              class:deleted={edits.deleted.has(rowIndex)}
+              class:find-hidden={hiddenRows?.has(rowIndex)}
+              onclick={(event) => selectRow(rowIndex, event)}
+            >
+              {rowOffset + rowIndex + 1}
+            </div>
+          {/each}
+          {#each edits.inserted as _, index (index)}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="row-number inserted" onclick={(event) => selectRow(rows.length + index, event)}>
+              {rowOffset + rows.length + index + 1}
+            </div>
           {/each}
         </div>
 
-        <div class="grid-body-table">
+        <div class="grid-body-table" style={columnWidthVars}>
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="grid-body-rows"
             bind:this={bodyEl}
-            style={columnWidthVars}
             onpointerdown={onBodyPointerDown}
             onpointerover={onBodyPointerOver}
             onkeydown={onBodyKeydown}
+            ondblclick={onBodyDoubleClick}
           ></div>
-          {#if selectionRect}
+          {#if edits.inserted.length > 0}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="grid-body-rows"
+              bind:this={insertedEl}
+              onpointerdown={onBodyPointerDown}
+              onpointerover={onBodyPointerOver}
+              onkeydown={onBodyKeydown}
+              ondblclick={onBodyDoubleClick}
+            >
+              <table class="body-batch">
+                <colgroup>
+                  {#each columns as _, index (index)}
+                    <col style={`width:var(--col-${index})`} />
+                  {/each}
+                </colgroup>
+                <tbody data-first-row={rows.length}>
+                  {#each edits.inserted as values, index (index)}
+                    <tr class="row-inserted">
+                      {#each values as value, col (col)}
+                        <td tabindex="0" class:placeholder-value={value.kind !== "text"}>{insertedLabel(value, col)}</td>
+                      {/each}
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+          {#if editorRect}
+            <div
+              class="cell-editor"
+              style={`top:${editorRect.top}px; left:${editorRect.left}px; width:${Math.max(editorRect.width, 120)}px; height:${editorRect.height}px;`}
+            >
+              <input
+                aria-label="Editar valor"
+                spellcheck="false"
+                bind:this={editInput}
+                bind:value={editValue}
+                onkeydown={onEditorKeydown}
+                onblur={() => finishEditing(true)}
+              />
+              <button
+                type="button"
+                class="null-chip"
+                title="Dejar en NULL"
+                onpointerdown={(event) => event.preventDefault()}
+                onclick={setEditingNull}>NULL</button
+              >
+            </div>
+          {/if}
+          {#each selectionRects as rect (rect.key)}
             <div
               class="selection-overlay"
-              style={`top:${selectionRect.top}px; left:${selectionRect.left}px; width:${selectionRect.width}px; height:${selectionRect.height}px;`}
+              style={`top:${rect.top}px; left:${rect.left}px; width:${rect.width}px; height:${rect.height}px;`}
             ></div>
-          {/if}
+          {/each}
         </div>
       </div>
 
@@ -838,10 +1736,16 @@
 
 <style>
   .data-grid {
+    outline: none;
     --row-height: 1.75rem;
     position: relative;
     height: 100%;
     overflow: hidden;
+    /* Con prefijo: WebKitGTK no siempre respeta user-select sin el. Puesto
+       en el contenedor cubre header, columna # y celdas (incluidos los
+       <span> del resaltado JSON). */
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* Sin contain / will-change / translateZ a proposito (ni aca ni en los
@@ -871,8 +1775,30 @@
      contenido queda del ancho de sus columnas y el resto del panel en
      blanco — asi es como lo hacen DataGrip y compania. */
   .grid-canvas {
+    position: relative;
     width: max-content;
     font-size: 0.8125rem;
+  }
+
+  /* Cortina de salida de filas nuevas (ver fadeOutInsertedRows): z-index 2
+     para quedar sobre la columna # (1); el encabezado tambien es 2 pero va
+     despues en el DOM, asi que la sigue tapando si la fila pasa por debajo
+     al scrollear, y la esquina es 3. Se funde al color del fondo del grid. */
+  .row-curtain {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    background: var(--surface-content);
+    animation: curtain-in 160ms ease-out forwards;
+  }
+
+  @keyframes curtain-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .grid-corner {
@@ -994,6 +1920,18 @@
     table-layout: fixed;
   }
 
+  /* Datos nuevos de la misma consulta (orden, filtro, pagina): fundido
+     corto en vez de un cambio de golpe. */
+  .grid-body-rows:global(.refreshing) {
+    animation: body-refresh 170ms ease-out;
+  }
+
+  @keyframes body-refresh {
+    from {
+      opacity: 0.35;
+    }
+  }
+
   .grid-body-table :global(table.body-batch) {
     border-collapse: separate;
     border-spacing: 0;
@@ -1060,6 +1998,56 @@
     background: color-mix(in srgb, var(--accent) 10%, var(--surface-elevated));
   }
 
+  /* Orden: tenue hasta pasar por el encabezado; activo, en acento. A la
+     derecha de la celda, fuera del nombre. */
+  .sort-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 1px;
+    margin-left: auto;
+    padding: 2px 3px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    opacity: 0;
+    cursor: pointer;
+    transition:
+      opacity var(--duration-fast) ease,
+      background-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
+  }
+
+  .column-header:hover .sort-button,
+  .sort-button:focus-visible {
+    opacity: 0.7;
+  }
+
+  .sort-button:hover {
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    color: var(--text-primary);
+    opacity: 1;
+  }
+
+  .sort-button.active {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  .sort-priority {
+    font-size: 0.625rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .sort-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
   .column-header :global(.column-type-icon) {
     flex-shrink: 0;
     color: var(--text-secondary);
@@ -1113,6 +2101,250 @@
 
   .end-spacer {
     height: 4rem;
+  }
+
+  /* Resaltado de celdas JSON (ver jsonHighlight.ts): los colores salen del
+     tema del editor (--syntax-*, puestos por theme.ts); la puntuacion toma
+     el color secundario de la celda. */
+  .grid-body-table :global(td.json-value) {
+    color: var(--text-secondary);
+  }
+
+  .grid-body-table :global(.j-key) {
+    color: var(--syntax-key, var(--text-primary));
+  }
+
+  .grid-body-table :global(.j-str) {
+    color: var(--syntax-string, var(--text-primary));
+  }
+
+  .grid-body-table :global(.j-num) {
+    color: var(--syntax-number, var(--text-primary));
+  }
+
+  .grid-body-table :global(.j-lit) {
+    color: var(--syntax-constant, var(--text-primary));
+  }
+
+  /* --- Busqueda (Ctrl+F) ------------------------------------------------
+     Coincidencias con un tono calido suave y la actual mas intensa, con
+     contorno: se distinguen de la seleccion (acento) y de los cambios. */
+  .grid-body-table :global(td.find-match) {
+    background: color-mix(in srgb, var(--warning) 26%, transparent);
+  }
+
+  .grid-body-table :global(td.find-current) {
+    background: color-mix(in srgb, var(--warning) 55%, transparent);
+    box-shadow: inset 0 0 0 1px var(--warning);
+    color: var(--text-primary);
+  }
+
+  .grid-body-table :global(tr.find-hidden),
+  .row-number.find-hidden {
+    display: none;
+  }
+
+  /* --- Cambios pendientes --------------------------------------------- */
+  /* Una celda editada (o de una fila nueva) puede traer un valor mas largo
+     que el ancho de su columna: se recorta con elipsis en vez de invadir la
+     celda vecina. Son pocas celdas, asi que el costo de overflow no pesa
+     (ver la nota de rendimiento sobre overflow en los td). */
+  .grid-body-table :global(td.cell-modified),
+  .grid-body-table :global(tr.row-inserted td) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .grid-body-table :global(td.cell-modified) {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  .grid-body-table :global(tr.row-inserted) {
+    background: color-mix(in srgb, var(--success) 20%, transparent);
+  }
+
+  .grid-body-table :global(td.placeholder-value) {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* Fila marcada para eliminar: rojo tenue de fondo (el mismo rojo de los
+     botones destructivos, --delete-red) y el texto atenuado y tachado en
+     rojo; el acento a la izquierda la marca de un vistazo al scrollear. */
+  .data-grid {
+    --delete-red: #e5484d;
+  }
+
+  .grid-body-table :global(tr.row-deleted) {
+    background: color-mix(in srgb, var(--delete-red) 17%, transparent);
+  }
+
+  .grid-body-table :global(tr.row-deleted td) {
+    color: color-mix(in srgb, var(--text-primary) 55%, transparent);
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--delete-red) 75%, transparent);
+    text-decoration-thickness: 1px;
+  }
+
+  .grid-body-table :global(tr.row-deleted td.cell-modified) {
+    background: transparent;
+  }
+
+  .row-number.deleted {
+    background: color-mix(in srgb, var(--delete-red) 22%, var(--surface));
+    box-shadow:
+      inset 2px 0 0 var(--delete-red),
+      inset -1px 0 0 var(--border);
+    color: var(--delete-red);
+  }
+
+  /* Capa de efectos (ver addEffect): sobre el cuerpo y la columna # (z 2,
+     como la cortina), bajo el encabezado y la esquina. Nunca interceptan el
+     mouse. Cada uno se retira solo al terminar su animacion. */
+  .grid-effect {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .grid-effect.appear {
+    background: var(--surface-content);
+    animation: effect-appear 220ms ease-out forwards;
+  }
+
+  @keyframes effect-appear {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .grid-effect.flash {
+    animation: effect-flash 650ms ease-out forwards;
+  }
+
+  @keyframes effect-flash {
+    from {
+      background: color-mix(in srgb, var(--accent) 34%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent);
+    }
+    to {
+      background: transparent;
+      box-shadow: inset 0 0 0 1px transparent;
+    }
+  }
+
+  .grid-effect.commit {
+    animation: effect-commit 480ms ease-out forwards;
+  }
+
+  @keyframes effect-commit {
+    from {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    to {
+      background: transparent;
+    }
+  }
+
+  .grid-effect.delete {
+    animation: effect-delete 420ms ease-out forwards;
+  }
+
+  .grid-effect.copy {
+    animation: effect-copy 520ms ease-out forwards;
+  }
+
+  @keyframes effect-copy {
+    from {
+      box-shadow: inset 0 0 0 2px var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+    to {
+      box-shadow: inset 0 0 0 2px transparent;
+      background: transparent;
+    }
+  }
+
+  @keyframes effect-delete {
+    from {
+      background: color-mix(in srgb, var(--delete-red) 34%, transparent);
+    }
+    to {
+      background: transparent;
+    }
+  }
+
+  /* El editor entra con un fundido y una escala apenas perceptibles. */
+  .cell-editor {
+    animation: editor-in 110ms ease-out;
+  }
+
+  @keyframes editor-in {
+    from {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell-editor {
+      animation: none;
+    }
+  }
+
+  .row-number.inserted {
+    background: color-mix(in srgb, var(--success) 20%, var(--surface));
+    color: var(--text-primary);
+  }
+
+  /* Editor en la celda: mismo alto que la fila, borde de acento, y un chip
+     "NULL" a la derecha para vaciar la celda sin salir del teclado. */
+  .cell-editor {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    background: var(--surface-content);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .cell-editor input {
+    min-width: 0;
+    height: 100%;
+    flex: 1;
+    padding: 0 calc(var(--space-2) - 2px);
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .null-chip {
+    flex-shrink: 0;
+    margin-right: 3px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  .null-chip:hover {
+    background: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+    color: var(--text-primary);
   }
 
   .grid-body-table :global(td.null-value) {

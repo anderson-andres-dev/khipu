@@ -68,6 +68,30 @@ export const shortcutDefinitions: ShortcutDefinition[] = [
     defaultKeys: "Ctrl+L",
   },
   {
+    id: "add-result-row",
+    label: "Agregar fila",
+    description: "Agrega una fila nueva al resultado (pendiente hasta aplicar).",
+    defaultKeys: "Alt+Insert",
+  },
+  {
+    id: "delete-result-rows",
+    label: "Eliminar filas",
+    description: "Marca para eliminar las filas seleccionadas del resultado.",
+    defaultKeys: "Ctrl+Y",
+  },
+  {
+    id: "revert-result-changes",
+    label: "Deshacer cambio",
+    description: "Deshace el último cambio pendiente del resultado, paso a paso.",
+    defaultKeys: "Ctrl+Alt+Z",
+  },
+  {
+    id: "submit-result-changes",
+    label: "Aplicar cambios",
+    description: "Aplica los cambios pendientes del resultado (con el foco en el grid).",
+    defaultKeys: "Ctrl+Enter",
+  },
+  {
     id: "next-result-page",
     label: "Página siguiente",
     description: "Muestra la siguiente página del resultado.",

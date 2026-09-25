@@ -139,20 +139,30 @@ export function initThemeEffects(): () => void {
 	if (!browser) return () => {};
 
 	const combined = derived(
-		[themeChoice, effectiveScheme, shellPalette],
-		([$themeChoice, $effectiveScheme, $shellPalette]) => ({
+		[themeChoice, effectiveScheme, shellPalette, editorPalette],
+		([$themeChoice, $effectiveScheme, $shellPalette, $editorPalette]) => ({
 			choice: $themeChoice,
 			scheme: $effectiveScheme,
-			palette: $shellPalette
+			palette: $shellPalette,
+			editor: $editorPalette
 		})
 	);
 
-	const unsubscribe = combined.subscribe(({ choice, scheme, palette }) => {
+	const unsubscribe = combined.subscribe(({ choice, scheme, palette, editor }) => {
 		const root = document.documentElement;
 
 		for (const key of Object.keys(SHELL_PALETTE_CSS_VARS) as (keyof ShellPalette)[]) {
 			root.style.setProperty(SHELL_PALETTE_CSS_VARS[key], palette[key]);
 		}
+
+		// Colores de sintaxis del editor, para resaltar fuera de CodeMirror
+		// (p.ej. celdas JSON del grid) con los mismos tonos que el SQL.
+		root.style.setProperty('--syntax-key', editor.function);
+		root.style.setProperty('--syntax-string', editor.string);
+		root.style.setProperty('--syntax-number', editor.number);
+		root.style.setProperty('--syntax-constant', editor.constant);
+		root.style.setProperty('--syntax-keyword', editor.keyword);
+		root.style.setProperty('--syntax-comment', editor.comment);
 
 		root.style.colorScheme = scheme;
 		// Los pocos estilos que dependen del esquema y no se pueden expresar

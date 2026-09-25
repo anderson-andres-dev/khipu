@@ -150,7 +150,6 @@
   async function confirmTrash() {
     const path = pendingTrash;
     trashDialog?.close();
-    pendingTrash = null;
     if (!path) return;
     try {
       await trashSqlFile(path);
@@ -343,8 +342,8 @@
   oncancel={(event) => {
     event.preventDefault();
     trashDialog?.close();
-    pendingTrash = null;
   }}
+  onclose={() => (pendingTrash = null)}
 >
   <h2>¿Mover {pendingTrash ? fileNameFromPath(pendingTrash) : "el archivo"} a la papelera?</h2>
   <p>Podrás recuperarlo desde la papelera del sistema.</p>
@@ -352,10 +351,7 @@
     <button
       type="button"
       class="secondary-action"
-      onclick={() => {
-        trashDialog?.close();
-        pendingTrash = null;
-      }}>Cancelar</button
+      onclick={() => trashDialog?.close()}>Cancelar</button
     >
     <button type="button" class="primary-action" onclick={() => void confirmTrash()}>Mover a la papelera</button>
   </div>

@@ -36,6 +36,8 @@
   import type { ContextMenuItem } from "$lib/contextMenu";
   import { writeClipboard as copyToClipboard } from "$lib/clipboard";
   import "$lib/sqlEditorIcons.css";
+  import "$lib/styles/editorSearch.css";
+  import { editorSearch, toggleSearchPanel } from "$lib/editorSearchPanel";
 
   let {
     value = $bindable(""),
@@ -282,12 +284,21 @@
     });
   }
 
+  // Ctrl+F pedido desde afuera: el Workspace lo enruta por la zona que tiene
+  // el mouse encima, aunque el foco este en otra parte.
+  export function toggleSearch() {
+    if (view) toggleSearchPanel(view);
+  }
+
   onMount(() => {
     view = new EditorView({
       doc: value,
       parent: container,
       extensions: [
         basicSetup,
+        // Barra de busqueda propia (Ctrl+F toggle) en vez del panel por
+        // defecto de basicSetup.
+        editorSearch(),
         sqlCompartment.of(sql({ dialect: sqlDialect, upperCaseKeywords: true })),
         completionCompartment.of(autocompletion()),
         definitionLinkCompartment.of(buildDefinitionLink()),

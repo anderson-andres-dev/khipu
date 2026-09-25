@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import { get, writable } from "svelte/store";
-import type { DestructiveStatement, QueryExecutionResult, ResultPage } from "$lib/types";
+import type { DestructiveStatement, QueryExecutionResult, ResultPage, SortKey } from "$lib/types";
 
 const STORAGE_KEY = "khipu:query-consoles:v1";
 
@@ -18,6 +18,17 @@ export interface QueryConsole {
   // perder nada al recargar; la pestaña marca cambios mientras difieren.
   // En una consola no se usa.
   savedSql: string;
+  // Pestaña de TABLA (doble clic en el explorador): muestra los datos de la
+  // tabla a pantalla completa, sin editor, con filtros WHERE / ORDER BY. En
+  // una consola o un archivo es null.
+  table: TableTab | null;
+}
+
+export interface TableTab {
+  schema: string;
+  name: string;
+  where: string;
+  orderBy: string;
 }
 
 export interface PendingQueryConfirmation {
@@ -47,6 +58,9 @@ export interface QueryExecutionState {
   // COUNT(*). Se conserva al cambiar de pagina (es la misma consulta).
   totalRows: number | null;
   counting: boolean;
+  // Orden elegido en los encabezados (vacio = el de la consulta). Se
+  // mantiene al paginar y recargar; una ejecucion nueva lo vacia.
+  sort: SortKey[];
   pendingConfirmation: PendingQueryConfirmation | null;
 }
 
@@ -58,6 +72,7 @@ const EMPTY_EXECUTION_STATE: QueryExecutionState = {
   page: null,
   totalRows: null,
   counting: false,
+  sort: [],
   pendingConfirmation: null,
 };
 
@@ -74,6 +89,18 @@ const EMPTY_STATE: QueryConsoleState = {
   nextOrdinal: 1,
   executionByConsole: {},
 };
+
+function parseTableTab(value: unknown): TableTab | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<TableTab>;
+  if (typeof candidate.schema !== "string" || typeof candidate.name !== "string") return null;
+  return {
+    schema: candidate.schema,
+    name: candidate.name,
+    where: typeof candidate.where === "string" ? candidate.where : "",
+    orderBy: typeof candidate.orderBy === "string" ? candidate.orderBy : "",
+  };
+}
 
 function consoleTitle(ordinal: number): string {
   return `consola_${ordinal}`;
@@ -97,6 +124,7 @@ function parseConsole(value: unknown): QueryConsole | null {
     title: legacyOrdinal ? consoleTitle(Number(legacyOrdinal)) : candidate.title,
     sql: candidate.sql,
     filePath: typeof candidate.filePath === "string" ? candidate.filePath : null,
+    table: parseTableTab(candidate.table),
     savedSql: typeof candidate.savedSql === "string" ? candidate.savedSql : candidate.sql,
   };
 }
@@ -166,6 +194,7 @@ function appendConsole(state: QueryConsoleState, profileId: string): { state: Qu
     sql: "",
     filePath: null,
     savedSql: "",
+    table: null,
   };
   return {
     id: item.id,
@@ -260,6 +289,42 @@ export function finishQueryExecution(
   });
 }
 
+// El estado de ejecucion se guarda por CLAVE de pestaña de resultado: la
+// consola misma para su pestaña normal, y "<consola>#pin<n>" para cada
+// pestaña fijada (ver pinnedResults.ts). Fijar mueve el estado de una clave
+// a otra; asi una pestaña fijada conserva todo (pagina, total...) y sigue
+// funcionando igual.
+export function moveExecutionState(fromKey: string, toKey: string): void {
+  queryConsoles.update((state) => {
+    const moved = state.executionByConsole[fromKey];
+    if (!moved) return state;
+    const { [fromKey]: _from, ...rest } = state.executionByConsole;
+    return { ...state, executionByConsole: { ...rest, [toKey]: moved } };
+  });
+}
+
+// Termina una ejecucion sin tocar su resultado (p.ej. una recarga fallida de
+// una pestaña fijada: se conserva lo que mostraba y el error va a la Salida).
+export function stopQueryExecution(key: string): void {
+  queryConsoles.update((state) => withExecution(state, key, { isExecuting: false }));
+}
+
+export function forgetExecutionState(key: string): void {
+  queryConsoles.update((state) => withoutExecution(state, key));
+}
+
+// Cierra la pestaña del resultado: la consola queda sin resultado (su
+// Salida sigue ahi).
+export function clearQueryResult(consoleId: string): void {
+  queryConsoles.update((state) =>
+    withExecution(state, consoleId, { result: null, page: null, totalRows: null, counting: false }),
+  );
+}
+
+export function setQuerySort(key: string, sort: SortKey[]): void {
+  queryConsoles.update((state) => withExecution(state, key, { sort }));
+}
+
 export function setQueryCounting(consoleId: string, counting: boolean): void {
   queryConsoles.update((state) => withExecution(state, consoleId, { counting }));
 }
@@ -347,7 +412,46 @@ export function updateQueryConsoleSql(id: string, sql: string): void {
 // archivo (su contenido solo sobrevive dentro de la app mientras siga
 // abierta).
 export function isQueryConsoleDirty(item: QueryConsole): boolean {
+  // Una pestaña de tabla no tiene texto que guardar.
+  if (item.table) return false;
   return item.filePath !== null ? item.sql !== item.savedSql : item.sql.trim() !== "";
+}
+
+// Doble clic en una tabla del explorador: la abre en su pestaña (o activa la
+// que ya estaba abierta para esa tabla en esta conexion).
+export function openTableConsole(profileId: string, schema: string, name: string): string {
+  const state = get(queryConsoles);
+  const existing = state.consoles.find(
+    (item) => item.profileId === profileId && item.table?.schema === schema && item.table.name === name,
+  );
+  if (existing) {
+    activateQueryConsole(profileId, existing.id);
+    return existing.id;
+  }
+  const item: QueryConsole = {
+    id: createId(),
+    profileId,
+    title: name,
+    sql: "",
+    filePath: null,
+    savedSql: "",
+    table: { schema, name, where: "", orderBy: "" },
+  };
+  queryConsoles.set({
+    ...state,
+    consoles: [...state.consoles, item],
+    activeByProfile: { ...state.activeByProfile, [profileId]: item.id },
+  });
+  return item.id;
+}
+
+export function setTableFilters(id: string, where: string, orderBy: string): void {
+  queryConsoles.update((state) => ({
+    ...state,
+    consoles: state.consoles.map((item) =>
+      item.id === id && item.table ? { ...item, table: { ...item.table, where, orderBy } } : item,
+    ),
+  }));
 }
 
 export function fileNameFromPath(path: string): string {
@@ -404,6 +508,7 @@ export function openSqlFileConsole(profileId: string, filePath: string, contents
     sql: contents,
     filePath,
     savedSql: contents,
+    table: null,
   };
   queryConsoles.set({
     ...state,
@@ -411,6 +516,26 @@ export function openSqlFileConsole(profileId: string, filePath: string, contents
     activeByProfile: { ...state.activeByProfile, [profileId]: item.id },
   });
   return item.id;
+}
+
+// Reordena las pestañas de consola de una conexion (arrastrar con el mouse).
+// El orden vive en el arreglo de consolas, que se persiste: sobrevive a
+// recargar la app. Los indices son los de las consolas de ESA conexion.
+export function reorderQueryConsoles(profileId: string, from: number, to: number): void {
+  queryConsoles.update((state) => {
+    const own = state.consoles.filter((item) => item.profileId === profileId);
+    if (from < 0 || from >= own.length || to < 0 || to >= own.length || from === to) return state;
+    const reordered = [...own];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    // Las de otras conexiones quedan donde estaban; las de esta ocupan sus
+    // mismos lugares del arreglo, en el orden nuevo.
+    let next = 0;
+    return {
+      ...state,
+      consoles: state.consoles.map((item) => (item.profileId === profileId ? reordered[next++] : item)),
+    };
+  });
 }
 
 export function renameQueryConsole(id: string, title: string): void {

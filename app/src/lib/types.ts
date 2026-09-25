@@ -196,6 +196,14 @@ export interface ResultPage {
   offset: number;
   pageSize: number;
   pageable: boolean;
+  // Se puede ordenar desde los encabezados (la consulta admite ORDER BY).
+  sortable?: boolean;
+}
+
+// Orden pedido desde un encabezado del grid: columna (base 0) y sentido.
+export interface SortKey {
+  column: number;
+  descending: boolean;
 }
 
 export type ExecuteQueryResponse =

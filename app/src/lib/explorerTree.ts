@@ -48,6 +48,8 @@ export interface ExplorerNode {
   // Abierto mientras hay un filtro activo, para ver las coincidencias sin
   // desplegar el interior de cada tabla (schemas y carpetas por tipo).
   openOnFilter?: boolean;
+  // Solo en tablas y vistas: cual es (doble clic la abre en una pestaña).
+  relation?: { schema: string; name: string };
   children?: ExplorerNode[];
 }
 
@@ -134,6 +136,7 @@ function tableNode(table: ExplorerTable, parentKey: string): ExplorerNode {
   );
 
   return {
+    relation: { schema: table.schema, name: table.name },
     key,
     label: table.name,
     icon: table.kind,

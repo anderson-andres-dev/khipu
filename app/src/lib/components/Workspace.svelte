@@ -2,7 +2,7 @@
   import { tick } from "svelte";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
-  import { FileCode, Plus, SquareTerminal, TriangleAlert, X } from "@lucide/svelte";
+  import { CircleCheck, FileCode, Plus, SquareTerminal, Table, TriangleAlert, X } from "@lucide/svelte";
   import SqlEditor from "$lib/SqlEditor.svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import ExecutionGuard from "$lib/components/ExecutionGuard.svelte";
@@ -16,7 +16,52 @@
   import { extractFromContext } from "$lib/sqlSchema";
   import { countQueryRows, executeQuery, type PageRequest } from "$lib/queryExecution";
   import { defaultPageSize } from "$lib/stores/resultPaging";
-  import type { CatalogColumn, CatalogTable, ColumnCatalogInfo, ExecuteQueryResponse } from "$lib/types";
+  import { appendLog, executionLog, forgetLog } from "$lib/stores/executionLog";
+  import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+  import ChangesPreview from "$lib/components/results/ChangesPreview.svelte";
+  import ExportDialog, { type ExportSummary } from "$lib/components/results/ExportDialog.svelte";
+  import TableFilters from "$lib/components/results/TableFilters.svelte";
+  import { copySettings } from "$lib/stores/copyFormat";
+  import {
+    addPinnedTab,
+    consoleOfKey,
+    forgetPinnedResults,
+    pinnedResults,
+    removePinnedTab,
+    resultKey,
+    setResultPinned,
+    unpinnedTabs,
+  } from "$lib/stores/pinnedResults";
+  import {
+    EMPTY_EDITS,
+    applyChanges,
+    buildChanges,
+    fetchEditInfo,
+    pendingCount,
+    previewChanges,
+    type ChangeError,
+    type EditTarget,
+    type ResultChanges,
+  } from "$lib/resultEditing";
+  import {
+    editStateFor,
+    forgetResultEdits,
+    resetResultEdits,
+    resultEdits,
+    setResultEditInfo,
+    clearResultPendingEdits,
+    commitResultEdits,
+    undoResultEdit,
+    moveResultEdits,
+  } from "$lib/stores/resultEdits";
+  import type {
+    CatalogColumn,
+    CatalogTable,
+    ColumnCatalogInfo,
+    DestructiveStatement,
+    ExecuteQueryResponse,
+    QueryExecutionResult,
+  } from "$lib/types";
   import {
     activateQueryConsole,
     beginQueryExecution,
@@ -29,50 +74,148 @@
     isQueryConsoleDirty,
     queryConsoles,
     renameQueryConsole,
+    reorderQueryConsoles,
+    setTableFilters,
+    type QueryConsole,
     requireQueryConfirmation,
     setQueryCounting,
+    setQuerySort,
+    clearQueryResult,
+    forgetExecutionState,
+    moveExecutionState,
+    stopQueryExecution,
     setQueryTotalRows,
     takeQueryConfirmation,
     updateQueryConsoleSql,
   } from "$lib/stores/queryConsoles";
   import { openSqlFileWithDialog, renameConsoleFile, saveConsole, saveConsoleAs } from "$lib/sqlFiles";
-  import { dismissNotice, notice, notifyError } from "$lib/stores/notifications";
+  import { flipDuration, moveItem, reorderable } from "$lib/reorder";
+  import { nextSort } from "$lib/gridSort";
+  import { dismissNotice, notice, notifyError, notifySuccess } from "$lib/stores/notifications";
 
   const profileId = $derived($connection.profileId ?? "default");
   const consoles = $derived($queryConsoles.consoles.filter((item) => item.profileId === profileId));
   const activeId = $derived($queryConsoles.activeByProfile[profileId]);
   const activeConsole = $derived(consoles.find((item) => item.id === activeId));
-  const execution = $derived(
-    activeConsole
-      ? executionForConsole($queryConsoles, activeConsole.id)
-      : {
-          isExecuting: false,
-          result: null,
-          resultSql: null,
-          resultAt: null,
-          page: null,
-          totalRows: null,
-          counting: false,
-          pendingConfirmation: null,
-        },
+  // --- Pestañas de resultado ------------------------------------------
+  // Cada pestaña tiene su propio estado (resultado, pagina, total, cambios,
+  // historial) guardado bajo su clave: la consola para la pestaña normal,
+  // "<consola>#pin<n>" para cada fijada. `liveExecution` es la normal (la
+  // que usa el editor); `execution` es la de la pestaña que se esta viendo.
+  const pinnedTabs = $derived(activeConsole ? ($pinnedResults[activeConsole.id] ?? []) : []);
+  const liveExecution = $derived(
+    activeConsole ? executionForConsole($queryConsoles, activeConsole.id) : executionForConsole($queryConsoles, ""),
   );
+  // "output" o la clave de la pestaña elegida, por consola.
+  let selectedTabByConsole = $state<Record<string, string>>({});
+
+  function tabExists(consoleId: string, tab: string): boolean {
+    if (tab === "output") return true;
+    if (tab === consoleId) return executionForConsole($queryConsoles, consoleId).result?.type === "resultSet";
+    return ($pinnedResults[consoleId] ?? []).some((item) => resultKey(consoleId, item.id) === tab);
+  }
+
+  const selectedTab = $derived.by(() => {
+    if (!activeConsole) return "output";
+    const chosen = selectedTabByConsole[activeConsole.id];
+    if (chosen && tabExists(activeConsole.id, chosen)) return chosen;
+    return liveExecution.result?.type === "resultSet" ? activeConsole.id : "output";
+  });
+
+  function selectTab(consoleId: string, tab: string) {
+    selectedTabByConsole = { ...selectedTabByConsole, [consoleId]: tab };
+  }
+
+  // Clave cuyo estado se muestra (con la Salida elegida, la normal).
+  const viewKey = $derived(activeConsole ? (selectedTab === "output" ? activeConsole.id : selectedTab) : "");
+  const execution = $derived(executionForConsole($queryConsoles, viewKey));
   const activeProfile = $derived($connectionProfiles.find((profile) => profile.id === profileId));
   // Tabla principal (primer FROM) de la consulta que produjo el resultado
   // vigente — no la del texto actual del editor, que puede haber cambiado
   // desde la ejecucion. Solo resuelve el caso simple (sin JOIN); con varias
   // tablas se toma la primera, igual que el resto de heuristicas de
   // sqlSchema.ts.
+  // Primera tabla despues de FROM, tal como esta escrita (con su schema si
+  // lo trae), sin comillas. extractFromContext es del autocompletado y
+  // depende de la posicion del cursor: sobre el texto entero a veces no
+  // resuelve una consulta simple.
+  function firstFromTable(sql: string): { schema?: string; table: string } | undefined {
+    const match = /\bfrom\s+((?:[`"]?[\w$]+[`"]?\s*\.\s*)?[`"]?[\w$]+[`"]?)/i.exec(sql);
+    if (!match) return undefined;
+    const parts = match[1].split(".").map((part) => part.trim().replace(/^[`"]|[`"]$/g, ""));
+    return parts.length === 2 ? { schema: parts[0], table: parts[1] } : { table: parts[0] };
+  }
+
   const resultTableName = $derived.by(() => {
     const sql = execution.resultSql;
-    return sql ? extractFromContext(sql, sql.length)?.table : undefined;
+    if (!sql) return undefined;
+    return extractFromContext(sql, sql.length)?.table ?? firstFromTable(sql)?.table;
   });
-  // Rotula el resultado con esa tabla: "schema.tabla", al estilo DataGrip.
-  // Si no hay un FROM reconocible (p.ej. "SELECT 1"), cae al schema solo.
-  const resultSourceLabel = $derived.by(() => {
-    if (!execution.resultSql || !activeProfile) return null;
-    const schema = activeProfile.database || activeProfile.name;
-    return resultTableName ? `${schema}.${resultTableName}` : schema;
+  // Rotula un resultado como DataGrip: "schema.tabla". La fuente mas
+  // confiable es el analisis de edicion del backend (AST + catalogo); si la
+  // consulta no es editable, la primera tabla del FROM; sin tabla ("SELECT
+  // 1"), "Resultado".
+  function labelForKey(key: string): string | null {
+    const sql = executionForConsole($queryConsoles, key).resultSql;
+    if (!sql || !activeProfile) return null;
+    const target = editStateFor($resultEdits, key).info?.target;
+    if (target) return `${target.schema}.${target.table}`;
+    const from = firstFromTable(sql);
+    if (!from) return "Resultado";
+    return `${from.schema ?? (activeProfile.database || activeProfile.name)}.${from.table}`;
+  }
+
+  const resultSourceLabel = $derived(labelForKey(viewKey));
+
+  // Orden de las pestañas de resultado (arrastrables), por consola: claves
+  // en el orden en que el usuario las dejo. Las nuevas se agregan al final
+  // y la normal conserva su lugar entre ejecuciones (su clave es la misma).
+  let resultTabOrder = $state<Record<string, string[]>>({});
+
+  // Fijadas primero (en el orden en que se fijaron) y la normal al final,
+  // salvo que el usuario las haya reordenado.
+  const resultTabs = $derived.by(() => {
+    if (!activeConsole) return [];
+    const consoleId = activeConsole.id;
+    const tabs = pinnedTabs.map((item) => {
+      const key = resultKey(consoleId, item.id);
+      return { key, label: labelForKey(key) ?? "Resultado", pinned: item.pinned };
+    });
+    if (liveExecution.result?.type === "resultSet") {
+      tabs.push({ key: consoleId, label: labelForKey(consoleId) ?? "Resultado", pinned: false });
+    }
+    const order = resultTabOrder[consoleId];
+    if (!order) return tabs;
+    const rank = (key: string) => {
+      const index = order.indexOf(key);
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    return tabs
+      .map((tab, index) => ({ tab, index }))
+      .sort((a, b) => rank(a.tab.key) - rank(b.tab.key) || a.index - b.index)
+      .map(({ tab }) => tab);
   });
+
+  // Cuando una pestaña cambia de clave (fijar: la normal pasa a ser una
+  // fijada; desfijar sin otra normal: al reves) conserva su lugar: se
+  // reemplaza una clave por la otra en el orden, en la misma posicion.
+  // Nada se reacomoda solo; lo nuevo va al final.
+  function keepTabPosition(consoleId: string, fromKey: string, toKey: string) {
+    const current = resultTabs.map((tab) => tab.key);
+    const order = (resultTabOrder[consoleId] ?? current).map((key) => (key === fromKey ? toKey : key));
+    if (!order.includes(toKey)) order.push(toKey);
+    resultTabOrder = { ...resultTabOrder, [consoleId]: order };
+  }
+
+  function reorderResultTabs(from: number, to: number) {
+    if (!activeConsole) return;
+    const keys = moveItem(
+      resultTabs.map((tab) => tab.key),
+      from,
+      to,
+    );
+    resultTabOrder = { ...resultTabOrder, [activeConsole.id]: keys };
+  }
   // Para cada columna del resultado que coincide (por nombre) con una
   // columna del catalogo ya cargado, expone si es PK/FK y su comentario —
   // sin pedirle nada nuevo al backend, reusando el catalogo que ya existe
@@ -129,7 +272,9 @@
   let renameInput = $state<HTMLInputElement>();
   let closeDialog = $state<HTMLDialogElement>();
   let pendingCloseId = $state<string | null>(null);
-  const pendingCloseConsole = $derived(consoles.find((item) => item.id === pendingCloseId));
+  // Titulo congelado al abrir: si la consola se cierra (Descartar) mientras
+  // el modal se desvanece, el titulo no debe cambiar a mitad de animacion.
+  let closeDialogTitle = $state("");
 
   function shortcutKeys(id: string): string {
     return $shortcuts.find((shortcut) => shortcut.id === id)?.keys ?? "";
@@ -146,19 +291,24 @@
         shortcut: shortcutKeys("rename-query-console"),
         action: () => startRename(item.id, item.title),
       },
+      // Una pestaña de tabla no tiene texto que guardar.
+      ...(item.table
+        ? []
+        : [
+            {
+              label: "Guardar",
+              shortcut: shortcutKeys("save-query-console"),
+              separatorBefore: true,
+              action: () => void runFileAction(() => saveConsole(item)),
+            },
+            {
+              label: "Guardar como…",
+              shortcut: shortcutKeys("save-query-console-as"),
+              action: () => void runFileAction(() => saveConsoleAs(item)),
+            },
+          ]),
       {
-        label: "Guardar",
-        shortcut: shortcutKeys("save-query-console"),
-        separatorBefore: true,
-        action: () => void runFileAction(() => saveConsole(item)),
-      },
-      {
-        label: "Guardar como…",
-        shortcut: shortcutKeys("save-query-console-as"),
-        action: () => void runFileAction(() => saveConsoleAs(item)),
-      },
-      {
-        label: item.filePath ? "Cerrar archivo" : "Cerrar consola",
+        label: item.table ? "Cerrar tabla" : item.filePath ? "Cerrar archivo" : "Cerrar consola",
         shortcut: shortcutKeys("close-query-console"),
         separatorBefore: true,
         action: () => requestClose(item.id),
@@ -288,13 +438,18 @@
 
   async function requestClose(id: string) {
     tabMenu = null;
+    if (!(await confirmDiscardPending(id))) return;
     const item = consoles.find((candidate) => candidate.id === id);
     // Solo se pregunta cuando cerrar perderia algo.
     if (item && !isQueryConsoleDirty(item)) {
       closeQueryConsole(profileId, id);
+      forgetResultEdits(id);
+      forgetLog(id);
+      forgetConsoleResults(id);
       return;
     }
     pendingCloseId = id;
+    closeDialogTitle = item?.title ?? "consola";
     await tick();
     closeDialog?.showModal();
     // El foco va al dialogo y no a un boton: asi ninguno aparece con el
@@ -303,15 +458,20 @@
     closeDialog?.focus();
   }
 
+  // pendingCloseId se limpia en el onclose del dialogo (al terminar su
+  // animacion de salida), no aca.
   function cancelClose() {
     closeDialog?.close();
-    pendingCloseId = null;
   }
 
   function discardAndClose() {
-    if (pendingCloseId) closeQueryConsole(profileId, pendingCloseId);
+    if (pendingCloseId) {
+      closeQueryConsole(profileId, pendingCloseId);
+      forgetResultEdits(pendingCloseId);
+      forgetLog(pendingCloseId);
+      forgetConsoleResults(pendingCloseId);
+    }
     closeDialog?.close();
-    pendingCloseId = null;
   }
 
   // Guarda (con el dialogo de "Guardar como" si es una consola) y recien
@@ -322,8 +482,12 @@
     const item = id ? currentConsole(id) : undefined;
     if (!id || !item) return;
     closeDialog?.close();
-    pendingCloseId = null;
-    if (await runFileAction(() => saveConsole(item))) closeQueryConsole(profileId, id);
+    if (await runFileAction(() => saveConsole(item))) {
+      closeQueryConsole(profileId, id);
+      forgetResultEdits(id);
+      forgetLog(id);
+      forgetConsoleResults(id);
+    }
   }
 
   function handleConsoleShortcut(event: KeyboardEvent) {
@@ -347,7 +511,7 @@
     }
 
     const saveAsKeys = shortcutKeys("save-query-console-as");
-    if (saveAsKeys && activeConsole && eventMatchesShortcut(event, saveAsKeys)) {
+    if (saveAsKeys && activeConsole && !activeConsole.table && eventMatchesShortcut(event, saveAsKeys)) {
       event.preventDefault();
       const item = activeConsole;
       void runFileAction(() => saveConsoleAs(item));
@@ -355,7 +519,7 @@
     }
 
     const saveKeys = shortcutKeys("save-query-console");
-    if (saveKeys && activeConsole && eventMatchesShortcut(event, saveKeys)) {
+    if (saveKeys && activeConsole && !activeConsole.table && eventMatchesShortcut(event, saveKeys)) {
       event.preventDefault();
       const item = activeConsole;
       void runFileAction(() => saveConsole(item));
@@ -388,45 +552,469 @@
     }
   }
 
-  function applyExecuteQueryResponse(
-    consoleId: string,
-    sql: string,
-    response: ExecuteQueryResponse,
-    paging = false,
-  ) {
-    if (response.type === "confirmationRequired") {
-      requireQueryConfirmation(consoleId, { sql, statement: response.statement });
+  // --- Pestañas de tabla ----------------------------------------------------
+  // Doble clic en una tabla del explorador: sus datos a pantalla completa
+  // (sin editor), con filtros WHERE / ORDER BY. Por dentro es una consulta
+  // "SELECT * FROM tabla ..." en la pestaña, asi que tiene TODO lo del
+  // resultado: editar, paginar, ordenar, buscar, exportar, fijar.
+  let tableFilterError = $state<Record<string, string | null>>({});
+  const tableLoadAttempted = new Set<string>();
+
+  function quoteIdentifier(name: string): string {
+    if (/^[A-Za-z_][A-Za-z0-9_$]*$/.test(name)) return name;
+    return activeProfile?.driver === "postgres" ? `"${name.replace(/"/g, '""')}"` : `\`${name.replace(/`/g, "``")}\``;
+  }
+
+  function tableSql(item: QueryConsole): string {
+    const table = item.table;
+    if (!table) return "";
+    const parts = [`SELECT * FROM ${quoteIdentifier(table.schema)}.${quoteIdentifier(table.name)}`];
+    if (table.where.trim()) parts.push(`WHERE ${table.where.trim()}`);
+    if (table.orderBy.trim()) parts.push(`ORDER BY ${table.orderBy.trim()}`);
+    return parts.join(" ");
+  }
+
+  // Un filtro con error no borra lo que se estaba viendo: el error queda al
+  // lado de los filtros y en la Salida.
+  async function runTableQuery(consoleId: string) {
+    const item = consoles.find((candidate) => candidate.id === consoleId);
+    if (!item?.table) return;
+    if (!(await confirmDiscardPending(replaceableKeys(consoleId))) || !beginQueryExecution(consoleId)) return;
+    setQuerySort(consoleId, []);
+    const sql = tableSql(item);
+    const startedAt = Date.now();
+    const started = performance.now();
+    const response = await executeQuery(sql, null, firstPage(consoleId));
+    if (response.type !== "completed") {
+      applyExecuteQueryResponse(consoleId, sql, response);
       return;
     }
-    finishQueryExecution(consoleId, sql, response.result, response.page ?? null, paging);
+    appendLog(consoleId, { kind: "query", schema: logSchema, text: sql, at: startedAt });
+    appendLog(consoleId, {
+      kind: response.result.type === "error" ? "error" : "info",
+      text: describeOutcome(response.result, response.page?.offset ?? 0, performance.now() - started),
+    });
+    const hadRows = executionForConsole($queryConsoles, consoleId).result?.type === "resultSet";
+    if (response.result.type === "error") {
+      tableFilterError = { ...tableFilterError, [consoleId]: describeOutcome(response.result, 0, 0) };
+      if (hadRows) {
+        stopQueryExecution(consoleId);
+        return;
+      }
+    } else {
+      tableFilterError = { ...tableFilterError, [consoleId]: null };
+    }
+    applyExecuteQueryResponse(consoleId, sql, response);
+    selectTab(consoleId, response.result.type === "resultSet" ? consoleId : "output");
+    dropUnpinnedResults(consoleId);
+  }
+
+  function applyTableFilters(consoleId: string, where: string, orderBy: string) {
+    setTableFilters(consoleId, where, orderBy);
+    void runTableQuery(consoleId);
+  }
+
+  // Al abrir (o volver a) una pestaña de tabla sin datos todavia, se carga.
+  $effect(() => {
+    const item = activeConsole;
+    if (!item?.table || tableLoadAttempted.has(item.id)) return;
+    if (liveExecution.result !== null || liveExecution.isExecuting) return;
+    tableLoadAttempted.add(item.id);
+    void runTableQuery(item.id);
+  });
+
+  // --- Ctrl+F segun el mouse -----------------------------------------------
+  // La busqueda sale segun la zona que tiene el MOUSE encima (sin hacer
+  // clic): editor -> su barra de buscar/reemplazar; resultado -> la barra del
+  // grid. En captura, antes de que CodeMirror vea la tecla (si el foco esta
+  // en el editor pero el mouse sobre el grid, gana el grid). Con el mouse
+  // sobre el sidebar no se toca: lo resuelve +layout.svelte. En cualquier
+  // otro lado, cada zona sigue respondiendo por foco.
+  let sqlEditor = $state<ReturnType<typeof SqlEditor>>();
+  let resultPane = $state<ReturnType<typeof ResultPane>>();
+  let editorPane = $state<HTMLElement>();
+  let resultRegion = $state<HTMLElement>();
+
+  $effect(() => {
+    function onKeydown(event: KeyboardEvent) {
+      const mod = event.ctrlKey || event.metaKey;
+      if (!mod || event.altKey || event.shiftKey || event.key.toLowerCase() !== "f") return;
+      if (document.querySelector("dialog[open]")) return;
+      if (document.querySelector(".sidebar:hover")) return;
+      if (editorPane?.matches(":hover") && sqlEditor) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        sqlEditor.toggleSearch();
+      } else if (resultRegion?.matches(":hover")) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        resultPane?.toggleFind();
+      }
+    }
+    window.addEventListener("keydown", onKeydown, true);
+    return () => window.removeEventListener("keydown", onKeydown, true);
+  });
+
+  // --- Salida -----------------------------------------------------------
+  const outputNumbers = new Intl.NumberFormat("es");
+  const logSchema = $derived(activeProfile ? activeProfile.database || activeProfile.name : "");
+
+  function describeOutcome(result: QueryExecutionResult, offset: number, elapsedMs: number): string {
+    const ms = `${outputNumbers.format(Math.round(elapsedMs))} ms`;
+    if (result.type === "resultSet") {
+      const count = result.rows.length;
+      if (count === 0) return `0 filas obtenidas en ${ms}`;
+      const noun = count === 1 ? "fila obtenida" : "filas obtenidas";
+      return `${outputNumbers.format(count)} ${noun} desde la fila ${outputNumbers.format(offset + 1)} en ${ms}`;
+    }
+    if (result.type === "command") {
+      if (result.affectedRows === 0) return `completado en ${ms}`;
+      const noun = result.affectedRows === 1 ? "fila afectada" : "filas afectadas";
+      return `${outputNumbers.format(result.affectedRows)} ${noun} en ${ms}`;
+    }
+    return result.code ? `[${result.code}] ${result.message}` : result.message;
+  }
+
+  // Unico camino de toda ejecucion (Ctrl+Enter, confirmacion, pagina,
+  // recarga): ejecuta, deja constancia en la Salida y aplica el resultado.
+  // Si el backend pide confirmacion, no se ejecuto nada y no se registra.
+  //
+  // `key` es la pestaña de resultado que recibe el resultado (la normal de
+  // la consola o una fijada); la Salida es siempre la de su consola. Con
+  // filas, se muestra esa pestaña; con error o sin filas, la Salida.
+  async function runQuery(
+    key: string,
+    sql: string,
+    confirmed: DestructiveStatement | null,
+    page: PageRequest,
+    paging = false,
+  ) {
+    const consoleId = consoleOfKey(key);
+    const startedAt = Date.now();
+    const started = performance.now();
+    const response = await executeQuery(sql, confirmed, page);
+    if (response.type === "completed") {
+      appendLog(consoleId, { kind: "query", schema: logSchema, text: sql.trim(), at: startedAt });
+      appendLog(consoleId, {
+        kind: response.result.type === "error" ? "error" : "info",
+        text: describeOutcome(response.result, response.page?.offset ?? 0, performance.now() - started),
+      });
+    }
+    applyExecuteQueryResponse(key, sql, response, paging);
+    if (response.type === "completed") {
+      selectTab(consoleId, response.result.type === "resultSet" ? key : "output");
+    }
+  }
+
+  function applyExecuteQueryResponse(key: string, sql: string, response: ExecuteQueryResponse, paging = false) {
+    if (response.type === "confirmationRequired") {
+      requireQueryConfirmation(key, { sql, statement: response.statement });
+      return;
+    }
+    // Una pestaña fijada que falla al recargar o paginar conserva lo que
+    // mostraba: el error queda en la Salida.
+    if (key !== consoleOfKey(key) && response.result.type !== "resultSet") {
+      stopQueryExecution(key);
+      return;
+    }
+    finishQueryExecution(key, sql, response.result, response.page ?? null, paging);
+    prepareResultEditing(key, sql, response.result);
+  }
+
+  // --- Edicion del resultado -------------------------------------------
+  const editState = $derived(activeConsole ? editStateFor($resultEdits, viewKey) : null);
+
+  // Cada resultado nuevo arranca sin cambios pendientes; si es otra
+  // consulta, se pregunta al backend si (y como) se puede editar. Es un
+  // analisis local (AST + catalogo en memoria), no va a la base.
+  function prepareResultEditing(consoleId: string, sql: string, result: QueryExecutionResult) {
+    if (result.type !== "resultSet") {
+      forgetResultEdits(consoleId);
+      return;
+    }
+    if (resetResultEdits(consoleId, sql)) return;
+    fetchEditInfo(
+      sql,
+      result.columns.map((column) => column.name),
+    )
+      .then((info) => setResultEditInfo(consoleId, sql, info, null))
+      .catch((reason) => setResultEditInfo(consoleId, sql, null, String(reason)));
+  }
+
+  function pendingEditsCount(consoleId: string): number {
+    return pendingCount(editStateFor($resultEdits, consoleId).edits);
+  }
+
+  // Cambiar de pagina, re-ejecutar o cerrar con cambios sin aplicar pide
+  // confirmacion: los cambios son sobre las filas visibles y se perderian.
+  let discardPrompt = $state<{ resolve: (discard: boolean) => void } | null>(null);
+
+  // Acepta varias claves: una ejecucion nueva reemplaza la pestaña normal y
+  // las desfijadas, y se pregunta UNA vez por todas.
+  function confirmDiscardPending(keys: string | string[]): Promise<boolean> {
+    const list = (Array.isArray(keys) ? keys : [keys]).filter((key) => pendingEditsCount(key) > 0);
+    if (list.length === 0) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      discardPrompt = {
+        resolve: (discard) => {
+          discardPrompt = null;
+          if (discard) for (const key of list) clearResultPendingEdits(key);
+          resolve(discard);
+        },
+      };
+    });
+  }
+
+  let preview = $state<{
+    consoleId: string;
+    target: EditTarget;
+    changes: ResultChanges;
+    statements: string[];
+    dismiss: boolean;
+  } | null>(null);
+  let applyingChanges = $state(false);
+  let applyError = $state<ChangeError | null>(null);
+
+  function currentChanges(consoleId: string): { target: EditTarget; changes: ResultChanges } | null {
+    const state = editStateFor($resultEdits, consoleId);
+    const result = executionForConsole($queryConsoles, consoleId).result;
+    if (!state.info || result?.type !== "resultSet") return null;
+    return { target: state.info.target, changes: buildChanges(state.edits, state.info, result.rows) };
+  }
+
+  // El SQL se pide ANTES de abrir: el modal aparece ya completo, sin un
+  // instante vacio ni contenido que salta al llegar.
+  async function openChangesPreview(consoleId: string, error: ChangeError | null = null) {
+    const current = currentChanges(consoleId);
+    if (!current) return;
+    try {
+      const statements = await previewChanges(current.target, current.changes);
+      applyError = error;
+      preview = { consoleId, ...current, statements, dismiss: false };
+    } catch (cause) {
+      notifyError(cause);
+    }
+  }
+
+  function asChangeError(error: unknown): ChangeError {
+    if (error && typeof error === "object" && "message" in error) {
+      const value = error as Partial<ChangeError>;
+      return { statementIndex: value.statementIndex ?? null, message: String(value.message), code: value.code ?? null };
+    }
+    return { statementIndex: null, message: String(error), code: null };
+  }
+
+  // Aplica todo en una transaccion. Si falla no queda nada aplicado: los
+  // cambios siguen pendientes y el error se muestra en la vista previa.
+  async function submitChanges(key: string) {
+    const consoleId = consoleOfKey(key);
+    const current = currentChanges(key);
+    if (!current || applyingChanges) return;
+    applyingChanges = true;
+    applyError = null;
+    // Las mismas sentencias que muestra la vista previa, para la Salida.
+    const statements = await previewChanges(current.target, current.changes).catch(() => [] as string[]);
+    const startedAt = Date.now();
+    const started = performance.now();
+    const logStatements = () => {
+      for (const statement of statements) {
+        appendLog(consoleId, { kind: "query", schema: logSchema, text: statement, at: startedAt });
+      }
+    };
+    try {
+      const affected = await applyChanges(current.target, current.changes);
+      logStatements();
+      const ms = outputNumbers.format(Math.round(performance.now() - started));
+      appendLog(consoleId, {
+        kind: "info",
+        text: `Cambios aplicados: ${outputNumbers.format(affected)} ${affected === 1 ? "fila afectada" : "filas afectadas"} en ${ms} ms`,
+      });
+      clearResultPendingEdits(key);
+      // El modal (si estaba abierto) se cierra animado; lo quita su onclose.
+      if (preview) preview = { ...preview, dismiss: true };
+      // Recarga: trae ids generados, defaults y lo que haya cambiado un
+      // trigger.
+      void reloadResult(key);
+    } catch (error) {
+      applyingChanges = false;
+      const changeError = asChangeError(error);
+      logStatements();
+      appendLog(consoleId, {
+        kind: "error",
+        text: `No se aplicó ningún cambio. ${changeError.statementIndex !== null ? `Sentencia ${changeError.statementIndex + 1}: ` : ""}${changeError.message}`,
+      });
+      if (preview) applyError = changeError;
+      else void openChangesPreview(key, changeError);
+      return;
+    }
+    applyingChanges = false;
+  }
+
+  // --- Exportar datos ---------------------------------------------------
+  // Clave de la pestaña que se exporta.
+  let exportFor = $state<string | null>(null);
+  const exportSource = $derived.by(() => {
+    if (!exportFor) return null;
+    const source = executionForConsole($queryConsoles, exportFor);
+    if (source.result?.type !== "resultSet" || !source.resultSql) return null;
+    return {
+      label: labelForKey(exportFor) ?? "Resultado",
+      sql: source.resultSql,
+      sort: source.sort,
+      result: source.result,
+      tableName: exportTableName(exportFor),
+    };
+  });
+
+  // Fijar: la pestaña normal pasa a ser una fijada CON TODO su estado
+  // (pagina, total, cambios pendientes, historial): sigue funcionando igual,
+  // solo que la proxima ejecucion ya no la reemplaza.
+  function pinCurrentResult(consoleId: string) {
+    if (executionForConsole($queryConsoles, consoleId).result?.type !== "resultSet") return;
+    const id = addPinnedTab(consoleId);
+    const key = resultKey(consoleId, id);
+    keepTabPosition(consoleId, consoleId, key);
+    moveExecutionState(consoleId, key);
+    moveResultEdits(consoleId, key);
+    selectTab(consoleId, key);
+  }
+
+  // Desfijar NO cierra ni reemplaza nada: la pestaña sigue abierta tal
+  // cual y la proxima ejecucion es la que la reemplaza. Si no hay una
+  // pestaña normal abierta, pasa directamente a serlo, en su mismo lugar.
+  function unpinTab(key: string) {
+    const consoleId = consoleOfKey(key);
+    const id = pinnedIdOf(key);
+    if (id === null) return;
+    if (executionForConsole($queryConsoles, consoleId).result?.type === "resultSet") {
+      setResultPinned(consoleId, id, false);
+      return;
+    }
+    keepTabPosition(consoleId, key, consoleId);
+    moveExecutionState(key, consoleId);
+    moveResultEdits(key, consoleId);
+    removePinnedTab(consoleId, id);
+    selectTab(consoleId, consoleId);
+  }
+
+  function pinnedIdOf(key: string): number | null {
+    const match = /#pin(\d+)$/.exec(key);
+    return match ? Number(match[1]) : null;
+  }
+
+  function forgetResultTab(key: string) {
+    forgetExecutionState(key);
+    forgetResultEdits(key);
+    const id = pinnedIdOf(key);
+    if (id !== null) removePinnedTab(consoleOfKey(key), id);
+  }
+
+  // Una ejecucion nueva reemplaza la pestaña normal y las desfijadas.
+  function replaceableKeys(consoleId: string): string[] {
+    return [consoleId, ...unpinnedTabs($pinnedResults, consoleId).map((item) => resultKey(consoleId, item.id))];
+  }
+
+  function dropUnpinnedResults(consoleId: string) {
+    for (const item of unpinnedTabs($pinnedResults, consoleId)) forgetResultTab(resultKey(consoleId, item.id));
+  }
+
+  // Al cerrar la consola, sus pestañas fijadas (y su estado) se van con ella.
+  function forgetConsoleResults(consoleId: string) {
+    for (const item of $pinnedResults[consoleId] ?? []) {
+      const key = resultKey(consoleId, item.id);
+      forgetExecutionState(key);
+      forgetResultEdits(key);
+    }
+    forgetPinnedResults(consoleId);
+  }
+
+  function exportTableName(key: string): string {
+    const info = editStateFor($resultEdits, key).info;
+    return info ? `${info.target.schema}.${info.target.table}` : (labelForKey(key) ?? "tabla");
+  }
+
+  function onExported(key: string, summary: ExportSummary) {
+    const rows = outputNumbers.format(summary.rows);
+    const ms = outputNumbers.format(summary.elapsedMs);
+    appendLog(consoleOfKey(key), {
+      kind: "info",
+      text: `${rows} ${summary.rows === 1 ? "fila exportada" : "filas exportadas"} a ${summary.path} en ${ms} ms`,
+    });
+    notifySuccess(`${rows} ${summary.rows === 1 ? "fila exportada" : "filas exportadas"} a ${summary.path}`);
+  }
+
+  // × de una pestaña de resultado: la quita (con cambios pendientes
+  // pregunta antes). La normal queda vacia; una fijada desaparece.
+  async function closeResultTab(key: string) {
+    if (!(await confirmDiscardPending(key))) return;
+    if (key === consoleOfKey(key)) {
+      clearQueryResult(key);
+      forgetResultEdits(key);
+    } else {
+      forgetResultTab(key);
+    }
+  }
+
+  // Vuelve a ejecutar la consulta del resultado en la misma pagina, como una
+  // ejecucion nueva (el total se vuelve a calcular). Con cambios pendientes
+  // pregunta antes de descartarlos.
+  async function reloadResult(key: string) {
+    const current = executionForConsole($queryConsoles, key);
+    const sql = current.resultSql;
+    if (!sql || !(await confirmDiscardPending(key)) || !beginQueryExecution(key)) return;
+    const page = current.page ?? firstPage(key);
+    await runQuery(key, sql, null, { offset: page.offset, pageSize: page.pageSize, sort: current.sort });
   }
 
   // Una ejecucion nueva arranca en la primera pagina, con el tamaño que la
   // consola venia usando (o el predeterminado).
-  function firstPage(consoleId: string): PageRequest {
-    const current = executionForConsole($queryConsoles, consoleId).page;
+  function firstPage(key: string): PageRequest {
+    const current = executionForConsole($queryConsoles, key).page;
     return { offset: 0, pageSize: current?.pageSize ?? $defaultPageSize };
   }
 
   // Otra pagina de la consulta que produjo el resultado vigente (resultSql,
   // no el texto actual del editor, que puede haber cambiado).
-  async function navigatePage(consoleId: string, offset: number, pageSize: number) {
-    const sql = executionForConsole($queryConsoles, consoleId).resultSql;
-    if (!sql || !beginQueryExecution(consoleId)) return;
-    const response = await executeQuery(sql, null, { offset, pageSize });
-    applyExecuteQueryResponse(consoleId, sql, response, true);
+  // Paginar conserva el orden elegido en los encabezados: cada pagina es
+  // consulta + orden + LIMIT/OFFSET (el backend ordena ANTES de paginar).
+  async function navigatePage(key: string, offset: number, pageSize: number) {
+    const current = executionForConsole($queryConsoles, key);
+    const sql = current.resultSql;
+    if (!sql || !(await confirmDiscardPending(key)) || !beginQueryExecution(key)) return;
+    await runQuery(key, sql, null, { offset, pageSize, sort: current.sort }, true);
   }
 
-  async function countTotalRows(consoleId: string): Promise<number | null> {
-    const sql = executionForConsole($queryConsoles, consoleId).resultSql;
+  // Clic en un encabezado: nuevo orden, de vuelta a la primera pagina (mismo
+  // tamaño). Es la misma consulta, asi que el total contado se conserva.
+  async function sortResult(key: string, column: number, additive: boolean) {
+    const current = executionForConsole($queryConsoles, key);
+    const sql = current.resultSql;
+    if (!sql || !current.page?.sortable) return;
+    if (!(await confirmDiscardPending(key)) || !beginQueryExecution(key)) return;
+    const sort = nextSort(current.sort, column, additive);
+    setQuerySort(key, sort);
+    await runQuery(key, sql, null, { offset: 0, pageSize: current.page.pageSize, sort }, true);
+  }
+
+  async function countTotalRows(key: string): Promise<number | null> {
+    const consoleId = consoleOfKey(key);
+    const sql = executionForConsole($queryConsoles, key).resultSql;
     if (!sql) return null;
-    setQueryCounting(consoleId, true);
+    setQueryCounting(key, true);
+    const started = performance.now();
+    appendLog(consoleId, { kind: "query", schema: logSchema, text: `SELECT COUNT(*) FROM (${sql.trim()})` });
     try {
       const total = await countQueryRows(sql);
-      setQueryTotalRows(consoleId, sql, total);
+      setQueryTotalRows(key, sql, total);
+      const ms = outputNumbers.format(Math.round(performance.now() - started));
+      appendLog(consoleId, {
+        kind: "info",
+        text: `${outputNumbers.format(total)} ${total === 1 ? "fila" : "filas"} en total · ${ms} ms`,
+      });
       return total;
     } catch (error) {
-      setQueryCounting(consoleId, false);
+      setQueryCounting(key, false);
+      appendLog(consoleId, { kind: "error", text: String(error) });
       notifyError(error);
       return null;
     }
@@ -440,7 +1028,7 @@
     if (direction === 1 && !result.truncated) return false;
     if (direction === -1 && page.offset === 0) return false;
     const offset = Math.max(0, page.offset + direction * page.pageSize);
-    void navigatePage(activeConsole.id, offset, page.pageSize);
+    void navigatePage(viewKey, offset, page.pageSize);
     return true;
   }
 
@@ -450,9 +1038,11 @@
   // Ctrl+Enter mientras el guard esta arriba no dispara una segunda
   // invocacion ni confirma nada por si solo.
   async function requestExecution(consoleId: string, sql: string) {
-    if (!beginQueryExecution(consoleId)) return;
-    const response = await executeQuery(sql, null, firstPage(consoleId));
-    applyExecuteQueryResponse(consoleId, sql, response);
+    if (!(await confirmDiscardPending(replaceableKeys(consoleId))) || !beginQueryExecution(consoleId)) return;
+    // Consulta nueva: arranca sin el orden de los encabezados.
+    setQuerySort(consoleId, []);
+    await runQuery(consoleId, sql, null, firstPage(consoleId));
+    dropUnpinnedResults(consoleId);
   }
 
   // Unica via de confirmacion: el click explicito en "Ejecutar de todos
@@ -462,8 +1052,9 @@
   async function confirmPendingExecution(consoleId: string) {
     const pending = takeQueryConfirmation(consoleId);
     if (!pending || !beginQueryExecution(consoleId)) return;
-    const response = await executeQuery(pending.sql, pending.statement, firstPage(consoleId));
-    applyExecuteQueryResponse(consoleId, pending.sql, response);
+    setQuerySort(consoleId, []);
+    await runQuery(consoleId, pending.sql, pending.statement, firstPage(consoleId));
+    dropUnpinnedResults(consoleId);
   }
 
   function cancelPendingExecution(consoleId: string) {
@@ -509,6 +1100,7 @@
   <div class="console-tabs">
   <div
     class="tabs-scroll"
+    use:reorderable={{ items: ".console-tab", onmove: (from, to) => reorderQueryConsoles(profileId, from, to) }}
     class:fade-start={tabsOverflow.start}
     class:fade-end={tabsOverflow.end}
     role="tablist"
@@ -531,11 +1123,13 @@
         onkeydown={(event) => {
           if (event.key === "Enter" || event.key === " ") activateQueryConsole(profileId, item.id);
         }}
-        animate:flip={{ duration: 150 }}
+        animate:flip={{ duration: flipDuration(150) }}
         in:fly={{ x: -8, duration: 150 }}
         out:fade={{ duration: 120 }}
       >
-        {#if item.filePath}
+        {#if item.table}
+          <Table size={13} class="console-tab-icon" aria-hidden="true" />
+        {:else if item.filePath}
           <FileCode size={13} class="console-tab-icon" aria-hidden="true" />
         {:else}
           <SquareTerminal size={13} class="console-tab-icon" aria-hidden="true" />
@@ -555,7 +1149,10 @@
             onblur={() => finishRename(true)}
           />
         {:else}
-          <span class="console-tab-title" title={item.filePath ?? undefined}>{item.title}</span>
+          <span
+            class="console-tab-title"
+            title={item.table ? `${item.table.schema}.${item.table.name}` : (item.filePath ?? undefined)}>{item.title}</span
+          >
         {/if}
         <button
           type="button"
@@ -598,23 +1195,25 @@
     </div>
   {:else}
   <section class="workspace-body" bind:this={workspaceBody}>
-    <div class="editor-pane" style={`flex-basis: ${editorFraction * 100}%`}>
+    {#if !activeConsole?.table}
+    <div class="editor-pane" bind:this={editorPane} style={`flex-basis: ${editorFraction * 100}%`}>
       {#if activeConsole}
         {#key activeConsole.id}
           <SqlEditor
+            bind:this={sqlEditor}
             value={activeConsole.sql}
             onchange={(sql) => updateQueryConsoleSql(activeConsole.id, sql)}
             onexecute={(sql) => requestExecution(activeConsole.id, sql)}
-            executing={execution.isExecuting}
-            result={execution.result}
+            executing={liveExecution.isExecuting}
+            result={liveExecution.result}
             onopentabledefinition={(ref) => (tableDefinitionRequest = ref)}
           />
         {/key}
       {/if}
     </div>
-    {#if execution.pendingConfirmation && activeConsole}
+    {#if liveExecution.pendingConfirmation && activeConsole}
       <ExecutionGuard
-        statement={execution.pendingConfirmation.statement}
+        statement={liveExecution.pendingConfirmation.statement}
         oncancel={() => cancelPendingExecution(activeConsole.id)}
         onconfirm={() => confirmPendingExecution(activeConsole.id)}
       />
@@ -632,8 +1231,10 @@
       onpointerdown={startResize}
       onkeydown={onSplitterKeydown}
     ></div>
-    <div class="result-region">
+    {/if}
+    <div class="result-region" bind:this={resultRegion}>
       <ResultPane
+        bind:this={resultPane}
         isExecuting={execution.isExecuting}
         result={execution.result}
         resultSql={execution.resultSql}
@@ -645,9 +1246,48 @@
         counting={execution.counting}
         nextPageShortcut={shortcutKeys("next-result-page")}
         previousPageShortcut={shortcutKeys("previous-result-page")}
-        onnavigate={(offset, pageSize) => activeConsole && void navigatePage(activeConsole.id, offset, pageSize)}
-        oncount={() => (activeConsole ? countTotalRows(activeConsole.id) : Promise.resolve(null))}
+        onnavigate={(offset, pageSize) => void navigatePage(viewKey, offset, pageSize)}
+        sort={execution.sort}
+        onsort={(column, additive) => void sortResult(viewKey, column, additive)}
+        oncount={() => countTotalRows(viewKey)}
+        editInfo={editState?.info ?? null}
+        editBlockedReason={editState?.blockedReason ?? null}
+        edits={editState?.edits ?? EMPTY_EDITS}
+        onedits={(edits, at) => commitResultEdits(viewKey, edits, at)}
+        lastEditStep={editState?.history.at(-1) ?? null}
+        onundo={() => undoResultEdit(viewKey)}
+        onreload={() => void reloadResult(viewKey)}
+        outputLog={activeConsole ? ($executionLog[activeConsole.id] ?? []) : []}
+        consoleRunning={liveExecution.isExecuting}
+        tabs={resultTabs}
+        activeTab={selectedTab}
+        onselecttab={(tab) => activeConsole && selectTab(activeConsole.id, tab)}
+        onreordertabs={reorderResultTabs}
+        onclosetab={(key) => void closeResultTab(key)}
+        onexport={() => (exportFor = viewKey)}
+        onpin={() => activeConsole && pinCurrentResult(activeConsole.id)}
+        onunpin={() => unpinTab(viewKey)}
+        onrepin={() => {
+          const id = pinnedIdOf(viewKey);
+          if (activeConsole && id !== null) setResultPinned(activeConsole.id, id, true);
+        }}
+        onpreview={() => void openChangesPreview(viewKey)}
+        onsubmit={() => void submitChanges(viewKey)}
+        onnotice={notifyError}
+        filters={activeConsole?.table ? tableFiltersBar : undefined}
       />
+      {#snippet tableFiltersBar()}
+        {#if activeConsole?.table}
+          {@const consoleId = activeConsole.id}
+          <TableFilters
+            where={activeConsole.table.where}
+            orderBy={activeConsole.table.orderBy}
+            error={tableFilterError[consoleId] ?? null}
+            busy={liveExecution.isExecuting}
+            onapply={(where, orderBy) => applyTableFilters(consoleId, where, orderBy)}
+          />
+        {/if}
+      {/snippet}
     </div>
   </section>
   {/if}
@@ -671,10 +1311,59 @@
   />
 {/if}
 
+{#if discardPrompt}
+  {@const prompt = discardPrompt}
+  <ConfirmDialog
+    title="¿Descartar cambios sin aplicar?"
+    message="Los cambios pendientes del resultado se perderán."
+    confirmLabel="Descartar"
+    onconfirm={() => prompt.resolve(true)}
+    oncancel={() => prompt.resolve(false)}
+  />
+{/if}
+
+{#if exportFor && exportSource}
+  {@const consoleId = exportFor}
+  <ExportDialog
+    source={exportSource.label}
+    sql={exportSource.sql}
+    sort={exportSource.sort}
+    columns={exportSource.result.columns}
+    rows={exportSource.result.rows}
+    tableName={exportSource.tableName}
+    initialFormat={$copySettings.format}
+    initialHeaders={$copySettings.headers}
+    onexported={(summary) => onExported(consoleId, summary)}
+    oncopied={(count) =>
+      notifySuccess(`${outputNumbers.format(count)} ${count === 1 ? "fila copiada" : "filas copiadas"} al portapapeles`)}
+    onclose={() => (exportFor = null)}
+  />
+{/if}
+
+{#if preview}
+  {@const current = preview}
+  <ChangesPreview
+    statements={current.statements}
+    changes={current.changes}
+    applying={applyingChanges}
+    error={applyError}
+    dismiss={current.dismiss}
+    onapply={() => void submitChanges(current.consoleId)}
+    onclose={() => {
+      preview = null;
+      applyError = null;
+    }}
+  />
+{/if}
+
 {#if $notice}
   {@const current = $notice}
-  <div class="notice" role="alert" transition:fly={{ y: 8, duration: 160 }}>
-    <TriangleAlert size={14} class="notice-icon" aria-hidden="true" />
+  <div class="notice" class:success={current.kind === "success"} role="alert" transition:fly={{ y: 8, duration: 160 }}>
+    {#if current.kind === "success"}
+      <CircleCheck size={14} class="notice-icon" aria-hidden="true" />
+    {:else}
+      <TriangleAlert size={14} class="notice-icon" aria-hidden="true" />
+    {/if}
     <span>{current.message}</span>
     <button type="button" class="notice-close" aria-label="Cerrar aviso" onclick={() => dismissNotice(current.id)}>
       <X size={12} aria-hidden="true" />
@@ -695,7 +1384,7 @@
   <div class="dialog-icon" aria-hidden="true">
     <TriangleAlert size={24} strokeWidth={2} />
   </div>
-  <h2>¿Cerrar {pendingCloseConsole?.title ?? "consola"}?</h2>
+  <h2>¿Cerrar {closeDialogTitle}?</h2>
   <p class="dialog-message">Hay cambios sin guardar.</p>
   <div class="dialog-actions">
     <button type="button" class="secondary-action" onclick={cancelClose}>Cancelar</button>
@@ -770,6 +1459,15 @@
     font: inherit;
     font-size: 0.75rem;
     cursor: pointer;
+  }
+
+  /* Pestaña tomada al arrastrar (reorder.ts): por encima de las demas, con
+     una sombra sutil. */
+  .console-tab:global(.reorder-dragging) {
+    position: relative;
+    z-index: 2;
+    box-shadow: var(--shadow-elevated);
+    cursor: grabbing;
   }
 
   .console-tab {
@@ -1157,6 +1855,14 @@
     flex-shrink: 0;
     margin-top: 2px;
     color: var(--danger);
+  }
+
+  .notice.success {
+    border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  }
+
+  .notice.success :global(.notice-icon) {
+    color: var(--success);
   }
 
   .notice span {

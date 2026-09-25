@@ -234,3 +234,68 @@ describe("queryConsoles: paginacion", () => {
     expect(mod.executionForConsole(get(mod.queryConsoles), id).totalRows).toBeNull();
   });
 });
+
+describe("queryConsoles: reordenar", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("mueve solo las consolas de esa conexion y persiste el orden", async () => {
+    const mod = await freshQueryConsoles();
+    const a = mod.createQueryConsole("p1");
+    const other = mod.createQueryConsole("p2");
+    const b = mod.createQueryConsole("p1");
+    const c = mod.createQueryConsole("p1");
+    mod.reorderQueryConsoles("p1", 2, 0);
+
+    const ids = get(mod.queryConsoles).consoles.map((item) => item.id);
+    expect(ids).toEqual([c, other, a, b]);
+    const persisted = JSON.parse(localStorage.getItem("khipu:query-consoles:v1") ?? "{}");
+    expect(persisted.consoles.map((item: { id: string }) => item.id)).toEqual([c, other, a, b]);
+  });
+});
+
+describe("queryConsoles: pestañas de tabla", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("abrir la misma tabla reutiliza su pestaña; los filtros se guardan", async () => {
+    const mod = await freshQueryConsoles();
+    const first = mod.openTableConsole("p1", "core", "api_core_smoke_test");
+    mod.createQueryConsole("p1");
+    const again = mod.openTableConsole("p1", "core", "api_core_smoke_test");
+    expect(again).toBe(first);
+    expect(get(mod.queryConsoles).activeByProfile.p1).toBe(first);
+
+    mod.setTableFilters(first, "estado = 'activo'", "id DESC");
+    const item = get(mod.queryConsoles).consoles.find((candidate) => candidate.id === first)!;
+    expect(item.title).toBe("api_core_smoke_test");
+    expect(item.table).toEqual({ schema: "core", name: "api_core_smoke_test", where: "estado = 'activo'", orderBy: "id DESC" });
+    // Nunca queda "sin guardar": no tiene texto propio.
+    expect(mod.isQueryConsoleDirty(item)).toBe(false);
+
+    const persisted = JSON.parse(localStorage.getItem("khipu:query-consoles:v1") ?? "{}");
+    expect(persisted.consoles.find((candidate: { id: string }) => candidate.id === first).table.where).toBe(
+      "estado = 'activo'",
+    );
+  });
+
+  it("al recargar la app se restaura la pestaña de tabla con sus filtros", async () => {
+    const mod = await freshQueryConsoles();
+    const id = mod.openTableConsole("p1", "core", "t");
+    mod.setTableFilters(id, "a = 1", "");
+    const stored = localStorage.getItem("khipu:query-consoles:v1");
+
+    vi.resetModules();
+    const storage = new Map([["khipu:query-consoles:v1", stored ?? ""]]);
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+    const reloaded = await import("./queryConsoles");
+    const item = get(reloaded.queryConsoles).consoles.find((candidate) => candidate.id === id)!;
+    expect(item.table?.where).toBe("a = 1");
+  });
+});

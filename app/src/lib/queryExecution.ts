@@ -1,9 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DestructiveStatement, ExecuteQueryResponse } from "$lib/types";
+import type { DestructiveStatement, ExecuteQueryResponse, SortKey } from "$lib/types";
 
 export interface PageRequest {
   offset: number;
   pageSize: number;
+  // Orden de los encabezados (se aplica en la base, antes de paginar).
+  sort?: SortKey[];
 }
 
 // Unico punto de invocacion del comando "execute_query": si el transporte de

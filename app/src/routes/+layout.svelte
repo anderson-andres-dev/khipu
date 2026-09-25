@@ -35,6 +35,8 @@
   import SettingsPanel from "$lib/components/SettingsPanel.svelte";
   import SchemaTree from "$lib/components/SchemaTree.svelte";
   import FileTree from "$lib/components/FileTree.svelte";
+  import { installDialogMotion } from "$lib/dialogMotion";
+  import { openTableConsole } from "$lib/stores/queryConsoles";
   import { openSqlFileWithDialog, pickSqlFolder } from "$lib/sqlFiles";
   import { MIN_FILE_PANEL_HEIGHT, setFilePanelHeight, setSqlFolder, sqlFolders } from "$lib/stores/sqlFolders";
   import { notifyError } from "$lib/stores/notifications";
@@ -137,6 +139,46 @@
   // Atajos globales resueltos desde Ajustes > Atajos (shortcuts.ts). Se
   // desactivan mientras el modal de Ajustes esta abierto, porque ahi mismo
   // se pueden estar capturando nuevas combinaciones.
+  // Ultima zona donde el usuario hizo clic. WebKit no enfoca los botones al
+  // hacer clic (y las filas del arbol del sidebar son botones), asi que
+  // "el foco esta en el sidebar" no se puede saber solo por activeElement.
+  let lastPointerInSidebar = false;
+
+  function trackPointerRegion(event: PointerEvent) {
+    lastPointerInSidebar = event.target instanceof Element && !!event.target.closest(".sidebar");
+  }
+
+  // Ctrl+F con el sidebar activo: lleva al filtro del explorador; si ya se
+  // esta en el filtro, lo deja (toggle). En el editor y en el grid, Ctrl+F lo
+  // resuelve cada uno (su propia barra de busqueda).
+  function handleSidebarFind(event: KeyboardEvent): boolean {
+    const mod = event.ctrlKey || event.metaKey;
+    if (!mod || event.altKey || event.shiftKey || event.key.toLowerCase() !== "f" || !sidebar) return false;
+    const active = document.activeElement;
+    // Manda el mouse: con el puntero sobre el sidebar, alcanza. Si no, el
+    // foco (o el ultimo clic, que WebKit no enfoca botones).
+    const inSidebar =
+      sidebar.matches(":hover") ||
+      (active && active !== document.body ? sidebar.contains(active) : lastPointerInSidebar);
+    if (!inSidebar) return false;
+    const filterInput = sidebar.querySelector<HTMLInputElement>(".filter input");
+    if (!filterInput) return false;
+    event.preventDefault();
+    // Que CodeMirror no la vea si el foco estaba en el editor.
+    event.stopImmediatePropagation();
+    if (active === filterInput) {
+      filterInput.blur();
+    } else {
+      filterInput.focus();
+      filterInput.select();
+    }
+    return true;
+  }
+
+  function onSidebarFindKeydown(event: KeyboardEvent) {
+    if (!settingsOpen) handleSidebarFind(event);
+  }
+
   function handleGlobalKeydown(event: KeyboardEvent) {
     if (settingsOpen) return;
 
@@ -193,13 +235,19 @@
   }
 
   onMount(() => {
+    installDialogMotion();
     cleanupThemeEffects = initThemeEffects();
     document.addEventListener("keydown", handleGlobalKeydown);
+    window.addEventListener("pointerdown", trackPointerRegion, true);
+    // En captura: tiene que llegar antes que el keymap de CodeMirror.
+    window.addEventListener("keydown", onSidebarFindKeydown, true);
   });
 
   onDestroy(() => {
     cleanupThemeEffects?.();
     document.removeEventListener("keydown", handleGlobalKeydown);
+    window.removeEventListener("pointerdown", trackPointerRegion, true);
+    window.removeEventListener("keydown", onSidebarFindKeydown, true);
   });
 </script>
 
@@ -315,6 +363,7 @@
           onhide={() => (sidebarCollapsed = true)}
           onopenfile={() => void openSqlFileWithDialog(profileId).catch(notifyError)}
           onopenfolder={() => void handleOpenFolder()}
+          onopentable={(schema, name) => openTableConsole(profileId, schema, name)}
           onschemaschange={(schemas) => void setVisibleSchemas(schemas).catch(() => {})}
         />
         </div>

@@ -194,12 +194,15 @@ dialog[open] {
   transform: translateY(0) scale(1);
 }
 
+/* El desenfoque del fondo es fijo y solo se anima el color del velo:
+   animar blur() obliga a recalcular el desenfoque de toda la app en cada
+   cuadro (con un grid de cientos de filas detras, en WebKitGTK eso se nota
+   como tirones). La opacidad del velo, en cambio, es barata. */
 dialog::backdrop {
   background: rgb(0 0 0 / 0%);
-  backdrop-filter: blur(0);
+  backdrop-filter: blur(3px);
   transition:
     background-color var(--duration-fast) ease-out,
-    backdrop-filter var(--duration-fast) ease-out,
     display var(--duration-fast) allow-discrete,
     overlay var(--duration-fast) allow-discrete;
 }
@@ -209,7 +212,23 @@ dialog::backdrop {
    ve pesado). */
 dialog[open]::backdrop {
   background: var(--scrim);
-  backdrop-filter: blur(3px);
+}
+
+/* Salida de cualquier modal (ver dialogMotion.ts): mismo recorrido que la
+   entrada pero un poco mas rapida y con ease-in, y el fondo se aclara a la
+   par. Va antes de @starting-style y despues de dialog[open] para ganarle. */
+dialog.is-closing {
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transition:
+    opacity 150ms ease-in,
+    transform 150ms ease-in;
+  animation: none !important;
+}
+
+dialog.is-closing::backdrop {
+  background: rgb(0 0 0 / 0%);
+  transition: background-color 150ms ease-in;
 }
 
 @starting-style {
@@ -220,6 +239,5 @@ dialog[open]::backdrop {
 
   dialog[open]::backdrop {
     background: rgb(0 0 0 / 0%);
-    backdrop-filter: blur(0);
   }
 }

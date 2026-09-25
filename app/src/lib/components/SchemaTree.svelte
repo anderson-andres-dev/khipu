@@ -43,6 +43,7 @@
     onhide,
     onopenfile,
     onopenfolder,
+    onopentable = () => {},
     onschemaschange,
   }: {
     explorer: DatabaseExplorer | null;
@@ -57,6 +58,8 @@
     onopenfile: () => void;
     // Abre una carpeta de scripts en el panel de archivos.
     onopenfolder: () => void;
+    // Doble clic en una tabla o vista: abrir sus datos en una pestaña.
+    onopentable?: (schema: string, name: string) => void;
     // Schemas extra a mostrar (el por defecto se incluye siempre).
     onschemaschange: (schemas: string[]) => void;
   } = $props();
@@ -206,15 +209,23 @@
         style:--depth={depth}
         title={node.title ?? (node.detail ? `${node.label} ${node.detail}` : node.label)}
         onclick={() => toggle(node.key, open)}
+        ondblclick={() => {
+          if (!node.relation) return;
+          // El doble clic ya alterno dos veces (abrio y cerro): se deja como
+          // estaba y se abre la tabla.
+          onopentable(node.relation.schema, node.relation.name);
+        }}
       >
         {@render chevron(open)}
         {@render nodeContent(node, Icon)}
       </button>
     {:else}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="row leaf"
         style:--depth={depth}
         title={node.title ?? (node.detail ? `${node.label} ${node.detail}` : node.label)}
+        ondblclick={() => node.relation && onopentable(node.relation.schema, node.relation.name)}
       >
         {@render nodeContent(node, Icon)}
       </div>
