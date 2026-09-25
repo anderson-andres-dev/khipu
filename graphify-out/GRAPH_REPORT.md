@@ -1,17 +1,17 @@
 # Graph Report - khipu  (2026-09-24)
 
 ## Corpus Check
-- 116 files · ~78,532 words
+- 116 files · ~78,915 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 9 file(s) not represented in the graph (top: (none) 6, .icns 1, .ico 1)
 
 ## Summary
-- 1215 nodes · 2359 edges · 56 communities (45 shown, 11 thin omitted)
+- 1214 nodes · 2360 edges · 51 communities (43 shown, 8 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3c1488ce`
+- Built from commit: `e802e6a2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -29,7 +29,7 @@
 - explorerTree.ts
 - tauri.conf.json
 - mysql/src/tls.rs
-- sqlDefinitionLink.ts
+- sqlExecutionMarker.ts
 - connection.ts
 - KhipuLanguageServer
 - svelte
@@ -46,7 +46,7 @@
 - scripts
 - default.json
 - khipu-desktop
-- postgres/src/introspect.rs
+- DriverError
 - sql_path
 - assembly.rs
 - app-environment.ts
@@ -55,17 +55,14 @@
 - CLAUDE.md
 - sqlCompletionPolicy.ts
 - sql_files.rs
-- DriverError
+- svelte.config.js
 - SqlEditor.svelte
 - postgres/src/tls.rs
 - ref_app
-- sqlExecutionMarker.ts
 - theme.ts
-- sqlEditorBehavior.ts
 - sqlSchema.test.ts
 - types.ts
 - extractFromContext
-- StatusGutterMarker
 
 ## God Nodes (most connected - your core abstractions)
 1. `DriverError` - 50 edges
@@ -99,7 +96,7 @@
 - **Branch protection to tagged-release pipeline flow** — contributing_branch_flow, _github_workflows_quality_workflow, _github_workflows_release_workflow [EXTRACTED 1.00]
 - **TablePlus edit-review-commit UX pattern group** — docs_design_tableplus_ux_arquitectura_explore_inspect_modify_review_commit, docs_design_tableplus_ux_arquitectura_pending_changes_commit, docs_design_tableplus_ux_arquitectura_application_shell [INFERRED 0.85]
 
-## Communities (56 total, 11 thin omitted)
+## Communities (51 total, 8 thin omitted)
 
 ### Community 0 - "execution_guard.rs"
 Cohesion: 0.06
@@ -107,7 +104,7 @@ Nodes (47): AlterTableOperation, ast, add_column_insert_create_select_are_not_de
 
 ### Community 1 - "mysql/src/lib.rs"
 Cohesion: 0.06
-Nodes (56): async_trait, QueryExecutionOptions, config_from_env(), config_with_tls(), connects_and_lists_schemas_and_tables_against_real_mysql(), ER_UNSUPPORTED_PS, execute_on_connection(), execute_query_returns_command_for_ddl() (+48 more)
+Nodes (60): QueryExecutionOptions, config_from_env(), config_with_tls(), connects_and_lists_schemas_and_tables_against_real_mysql(), ER_UNSUPPORTED_PS, execute_on_connection(), execute_query_returns_command_for_ddl(), execute_query_returns_error_with_code_for_bad_sql() (+52 more)
 
 ### Community 2 - "sqlContext.ts"
 Cohesion: 0.18
@@ -127,11 +124,11 @@ Nodes (18): buildCompletionSource(), buildKeywordCompletion(), buildMultiTableCo
 
 ### Community 6 - "driver-core/src/lib.rs"
 Cohesion: 0.08
-Nodes (33): CheckInfo, ColumnInfo, ConnectionConfig, DbConnector, EventInfo, ForeignKeyInfo, IndexInfo, KeyInfo (+25 more)
+Nodes (34): async_trait, CheckInfo, ColumnInfo, ConnectionConfig, DbConnector, EventInfo, ForeignKeyInfo, IndexInfo (+26 more)
 
 ### Community 7 - "queryConsoles.ts"
-Cohesion: 0.05
-Nodes (60): active, confirmTrash(), editValue, fileMenuItems(), finishEdit(), onEditKeydown(), requestTrash(), startRename() (+52 more)
+Cohesion: 0.06
+Nodes (57): active, confirmTrash(), editValue, fileMenuItems(), finishEdit(), onEditKeydown(), requestTrash(), startRename() (+49 more)
 
 ### Community 8 - "docs/ARCHITECTURE.md"
 Cohesion: 0.05
@@ -139,7 +136,7 @@ Nodes (47): Node job (check, build), Rust job (fmt, clippy, test), Quality CI Wo
 
 ### Community 9 - "+layout.svelte"
 Cohesion: 0.05
-Nodes (45): folderMenuItems(), startCreate(), pickSqlFolder(), reset(), eventMatchesShortcut(), formatShortcutEvent(), MODIFIER_KEYS, ResolvedShortcut (+37 more)
+Nodes (44): folderMenuItems(), startCreate(), pickSqlFolder(), reset(), eventMatchesShortcut(), formatShortcutEvent(), MODIFIER_KEYS, ResolvedShortcut (+36 more)
 
 ### Community 10 - "explorerTree.ts"
 Cohesion: 0.19
@@ -153,9 +150,9 @@ Nodes (17): app, security, windows, build, beforeBuildCommand, beforeDevCommand,
 Cohesion: 0.13
 Nodes (19): apply(), connection_error(), io_error(), is_tls_failure(), read_status(), Error, ErrorKind, MySqlPool (+11 more)
 
-### Community 13 - "sqlDefinitionLink.ts"
-Cohesion: 0.18
-Nodes (7): CatalogTableRef, definitionLinkExtension(), DefinitionLinkOptions, DefinitionLinkPlugin, isModifierHeld(), linkRangeField, setLinkRange
+### Community 13 - "sqlExecutionMarker.ts"
+Cohesion: 0.06
+Nodes (27): CatalogTableRef, definitionLinkExtension(), DefinitionLinkOptions, DefinitionLinkPlugin, isModifierHeld(), linkRangeField, setLinkRange, activeStatementHighlight (+19 more)
 
 ### Community 14 - "connection.ts"
 Cohesion: 0.10
@@ -174,8 +171,8 @@ Cohesion: 0.15
 Nodes (15): ConnectionDriver, PasswordPolicy, ConnectionConfig, ConnectionProfile, connectionProfiles, isDriver(), isHexColor(), isPasswordPolicy() (+7 more)
 
 ### Community 18 - "package.json"
-Cohesion: 0.10
-Nodes (18): description, license, name, type, version, config, codemirror, @codemirror/commands (+10 more)
+Cohesion: 0.12
+Nodes (15): description, license, name, type, version, codemirror, @codemirror/commands, @lucide/svelte (+7 more)
 
 ### Community 19 - "dependencies"
 Cohesion: 0.14
@@ -186,7 +183,7 @@ Cohesion: 0.23
 Nodes (10): CLAUSES_WITH_INLINE_BODY, compactStructuredLayout(), compactStructuredLayoutPass(), formatSqlBlock(), indentation(), isClause(), Quote, scanFormattedSql() (+2 more)
 
 ### Community 21 - "drivers.rs"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (20): connect(), ConnectedDatabase, DatabaseKind, open(), report(), Arc, ConnectionConfig, Option (+12 more)
 
 ### Community 22 - "compilerOptions"
@@ -221,9 +218,9 @@ Nodes (5): description, identifier, permissions, $schema, windows
 Cohesion: 0.47
 Nodes (6): khipu-desktop, khipu-driver-core, khipu-driver-mysql, khipu-driver-postgres, khipu-engine, khipu-lsp
 
-### Community 30 - "postgres/src/introspect.rs"
-Cohesion: 0.11
-Nodes (38): balanced(), check_expression(), COLUMNS_SQL, constraint_column_row(), CONSTRAINT_COLUMNS_SQL, ConstraintColumnRow, decode_trigger_type(), fetch() (+30 more)
+### Community 30 - "DriverError"
+Cohesion: 0.07
+Nodes (73): DriverError, COLUMNS_SQL, event_row(), EVENTS_SQL, fetch(), foreign_key_row(), FOREIGN_KEYS_SQL, format_parameter() (+65 more)
 
 ### Community 32 - "assembly.rs"
 Cohesion: 0.14
@@ -241,13 +238,13 @@ Nodes (10): COMMON_STARTERS, completionPolicy, MYSQL_STARTERS, NO_BOOST(), POSTG
 Cohesion: 0.10
 Nodes (33): preserves_column_metadata(), preserves_foreign_keys(), IntoIterator, Item, tables_to_catalog(), absolute_dir(), create(), is_sql_file_name() (+25 more)
 
-### Community 43 - "DriverError"
-Cohesion: 0.11
-Nodes (40): DriverError, COLUMNS_SQL, event_row(), EVENTS_SQL, fetch(), foreign_key_row(), FOREIGN_KEYS_SQL, format_parameter() (+32 more)
+### Community 43 - "svelte.config.js"
+Cohesion: 0.40
+Nodes (3): config, @sveltejs/adapter-static, @sveltejs/vite-plugin-svelte
 
 ### Community 44 - "SqlEditor.svelte"
-Cohesion: 0.11
-Nodes (6): onMove(), onUp(), ContextMenuItem, table(), app_src_lib_sqleditoricons, state
+Cohesion: 0.10
+Nodes (7): onMove(), onUp(), #each(), ContextMenuItem, table(), app_src_lib_sqleditoricons, isQueryConsoleDirty()
 
 ### Community 45 - "postgres/src/tls.rs"
 Cohesion: 0.15
@@ -257,25 +254,17 @@ Nodes (16): apply(), certificate_errors_are_labelled(), connection_error(), io_e
 Cohesion: 0.25
 Nodes (7): applyForwardJoin(), applyReverseJoin(), buildJoinCompletionSource(), boostFor(), recordUsage(), usage, ref_app
 
-### Community 47 - "sqlExecutionMarker.ts"
-Cohesion: 0.17
-Nodes (10): executionMarker, executionMarkerField, ExecutionMarkerStatus, executionTimeDecorations(), ExecutionTimeWidget, formatExecutionTime(), markerFromResult(), setExecutionMarker (+2 more)
-
 ### Community 48 - "theme.ts"
 Cohesion: 0.06
-Nodes (36): DEFAULT_FORMATTER_LINE_WIDTH, defaultEditorSettings(), editorSettings, loadEditorSettings(), MAX_FORMATTER_LINE_WIDTH, MIN_FORMATTER_LINE_WIDTH, normalizeLineWidth(), setFormatterLineWidth() (+28 more)
-
-### Community 49 - "sqlEditorBehavior.ts"
-Cohesion: 0.27
-Nodes (8): activeStatementHighlight, autoUppercaseSqlKeywords, findStatement(), statementDecorations(), editFor(), uppercaseKeywordEdit, @codemirror/lang-sql, @codemirror/view
+Nodes (35): DEFAULT_FORMATTER_LINE_WIDTH, defaultEditorSettings(), editorSettings, loadEditorSettings(), MAX_FORMATTER_LINE_WIDTH, MIN_FORMATTER_LINE_WIDTH, normalizeLineWidth(), setFormatterLineWidth() (+27 more)
 
 ### Community 50 - "sqlSchema.test.ts"
 Cohesion: 0.20
 Nodes (10): applyAndRecord(), buildFkIndex(), buildSqlSchema(), extractDefaultTable(), CATALOG, complete(), ORDERS, USERS (+2 more)
 
 ### Community 51 - "types.ts"
-Cohesion: 0.11
-Nodes (16): CatalogColumn, ColumnCatalogInfo, ExecuteQueryResponse, ExplorerCheck, ExplorerColumn, ExplorerEvent, ExplorerForeignKey, ExplorerIndex (+8 more)
+Cohesion: 0.10
+Nodes (18): PendingQueryConfirmation, CatalogColumn, ColumnCatalogInfo, DestructiveStatement, ExecuteQueryResponse, ExplorerCheck, ExplorerColumn, ExplorerEvent (+10 more)
 
 ### Community 52 - "extractFromContext"
 Cohesion: 0.67
@@ -289,8 +278,8 @@ Nodes (4): currentStatement(), extractFromContext(), extractFromTables(), toRela
 
 ## Knowledge Gaps
 - **224 isolated node(s):** `name`, `version`, `description`, `license`, `type` (+219 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 453 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 451 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -299,13 +288,13 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `SHELL_PALETTES literal (datagrip/vscode x dark/light)` and `palettes.ts palette definitions (external reference, file not read in this chunk)`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
+- **Why does `DriverError` connect `DriverError` to `mysql/src/lib.rs`, `postgres/src/lib.rs`, `driver-core/src/lib.rs`, `mysql/src/tls.rs`, `postgres/src/tls.rs`, `drivers.rs`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Why does `Explorador de base de datos` connect `docs/ARCHITECTURE.md` to `connection.ts`, `connectionTest.ts`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `DriverError` connect `DriverError` to `mysql/src/lib.rs`, `postgres/src/lib.rs`, `driver-core/src/lib.rs`, `mysql/src/tls.rs`, `postgres/src/tls.rs`, `drivers.rs`, `postgres/src/introspect.rs`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Why does `svelte` connect `queryConsoles.ts` to `+layout.svelte`, `connection.ts`, `ref_app`, `theme.ts`, `connectionProfiles.ts`, `package.json`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
 - **What connects `name`, `version`, `description` to the rest of the system?**
   _224 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `execution_guard.rs` be split into smaller, more focused modules?**
-  _Cohesion score 0.061367621274108705 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06291591046581972 - nodes in this community are weakly interconnected._
