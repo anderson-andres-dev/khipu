@@ -4,82 +4,385 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Khipu</title>
+    <title>Rowly DB</title>
     <script>
       // Bootstrap de tema sin flash: corre antes de que cargue el bundle de
       // SvelteKit, así que NO puede importar `theme.ts`/`palettes.ts` (son
       // módulos ES que todavía no están disponibles en este punto del
-      // documento). Por eso los 4 bloques de paleta (shell únicamente, es lo
+      // documento). Por eso los bloques de paleta (shell únicamente, es lo
       // único que este bootstrap necesita) están copiados aquí en forma de
       // literales — es la única duplicación deliberada de este spec,
       // exactamente para poder pintar las variables --palette-* antes del
       // primer paint. Si `palettes.ts` cambia estos valores, hay que
-      // actualizar también esta copia.
+      // actualizar también esta copia: palettes.test.ts falla si difieren.
       (function () {
         try {
           var SHELL_PALETTES = {
+            rowly: {
+              dark: {
+                surface: '#1B1E1F',
+                surfaceElevated: '#272B2C',
+                surfaceHover: '#232829',
+                surfaceContent: '#161819',
+                border: '#313739',
+                gridLine: '#2B3031',
+                controlBorder: '#515A5D',
+                textPrimary: '#DDE3E4',
+                textSecondary: '#98A2A5',
+                textOnAccent: '#04191D',
+                accent: '#2EB8AA',
+                accentHover: '#49C5B6',
+                danger: '#F28B82',
+                dangerSolid: '#D6454D',
+                dangerSolidHover: '#E05A61',
+                success: '#5CCB8A',
+                warning: '#E9B45A',
+                keyPrimary: '#E9B45A',
+                controlDisabled: '#3A4143',
+                focusRing: '#49C5B6',
+                shadow: '0 10px 32px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.55)',
+                scrollbarThumb: 'rgba(150,160,163,0.35)',
+                scrollbarThumbHover: 'rgba(150,160,163,0.6)',
+                topbarBackground: 'rgba(27,30,31,0.78)'
+              },
+              light: {
+                surface: '#EEF4F5',
+                surfaceElevated: '#FFFFFF',
+                surfaceHover: '#E3EDEF',
+                surfaceContent: '#FFFFFF',
+                border: '#D9E5E7',
+                gridLine: '#E7EFF0',
+                controlBorder: '#B7C9CD',
+                textPrimary: '#0B2D33',
+                textSecondary: '#56696F',
+                textOnAccent: '#FFFFFF',
+                accent: '#0B8281',
+                accentHover: '#0A7070',
+                danger: '#C23B45',
+                dangerSolid: '#C23B45',
+                dangerSolidHover: '#D0505A',
+                success: '#1F8A5B',
+                warning: '#A87310',
+                keyPrimary: '#B07A12',
+                controlDisabled: '#B7C9CD',
+                focusRing: '#0E9594',
+                shadow: '0 10px 30px rgba(11,45,51,0.10)',
+                scrim: 'rgba(8,33,38,0.28)',
+                scrollbarThumb: '#C9D8DB',
+                scrollbarThumbHover: '#A9BEC3',
+                topbarBackground: 'rgba(238,244,245,0.82)'
+              }
+            },
             datagrip: {
               dark: {
                 surface: '#191A1C',
                 surfaceElevated: '#26282C',
+                surfaceHover: '#26282C',
+                surfaceContent: '#191A1C',
                 border: '#33353B',
+                gridLine: '#33353B',
                 controlBorder: '#8B8E94',
                 textPrimary: '#D1D3D9',
                 textSecondary: '#9FA2A8',
                 textOnAccent: '#FFFFFF',
                 accent: '#3871E1',
+                accentHover: '#5485E5',
                 danger: '#F57E84',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
+                success: '#4CAF50',
+                warning: '#E8B339',
+                keyPrimary: '#E8B339',
                 controlDisabled: '#4C4F56',
                 focusRing: '#3871E1',
                 shadow: '0 8px 30px rgba(0,0,0,0.45)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(139,142,148,0.65)',
+                scrollbarThumbHover: '#9FA2A8',
                 topbarBackground: 'rgba(25,26,28,0.72)'
               },
               light: {
-                surface: '#E9EAEE',
+                surface: '#F7F8FA',
                 surfaceElevated: '#FFFFFF',
-                border: '#8F959B',
-                controlBorder: '#5F6269',
-                textPrimary: '#000000',
-                textSecondary: '#4C4F56',
+                surfaceHover: '#EBECF0',
+                surfaceContent: '#FFFFFF',
+                border: '#EBECF0',
+                gridLine: '#EBECF0',
+                controlBorder: '#C9CCD6',
+                textPrimary: '#1E1F22',
+                textSecondary: '#6C707E',
                 textOnAccent: '#FFFFFF',
-                accent: '#3871E1',
-                danger: '#C54E58',
-                controlDisabled: '#9FA2A8',
-                focusRing: '#3871E1',
-                shadow: '0 8px 30px rgba(0,0,0,0.12)',
-                topbarBackground: 'rgba(233,234,238,0.72)'
+                accent: '#3574F0',
+                accentHover: '#2B63D6',
+                danger: '#DB3B4B',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
+                success: '#208A3C',
+                warning: '#C27D04',
+                keyPrimary: '#B98A10',
+                controlDisabled: '#A8ADBD',
+                focusRing: '#3574F0',
+                shadow: '0 8px 28px rgba(0,0,0,0.10)',
+                scrim: 'rgba(0,0,0,0.28)',
+                scrollbarThumb: '#C9CCD6',
+                scrollbarThumbHover: '#A8ADBD',
+                topbarBackground: 'rgba(247,248,250,0.8)'
               }
             },
             vscode: {
               dark: {
                 surface: '#191A1B',
                 surfaceElevated: '#242526',
+                surfaceHover: '#242526',
+                surfaceContent: '#191A1B',
                 border: '#2A2B2C',
+                gridLine: '#2A2B2C',
                 controlBorder: '#333536',
                 textPrimary: '#BFBFBF',
                 textSecondary: '#8C8C8C',
                 textOnAccent: '#FFFFFF',
                 accent: '#297AA0',
+                accentHover: '#478DAD',
                 danger: '#F48771',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
+                success: '#4CAF50',
+                warning: '#E8B339',
+                keyPrimary: '#E8B339',
                 controlDisabled: '#555555',
                 focusRing: '#3994BC',
                 shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(51,53,54,0.65)',
+                scrollbarThumbHover: '#8C8C8C',
                 topbarBackground: 'rgba(25,26,27,0.72)'
               },
               light: {
-                surface: '#FAFAFD',
+                surface: '#F8F8F8',
                 surfaceElevated: '#FFFFFF',
-                border: '#909090',
-                controlBorder: '#D8D8D8',
-                textPrimary: '#202020',
-                textSecondary: '#606060',
+                surfaceHover: '#EDEDED',
+                surfaceContent: '#FFFFFF',
+                border: '#E5E5E5',
+                gridLine: '#EBEBEB',
+                controlBorder: '#CECECE',
+                textPrimary: '#3B3B3B',
+                textSecondary: '#6E6E6E',
                 textOnAccent: '#FFFFFF',
-                accent: '#0069CC',
-                danger: '#AD0707',
-                controlDisabled: '#BBBBBB',
-                focusRing: '#0069CC',
-                shadow: '0 8px 24px rgba(0,0,0,0.15)',
-                topbarBackground: 'rgba(250,250,253,0.72)'
+                accent: '#005FB8',
+                accentHover: '#0258A8',
+                danger: '#C4314B',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
+                success: '#388A34',
+                warning: '#BF8803',
+                keyPrimary: '#BF8803',
+                controlDisabled: '#BDBDBD',
+                focusRing: '#005FB8',
+                shadow: '0 8px 24px rgba(0,0,0,0.10)',
+                scrim: 'rgba(0,0,0,0.28)',
+                scrollbarThumb: '#CCCCCC',
+                scrollbarThumbHover: '#AFAFAF',
+                topbarBackground: 'rgba(248,248,248,0.8)'
+              }
+            },
+            onedark: {
+              dark: {
+                surface: '#21252B',
+                surfaceElevated: '#2C313A',
+                surfaceHover: '#2C313A',
+                surfaceContent: '#282C34',
+                border: '#181A1F',
+                gridLine: '#333842',
+                controlBorder: '#4B5263',
+                textPrimary: '#ABB2BF',
+                textSecondary: '#979EAB',
+                textOnAccent: '#FFFFFF',
+                accent: '#4D78CC',
+                accentHover: '#6089D6',
+                danger: '#E06C75',
+                dangerSolid: '#BE5046',
+                dangerSolidHover: '#CC5E54',
+                success: '#98C379',
+                warning: '#E5C07B',
+                keyPrimary: '#E5C07B',
+                controlDisabled: '#4B5263',
+                focusRing: '#528BFF',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(78,86,102,0.6)',
+                scrollbarThumbHover: '#5A6375',
+                topbarBackground: 'rgba(33,37,43,0.72)'
+              }
+            },
+            dracula: {
+              dark: {
+                surface: '#21222C',
+                surfaceElevated: '#343746',
+                surfaceHover: '#343746',
+                surfaceContent: '#282A36',
+                border: '#191A21',
+                gridLine: '#343746',
+                controlBorder: '#6272A4',
+                textPrimary: '#F8F8F2',
+                textSecondary: '#A7ABBE',
+                textOnAccent: '#282A36',
+                accent: '#BD93F9',
+                accentHover: '#CAA8FA',
+                danger: '#FF5555',
+                dangerSolid: '#E04848',
+                dangerSolidHover: '#F05A5A',
+                success: '#50FA7B',
+                warning: '#F1FA8C',
+                keyPrimary: '#F1FA8C',
+                controlDisabled: '#44475A',
+                focusRing: '#BD93F9',
+                shadow: '0 8px 30px rgba(0,0,0,0.55)',
+                scrim: 'rgba(0,0,0,0.55)',
+                scrollbarThumb: 'rgba(98,114,164,0.45)',
+                scrollbarThumbHover: '#6272A4',
+                topbarBackground: 'rgba(33,34,44,0.72)'
+              }
+            },
+            nord: {
+              dark: {
+                surface: '#2E3440',
+                surfaceElevated: '#3B4252',
+                surfaceHover: '#3B4252',
+                surfaceContent: '#2E3440',
+                border: '#3B4252',
+                gridLine: '#3B4252',
+                controlBorder: '#4C566A',
+                textPrimary: '#D8DEE9',
+                textSecondary: '#AAB2C0',
+                textOnAccent: '#2E3440',
+                accent: '#88C0D0',
+                accentHover: '#9FCFDC',
+                danger: '#D98089',
+                dangerSolid: '#BF616A',
+                dangerSolidHover: '#C9737B',
+                success: '#A3BE8C',
+                warning: '#EBCB8B',
+                keyPrimary: '#EBCB8B',
+                controlDisabled: '#4C566A',
+                focusRing: '#88C0D0',
+                shadow: '0 8px 30px rgba(0,0,0,0.4)',
+                scrim: 'rgba(20,24,31,0.55)',
+                scrollbarThumb: 'rgba(76,86,106,0.75)',
+                scrollbarThumbHover: '#616E88',
+                topbarBackground: 'rgba(46,52,64,0.72)'
+              }
+            },
+            gruvbox: {
+              dark: {
+                surface: '#282828',
+                surfaceElevated: '#32302F',
+                surfaceHover: '#3C3836',
+                surfaceContent: '#282828',
+                border: '#3C3836',
+                gridLine: '#3C3836',
+                controlBorder: '#665C54',
+                textPrimary: '#EBDBB2',
+                textSecondary: '#A89984',
+                textOnAccent: '#282828',
+                accent: '#FE8019',
+                accentHover: '#FF9A45',
+                danger: '#FB4934',
+                dangerSolid: '#CC241D',
+                dangerSolidHover: '#DD3A2C',
+                success: '#B8BB26',
+                warning: '#FABD2F',
+                keyPrimary: '#FABD2F',
+                controlDisabled: '#504945',
+                focusRing: '#FE8019',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(102,92,84,0.7)',
+                scrollbarThumbHover: '#7C6F64',
+                topbarBackground: 'rgba(40,40,40,0.72)'
+              },
+              light: {
+                surface: '#F2E5BC',
+                surfaceElevated: '#F9F5D7',
+                surfaceHover: '#EBDBB2',
+                surfaceContent: '#FBF1C7',
+                border: '#D5C4A1',
+                gridLine: '#EBDBB2',
+                controlBorder: '#BDAE93',
+                textPrimary: '#3C3836',
+                textSecondary: '#665C54',
+                textOnAccent: '#FBF1C7',
+                accent: '#AF3A03',
+                accentHover: '#9A3302',
+                danger: '#9D0006',
+                dangerSolid: '#9D0006',
+                dangerSolidHover: '#B3190F',
+                success: '#79740E',
+                warning: '#B57614',
+                keyPrimary: '#B57614',
+                controlDisabled: '#BDAE93',
+                focusRing: '#AF3A03',
+                shadow: '0 8px 28px rgba(60,56,54,0.14)',
+                scrim: 'rgba(40,40,40,0.28)',
+                scrollbarThumb: '#D5C4A1',
+                scrollbarThumbHover: '#BDAE93',
+                topbarBackground: 'rgba(242,229,188,0.8)'
+              }
+            },
+            solarized: {
+              dark: {
+                surface: '#00212B',
+                surfaceElevated: '#073642',
+                surfaceHover: '#073642',
+                surfaceContent: '#002B36',
+                border: '#073642',
+                gridLine: '#073642',
+                controlBorder: '#586E75',
+                textPrimary: '#93A1A1',
+                textSecondary: '#839496',
+                textOnAccent: '#FDF6E3',
+                accent: '#268BD2',
+                accentHover: '#3A98DA',
+                danger: '#EC5E5B',
+                dangerSolid: '#DC322F',
+                dangerSolidHover: '#E4504C',
+                success: '#859900',
+                warning: '#B58900',
+                keyPrimary: '#B58900',
+                controlDisabled: '#586E75',
+                focusRing: '#268BD2',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,16,21,0.6)',
+                scrollbarThumb: 'rgba(88,110,117,0.6)',
+                scrollbarThumbHover: '#657B83',
+                topbarBackground: 'rgba(0,33,43,0.72)'
+              },
+              light: {
+                surface: '#EEE8D5',
+                surfaceElevated: '#FDF6E3',
+                surfaceHover: '#E4DDC8',
+                surfaceContent: '#FDF6E3',
+                border: '#DDD6C1',
+                gridLine: '#EEE8D5',
+                controlBorder: '#C9C1A8',
+                textPrimary: '#073642',
+                textSecondary: '#52676E',
+                textOnAccent: '#FDF6E3',
+                accent: '#268BD2',
+                accentHover: '#1F7AB9',
+                danger: '#DC322F',
+                dangerSolid: '#DC322F',
+                dangerSolidHover: '#C92A27',
+                success: '#738A00',
+                warning: '#A07800',
+                keyPrimary: '#B58900',
+                controlDisabled: '#93A1A1',
+                focusRing: '#268BD2',
+                shadow: '0 8px 28px rgba(0,43,54,0.12)',
+                scrim: 'rgba(0,43,54,0.25)',
+                scrollbarThumb: '#D6CFBA',
+                scrollbarThumbHover: '#BCB39B',
+                topbarBackground: 'rgba(238,232,213,0.8)'
               }
             }
           };
@@ -89,27 +392,39 @@
           var CSS_VAR_NAMES = {
             surface: '--palette-surface',
             surfaceElevated: '--palette-surface-elevated',
+            surfaceHover: '--palette-surface-hover',
+            surfaceContent: '--palette-surface-content',
             border: '--palette-border',
+            gridLine: '--palette-grid-line',
             controlBorder: '--palette-control-border',
             textPrimary: '--palette-text-primary',
             textSecondary: '--palette-text-secondary',
             textOnAccent: '--palette-text-on-accent',
             accent: '--palette-accent',
+            accentHover: '--palette-accent-hover',
             danger: '--palette-danger',
+            dangerSolid: '--palette-danger-solid',
+            dangerSolidHover: '--palette-danger-solid-hover',
+            success: '--palette-success',
+            warning: '--palette-warning',
+            keyPrimary: '--palette-key-primary',
             controlDisabled: '--palette-control-disabled',
             focusRing: '--palette-focus-ring',
             shadow: '--palette-shadow',
+            scrim: '--palette-scrim',
+            scrollbarThumb: '--palette-scrollbar-thumb',
+            scrollbarThumbHover: '--palette-scrollbar-thumb-hover',
             topbarBackground: '--palette-topbar-background'
           };
 
-          var DEFAULT_CHOICE = { family: 'datagrip', scheme: 'system' };
+          var DEFAULT_CHOICE = { family: 'rowly', scheme: 'system' };
           var choice = DEFAULT_CHOICE;
 
           try {
             var raw = localStorage.getItem('khipu:theme');
             if (raw) {
               var parsed = JSON.parse(raw);
-              var familyOk = parsed && (parsed.family === 'datagrip' || parsed.family === 'vscode');
+              var familyOk = parsed && Object.prototype.hasOwnProperty.call(SHELL_PALETTES, parsed.family);
               var schemeOk =
                 parsed &&
                 (parsed.scheme === 'system' || parsed.scheme === 'dark' || parsed.scheme === 'light');
@@ -129,15 +444,21 @@
                 : 'light';
           }
 
+          // One Dark, Dracula y Nord no tienen variante clara: se quedan en
+          // oscuro, igual que resolveScheme() en palettes.ts.
+          if (!SHELL_PALETTES[choice.family][resolvedScheme]) resolvedScheme = 'dark';
           var palette = SHELL_PALETTES[choice.family][resolvedScheme];
           var root = document.documentElement;
           for (var field in CSS_VAR_NAMES) {
             root.style.setProperty(CSS_VAR_NAMES[field], palette[field]);
           }
           root.style.colorScheme = resolvedScheme;
+          // Mismo atributo que fija theme.ts: los pocos estilos que dependen
+          // del esquema (degradados de identidad, alto contraste) lo leen.
+          root.dataset.scheme = resolvedScheme;
         } catch (e) {
           // Si algo falla acá, se cae al CSS estático de tokens.css
-          // (DataGrip Dark) — nunca debe romper el arranque de la app.
+          // (Rowly oscuro) — nunca debe romper el arranque de la app.
         }
       })();
     </script>

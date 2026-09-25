@@ -1,66 +1,73 @@
-# Khipu
+<div align="center">
 
-**Open-source desktop SQL client for MySQL, MariaDB and PostgreSQL, built
-with Tauri, Rust and Svelte.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/rowly-logo-dark.svg">
+  <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="400">
+</picture>
 
-Khipu is a compact SQL workspace: connect to a database, browse its schema
-and write SQL with schema-aware autocompletion, in a lightweight desktop app.
+<br>
 
-Read this in other languages: [Español](README.es.md).
+<p>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/releases"><strong>Download Rowly DB</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#installation">Installation</a>
+  &nbsp;·&nbsp;
+  <a href="README.es.md">Español</a>
+</p>
 
-## Supported databases
+<p>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=ISSUES&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/pulls"><img alt="Open pull requests" src="https://img.shields.io/github/issues-pr/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=PULL%20REQUESTS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="docs/assets/rowly-db.webp"><img alt="View screenshot" src="https://img.shields.io/badge/SHOWCASE-SCREENSHOT-283640?style=for-the-badge&amp;labelColor=283640"></a>
+</p>
 
-- PostgreSQL
-- MySQL
-- MariaDB
+</div>
 
-## Status
+<br>
 
-Khipu is under active development. Available today:
+<p align="center">
+  <img src="docs/assets/rowly-db.webp" alt="Rowly DB desktop interface in light and dark themes" width="900">
+</p>
 
-- Connection profiles for MySQL/MariaDB and PostgreSQL.
-- Schema catalog (tables and column metadata).
-- SQL editor with catalog-aware autocompletion.
-- Secure credential storage via the OS keyring (when "Always" is selected).
+## Features
 
-Query execution and a results viewer are the next milestone and are not
-available yet.
+Schema explorer · SQL autocomplete · Editable results · System keyring · Confirmed updates
 
-## Stack
+## Installation
 
-- [Tauri 2](https://tauri.app/) and Rust
-- Svelte 5 and TypeScript
-- [CodeMirror 6](https://codemirror.net/)
-- [SQLx](https://github.com/launchbadge/sqlx) for the database connectors
+Download your package from [Releases](https://github.com/anderson-andres-dev/rowly-db/releases).
+Run the command in the download folder. Linux packages target **x86_64**.
 
-## Development
+| Linux | Install |
+| :--- | :--- |
+| Debian based `.deb` | `sudo apt install ./Rowly*.deb` |
+| Fedora based `.rpm` | `sudo dnf install ./Rowly*.rpm` |
+| Arch based `.pkg.tar.zst` | `sudo pacman -U ./rowly-db_*.pkg.tar.zst` |
+| AppImage | `chmod +x ./Rowly*.AppImage`<br>`./Rowly*.AppImage` |
 
-Requirements: Rust and Node.js 20+.
+For **Windows**, run the `.msi` or `.exe`. For **macOS**, open the `.dmg` for
+your processor and drag Rowly DB to Applications.
+
+Updates are available in **Settings → Updates**.
+
+## Build from source
+
+Requires Rust 1.85+, Node.js 20.19+, and the [Tauri dependencies](https://tauri.app/start/prerequisites/).
 
 ```bash
-cargo build --workspace
-cargo test --workspace
-
-cd app
-npm install
-npm run check
-npm run tauri dev
+git clone https://github.com/anderson-andres-dev/rowly-db.git
+cd rowly-db/app
+npm ci
+npm run tauri build
 ```
 
-Formatting is enforced with `cargo fmt --all`; lints can be run with
-`cargo clippy --workspace --all-targets`.
+Packages are written to `target/release/bundle/`.
 
-## Architecture
+## Contributing
 
-The engine and database connectors live in `crates/`. The Tauri shell is in
-`app/src-tauri/` and the Svelte UI in `app/src/`.
-
-Connector architecture is documented in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-Credentials are never written to connection profiles in `localStorage`: the
-"Always" option stores them in the native OS keyring via `keyring-rs`.
+[Development guide](CONTRIBUTING.md) · [Report an issue](https://github.com/anderson-andres-dev/rowly-db/issues)
 
 ## License
 
-MIT or Apache-2.0.
+Dual licensed. Choose [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE).

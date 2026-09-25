@@ -1,0 +1,103 @@
+//! Server version detection and the catalog capabilities derived from it.
+//! Introspection picks its queries from `Capabilities`, never from the raw
+//! version, so every version-dependent decision lives in one place.
+
+/// `server_version_num` as the server reports it: `160002` for 16.2,
+/// `100023` for 10.23 (since 10, the number is major * 10000 + minor).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ServerVersion(pub u32);
+
+/// Oldest major version introspection is written against: the one that
+/// introduced `pg_sequence`, `relispartition` and declarative partitioning.
+/// Older servers still connect and load what they can, with a warning.
+const MIN_MAJOR: u32 = 10;
+
+impl ServerVersion {
+    /// Parses `SHOW server_version_num`. Unparseable values become 0, which
+    /// every capability check treats as "oldest" (the conservative path).
+    pub fn parse(raw: &str) -> Self {
+        Self(raw.trim().parse().unwrap_or(0))
+    }
+
+    pub fn display(&self) -> String {
+        // Since 10 the number is major * 10000 + minor; before, 9.6.24 was
+        // 90624, with a two-component major.
+        if self.0 >= 100_000 {
+            format!("PostgreSQL {}.{}", self.0 / 10_000, self.0 % 10_000)
+        } else {
+            format!(
+                "PostgreSQL {}.{}.{}",
+                self.0 / 10_000,
+                (self.0 / 100) % 100,
+                self.0 % 100
+            )
+        }
+    }
+
+    pub fn is_below_minimum(&self) -> bool {
+        self.0 < MIN_MAJOR * 10_000
+    }
+
+    pub fn capabilities(&self) -> Capabilities {
+        let at_least = |major: u32| self.0 >= major * 10_000;
+        Capabilities {
+            // pg_proc.prokind (and with it, procedures) arrived in 11;
+            // before that, aggregates/window functions are told apart by
+            // proisagg/proiswindow and everything else is a function.
+            prokind: at_least(11),
+            // 11 added INCLUDE columns to indexes: indnatts counts them,
+            // indnkeyatts (new in 11) doesn't.
+            index_key_attributes: at_least(11),
+            // pg_sequence and relispartition are both 10+.
+            catalog_v10: at_least(10),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Capabilities {
+    pub prokind: bool,
+    pub index_key_attributes: bool,
+    pub catalog_v10: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_server_version_num() {
+        assert_eq!(ServerVersion::parse("160002"), ServerVersion(160002));
+        assert_eq!(ServerVersion::parse(" 100023\n"), ServerVersion(100023));
+        assert_eq!(ServerVersion::parse("not a number"), ServerVersion(0));
+    }
+
+    #[test]
+    fn display_across_numbering_schemes() {
+        assert_eq!(ServerVersion(160002).display(), "PostgreSQL 16.2");
+        assert_eq!(ServerVersion(100023).display(), "PostgreSQL 10.23");
+        assert_eq!(ServerVersion(90624).display(), "PostgreSQL 9.6.24");
+    }
+
+    #[test]
+    fn minimum_is_postgres_10() {
+        assert!(ServerVersion(90624).is_below_minimum());
+        assert!(!ServerVersion(100000).is_below_minimum());
+        assert!(ServerVersion(0).is_below_minimum());
+    }
+
+    #[test]
+    fn capabilities_by_version() {
+        let pg10 = ServerVersion(100023).capabilities();
+        assert!(!pg10.prokind);
+        assert!(!pg10.index_key_attributes);
+        assert!(pg10.catalog_v10);
+
+        let pg11 = ServerVersion(110000).capabilities();
+        assert!(pg11.prokind);
+        assert!(pg11.index_key_attributes);
+
+        let pg96 = ServerVersion(90624).capabilities();
+        assert!(!pg96.catalog_v10);
+    }
+}

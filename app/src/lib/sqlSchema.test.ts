@@ -106,3 +106,18 @@ describe("buildCompletionSource - no romper lo que ya funcionaba", () => {
     expect(labels(result)).toContain("name");
   });
 });
+
+describe("buildCompletionSource - columnas sin calificar antes del FROM y con JOIN", () => {
+  it("SELECT na| FROM users sugiere columnas de la tabla aunque el FROM este despues del cursor", async () => {
+    const result = await complete("SELECT na| FROM users");
+    expect(labels(result)).toContain("name");
+  });
+
+  it("SELECT co| FROM users JOIN orders sugiere columnas de ambas tablas sin calificar", async () => {
+    // Palabra no vacia ("co"): igual que en el test de JOIN de arriba, la
+    // palabra vacia solo dispara con invocacion explicita.
+    const result = await complete("SELECT co| FROM users JOIN orders ON users.id = orders.user_id");
+    expect(labels(result)).toContain("name");
+    expect(labels(result)).toContain("user_id");
+  });
+});

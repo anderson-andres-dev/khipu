@@ -28,6 +28,8 @@ pub struct CatalogColumn {
     pub data_type: String,
     pub nullable: bool,
     pub is_primary_key: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<String>,
 }
 
 /// A foreign key owned by a `CatalogTable`: `column` on this table references

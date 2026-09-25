@@ -9,11 +9,11 @@
  * pisando --border/--focus-ring/--control-border por especificidad de
  * hoja de estilo sin que un valor inline lo tape).
  *
- * Los valores estáticos de --palette-* en :root son DataGrip Dark (el
+ * Los valores estáticos de --palette-* en :root son Rowly oscuro (el
  * tema por defecto), para que coincida con lo que ya escribió el bootstrap
  * de app.html si ambos corrieron. El bloque
  * `@media (prefers-color-scheme: light)` redefine solo las --palette-*
- * (nunca los nombres finales) con los valores de DataGrip Light, como
+ * (nunca los nombres finales) con los valores de Rowly claro, como
  * fallback de primer paint mientras el script de app.html no corrió
  * todavía (p.ej. JS deshabilitado) y el SO está en modo claro.
  *
@@ -26,34 +26,58 @@
 :root {
   color-scheme: light dark;
 
-  /* Paleta cruda (DataGrip Dark) — fuente real, ver comentario arriba */
-  --palette-surface: #191A1C;
-  --palette-surface-elevated: #26282C;
-  --palette-border: #33353B;
-  --palette-control-border: #8B8E94;
-  --palette-text-primary: #D1D3D9;
-  --palette-text-secondary: #9FA2A8;
-  --palette-text-on-accent: #FFFFFF;
-  --palette-accent: #3871E1;
-  --palette-danger: #F57E84;
-  --palette-control-disabled: #4C4F56;
-  --palette-focus-ring: #3871E1;
-  --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-  --palette-topbar-background: rgba(25, 26, 28, 0.72);
+  /* Paleta cruda (Rowly oscuro) — fuente real, ver comentario arriba */
+  --palette-surface: #1B1E1F;
+  --palette-surface-elevated: #272B2C;
+  --palette-surface-hover: #232829;
+  --palette-surface-content: #161819;
+  --palette-border: #313739;
+  --palette-grid-line: #2B3031;
+  --palette-control-border: #515A5D;
+  --palette-text-primary: #DDE3E4;
+  --palette-text-secondary: #98A2A5;
+  --palette-text-on-accent: #04191D;
+  --palette-accent: #2EB8AA;
+  --palette-accent-hover: #49C5B6;
+  --palette-danger: #F28B82;
+  --palette-danger-solid: #D6454D;
+  --palette-danger-solid-hover: #E05A61;
+  --palette-success: #5CCB8A;
+  --palette-warning: #E9B45A;
+  --palette-key-primary: #E9B45A;
+  --palette-control-disabled: #3A4143;
+  --palette-focus-ring: #49C5B6;
+  --palette-shadow: 0 10px 32px rgba(0,0,0,0.5);
+  --palette-scrim: rgba(0,0,0,0.55);
+  --palette-scrollbar-thumb: rgba(150,160,163,0.35);
+  --palette-scrollbar-thumb-hover: rgba(150,160,163,0.6);
+  --palette-topbar-background: rgba(27,30,31,0.78);
 
   /* Color semántico — alias estable sobre --palette-* */
   --surface: var(--palette-surface);
   --surface-elevated: var(--palette-surface-elevated);
+  --surface-hover: var(--palette-surface-hover);
+  --surface-content: var(--palette-surface-content);
   --border: var(--palette-border);
+  --grid-line: var(--palette-grid-line);
   --control-border: var(--palette-control-border);
   --text-primary: var(--palette-text-primary);
   --text-secondary: var(--palette-text-secondary);
   --text-on-accent: var(--palette-text-on-accent);
   --accent: var(--palette-accent);
+  --accent-hover: var(--palette-accent-hover);
   --danger: var(--palette-danger);
+  --danger-solid: var(--palette-danger-solid);
+  --danger-solid-hover: var(--palette-danger-solid-hover);
+  --success: var(--palette-success);
+  --warning: var(--palette-warning);
+  --key-primary: var(--palette-key-primary);
   --control-disabled: var(--palette-control-disabled);
   --focus-ring: var(--palette-focus-ring);
   --shadow-elevated: var(--palette-shadow);
+  --scrim: var(--palette-scrim);
+  --scrollbar-thumb: var(--palette-scrollbar-thumb);
+  --scrollbar-thumb-hover: var(--palette-scrollbar-thumb-hover);
   --topbar-background: var(--palette-topbar-background);
 
   /* Espaciado — base 4px */
@@ -91,24 +115,36 @@
 
 /*
  * Fallback de primer paint (SO en claro, JS aún no corrió el bootstrap de
- * app.html ni theme.ts): redefine las --palette-* con DataGrip Light,
+ * app.html ni theme.ts): redefine las --palette-* con Rowly claro,
  * nunca los nombres finales.
  */
 @media (prefers-color-scheme: light) {
   :root {
-    --palette-surface: #E9EAEE;
+    --palette-surface: #EEF4F5;
     --palette-surface-elevated: #FFFFFF;
-    --palette-border: #8F959B;
-    --palette-control-border: #5F6269;
-    --palette-text-primary: #000000;
-    --palette-text-secondary: #4C4F56;
+    --palette-surface-hover: #E3EDEF;
+    --palette-surface-content: #FFFFFF;
+    --palette-border: #D9E5E7;
+    --palette-grid-line: #E7EFF0;
+    --palette-control-border: #B7C9CD;
+    --palette-text-primary: #0B2D33;
+    --palette-text-secondary: #56696F;
     --palette-text-on-accent: #FFFFFF;
-    --palette-accent: #3871E1;
-    --palette-danger: #C54E58;
-    --palette-control-disabled: #9FA2A8;
-    --palette-focus-ring: #3871E1;
-    --palette-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    --palette-topbar-background: rgba(233, 234, 238, 0.72);
+    --palette-accent: #0B8281;
+    --palette-accent-hover: #0A7070;
+    --palette-danger: #C23B45;
+    --palette-danger-solid: #C23B45;
+    --palette-danger-solid-hover: #D0505A;
+    --palette-success: #1F8A5B;
+    --palette-warning: #A87310;
+    --palette-key-primary: #B07A12;
+    --palette-control-disabled: #B7C9CD;
+    --palette-focus-ring: #0E9594;
+    --palette-shadow: 0 10px 30px rgba(11,45,51,0.10);
+    --palette-scrim: rgba(8,33,38,0.28);
+    --palette-scrollbar-thumb: #C9D8DB;
+    --palette-scrollbar-thumb-hover: #A9BEC3;
+    --palette-topbar-background: rgba(238,244,245,0.82);
   }
 }
 
@@ -124,6 +160,10 @@
  * las --palette-*), para que la indirección de theme.ts nunca lo tape:
  * la escritura inline de theme.ts solo toca --palette-*, así que este
  * media query de hoja de estilo sigue ganando sobre --border/etc.
+ *
+ * El esquema sale de data-scheme (lo fijan app.html y theme.ts), no de
+ * prefers-color-scheme: con el sistema en oscuro y la app en claro, las
+ * reglas del SO darían bordes casi blancos sobre un fondo claro.
  */
 @media (prefers-contrast: more) {
   :root {
@@ -131,10 +171,8 @@
     --focus-ring: #6cb2ff;
     --control-border: #e6e6e6;
   }
-}
 
-@media (prefers-contrast: more) and (prefers-color-scheme: light) {
-  :root {
+  :root[data-scheme="light"] {
     --border: #4d4d4f;
     --focus-ring: #0060df;
     --control-border: #262626;
@@ -162,19 +200,41 @@ dialog[open] {
   transform: translateY(0) scale(1);
 }
 
+/* El desenfoque del fondo es fijo y solo se anima el color del velo:
+   animar blur() obliga a recalcular el desenfoque de toda la app en cada
+   cuadro (con un grid de cientos de filas detras, en WebKitGTK eso se nota
+   como tirones). La opacidad del velo, en cambio, es barata. */
 dialog::backdrop {
   background: rgb(0 0 0 / 0%);
-  backdrop-filter: blur(0);
+  backdrop-filter: blur(3px);
   transition:
     background-color var(--duration-fast) ease-out,
-    backdrop-filter var(--duration-fast) ease-out,
     display var(--duration-fast) allow-discrete,
     overlay var(--duration-fast) allow-discrete;
 }
 
+/* Un solo fondo para todos los modales, del tema: negro al 50% en oscuro,
+   mucho mas liviano en claro (sobre una UI clara un velo negro fuerte se
+   ve pesado). */
 dialog[open]::backdrop {
-  background: rgb(0 0 0 / 64%);
-  backdrop-filter: blur(4px);
+  background: var(--scrim);
+}
+
+/* Salida de cualquier modal (ver dialogMotion.ts): mismo recorrido que la
+   entrada pero un poco mas rapida y con ease-in, y el fondo se aclara a la
+   par. Va antes de @starting-style y despues de dialog[open] para ganarle. */
+dialog.is-closing {
+  opacity: 0;
+  transform: translateY(8px) scale(0.985);
+  transition:
+    opacity 150ms ease-in,
+    transform 150ms ease-in;
+  animation: none !important;
+}
+
+dialog.is-closing::backdrop {
+  background: rgb(0 0 0 / 0%);
+  transition: background-color 150ms ease-in;
 }
 
 @starting-style {
@@ -185,6 +245,5 @@ dialog[open]::backdrop {
 
   dialog[open]::backdrop {
     background: rgb(0 0 0 / 0%);
-    backdrop-filter: blur(0);
   }
 }

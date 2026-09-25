@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",
+    // Por defecto vitest reemplaza los .css por un modulo vacio, incluso con
+    // ?raw; palettes.test.ts necesita leer tokens.css tal cual.
+    css: true,
   },
   resolve: {
     alias: {

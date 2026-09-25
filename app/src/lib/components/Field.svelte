@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Eye, EyeOff } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
   import type { HTMLInputAttributes } from "svelte/elements";
+  import { t } from "$lib/i18n";
 
   interface Option {
     value: string;
@@ -23,6 +25,8 @@
     max,
     orientation = "stacked",
     readonly = false,
+    list,
+    trailing,
   }: {
     label: string;
     id: string;
@@ -39,6 +43,11 @@
     max?: number;
     orientation?: "stacked" | "horizontal" | "compact";
     readonly?: boolean;
+    // id de un <datalist> con sugerencias (p.ej. grupos ya usados).
+    list?: string;
+    // Contenido dentro del input, a la derecha (p.ej. el menu de color del
+    // campo Nombre). El input reserva el espacio con padding.
+    trailing?: Snippet;
   } = $props();
 
   const errorId = $derived(`${id}-error`);
@@ -141,7 +150,7 @@
       {/if}
     </div>
   {:else}
-    <div class:with-action={type === "password"} class="control">
+    <div class:with-action={type === "password"} class:with-trailing={!!trailing} class="control">
       <input
         {id}
         type={inputType}
@@ -152,16 +161,20 @@
         {required}
         {disabled}
         {readonly}
+        {list}
         {min}
         {max}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? errorId : undefined}
       />
+      {#if trailing}
+        <div class="field-trailing">{@render trailing()}</div>
+      {/if}
       {#if type === "password"}
         <button
           class="field-action"
           type="button"
-          aria-label={passwordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+          aria-label={passwordVisible ? $t("shell.hidePassword") : $t("shell.showPassword")}
           aria-pressed={passwordVisible}
           onclick={() => (passwordVisible = !passwordVisible)}
           {disabled}
@@ -240,6 +253,24 @@
 
   .control.with-action input {
     padding-right: 2.5rem;
+  }
+
+  .control.with-trailing input {
+    padding-right: 6rem;
+  }
+
+  /* Centrado con top/bottom en vez de transform: un transform crea un
+     contexto de apilamiento que encierra el z-index de lo que se abra
+     adentro (p.ej. el menu de color), y los campos siguientes del
+     formulario se pintarian encima. El z-index lo pone por delante de ellos. */
+  .field-trailing {
+    position: absolute;
+    top: 0;
+    right: 4px;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
   }
 
   .field-action {

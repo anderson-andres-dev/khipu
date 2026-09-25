@@ -1,7 +1,13 @@
-use khipu_driver_core::{ConnectionConfig, DbConnector, DriverError, TableInfo};
+use khipu_driver_core::{
+    ConnectionConfig, DbConnector, DriverError, QueryExecutionOptions, QueryExecutionResult,
+    SchemaObjects, TlsStatus,
+};
 use khipu_driver_mysql::MySqlConnector;
 use khipu_driver_postgres::PostgresConnector;
+use khipu_engine::Dialect;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Instant;
 
 /// Which database engine to connect to. Serializable so the frontend can pass
 /// it straight through `invoke`.
@@ -12,39 +18,101 @@ pub enum DatabaseKind {
     Postgres,
 }
 
+impl DatabaseKind {
+    pub fn dialect(self) -> Dialect {
+        match self {
+            DatabaseKind::MySql => Dialect::MySql,
+            DatabaseKind::Postgres => Dialect::Postgres,
+        }
+    }
+}
+
+/// A connector kept alive alongside what was introspected on connect, so
+/// `execute_query` and the database explorer keep using the same pool.
+pub struct ConnectedDatabase {
+    pub connector: Arc<dyn DbConnector>,
+    pub server_version: String,
+    pub tls: TlsStatus,
+    /// The schema the profile resolves unqualified names against (see
+    /// `DbConnector::current_schema`); always loaded, never hidden.
+    pub default_schema: String,
+    pub available_schemas: Vec<String>,
+    pub default_objects: SchemaObjects,
+}
+
+/// What "Probar conexión" shows (and copies to the clipboard).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestConnectionReport {
+    pub server_version: String,
+    pub default_schema: Option<String>,
+    /// Round trip of a trivial query on the already-open connection: the
+    /// network + server latency, without the connection handshake.
+    pub latency_ms: Option<u64>,
+    pub tls: TlsStatus,
+}
+
 /// Verifies that the credentials can open a database connection, then drops
 /// the connector without loading or replacing the current catalog.
 pub async fn test_connection(
     kind: DatabaseKind,
     config: &ConnectionConfig,
-) -> Result<(), DriverError> {
+) -> Result<TestConnectionReport, DriverError> {
     match kind {
-        DatabaseKind::MySql => {
-            MySqlConnector::connect(config).await?;
-        }
-        DatabaseKind::Postgres => {
-            PostgresConnector::connect(config).await?;
-        }
+        DatabaseKind::MySql => report(MySqlConnector::connect(config).await?).await,
+        DatabaseKind::Postgres => report(PostgresConnector::connect(config).await?).await,
     }
-
-    Ok(())
 }
 
-/// Connects to the given database, lists its tables, and drops the
-/// connection/pool before returning. Callers only ever see the resulting
-/// `TableInfo`s, never the live connector.
+async fn report<C: DbConnector>(connector: C) -> Result<TestConnectionReport, DriverError> {
+    let start = Instant::now();
+    let ping = connector
+        .execute_query("SELECT 1", QueryExecutionOptions { max_rows: 1 })
+        .await;
+    let latency_ms = match ping {
+        QueryExecutionResult::Error { .. } => None,
+        _ => Some(start.elapsed().as_millis() as u64),
+    };
+
+    Ok(TestConnectionReport {
+        server_version: connector.server_version(),
+        default_schema: connector.current_schema().await.ok(),
+        latency_ms,
+        tls: connector.tls_status(),
+    })
+}
+
+/// Connects to the given database and introspects its default schema.
 pub async fn connect(
     kind: DatabaseKind,
     config: &ConnectionConfig,
-) -> Result<Vec<TableInfo>, DriverError> {
+) -> Result<ConnectedDatabase, DriverError> {
     match kind {
-        DatabaseKind::MySql => {
-            let connector = MySqlConnector::connect(config).await?;
-            connector.list_tables(&config.database).await
-        }
-        DatabaseKind::Postgres => {
-            let connector = PostgresConnector::connect(config).await?;
-            connector.list_tables("public").await
-        }
+        DatabaseKind::MySql => open(MySqlConnector::connect(config).await?).await,
+        DatabaseKind::Postgres => open(PostgresConnector::connect(config).await?).await,
     }
+}
+
+async fn open<C: DbConnector + 'static>(connector: C) -> Result<ConnectedDatabase, DriverError> {
+    let default_schema = connector.current_schema().await?;
+    let default_objects = connector.introspect_schema(&default_schema).await?;
+    // Sin permiso para listar schemas, el selector ofrece solo el actual en
+    // vez de impedir la conexion.
+    let mut available_schemas = connector
+        .list_schemas()
+        .await
+        .unwrap_or_else(|_| Vec::new());
+    if !available_schemas.contains(&default_schema) {
+        available_schemas.push(default_schema.clone());
+        available_schemas.sort();
+    }
+
+    Ok(ConnectedDatabase {
+        server_version: connector.server_version(),
+        tls: connector.tls_status(),
+        connector: Arc::new(connector),
+        default_schema,
+        available_schemas,
+        default_objects,
+    })
 }

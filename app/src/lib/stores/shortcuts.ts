@@ -3,51 +3,79 @@ import { derived, writable } from "svelte/store";
 
 // Catalogo de atajos de teclado de la app. La accion real de cada uno vive
 // donde corresponde su estado (p.ej. el toggle del sidebar en
-// +layout.svelte); este modulo solo sabe el id/etiqueta/tecla por defecto y
+// +layout.svelte); este modulo solo sabe el id y la tecla por defecto y
 // persiste los overrides que el usuario reasigne en Ajustes > Atajos.
+// El nombre y la descripción de cada atajo se traducen por su id en
+// i18n/messages/shortcuts.ts.
 export interface ShortcutDefinition {
   id: string;
-  label: string;
-  description: string;
   defaultKeys: string;
 }
 
 export const shortcutDefinitions: ShortcutDefinition[] = [
   {
     id: "toggle-sidebar",
-    label: "Ocultar panel de tablas",
-    description: "Muestra u oculta el arbol de tablas del sidebar.",
     defaultKeys: "Alt+1",
   },
   {
     id: "select-all",
-    label: "Seleccionar todo",
-    description: "Selecciona todo el texto del editor SQL.",
     defaultKeys: "Ctrl+A",
   },
   {
     id: "new-query-console",
-    label: "Nueva consola SQL",
-    description: "Crea y activa una consola temporal para la conexion actual.",
     defaultKeys: "Ctrl+Shift+Q",
   },
   {
     id: "rename-query-console",
-    label: "Cambiar nombre de consola",
-    description: "Edita el nombre de la consola SQL activa.",
     defaultKeys: "Shift+F6",
   },
   {
+    id: "save-query-console",
+    defaultKeys: "Ctrl+S",
+  },
+  {
+    id: "save-query-console-as",
+    defaultKeys: "Ctrl+Shift+S",
+  },
+  {
+    id: "open-sql-file",
+    defaultKeys: "Ctrl+O",
+  },
+  {
     id: "close-query-console",
-    label: "Cerrar consola",
-    description: "Pide confirmacion antes de cerrar la consola SQL activa.",
     defaultKeys: "Ctrl+F4",
   },
   {
     id: "format-sql",
-    label: "Formatear SQL",
-    description: "Formatea la seleccion o la consulta donde esta el cursor.",
     defaultKeys: "Ctrl+L",
+  },
+  {
+    id: "add-result-row",
+    defaultKeys: "Alt+Insert",
+  },
+  {
+    id: "delete-result-rows",
+    defaultKeys: "Ctrl+Y",
+  },
+  {
+    id: "revert-result-changes",
+    defaultKeys: "Ctrl+Alt+Z",
+  },
+  {
+    id: "submit-result-changes",
+    defaultKeys: "Ctrl+Enter",
+  },
+  {
+    id: "next-result-page",
+    defaultKeys: "Ctrl+Alt+ArrowDown",
+  },
+  {
+    id: "previous-result-page",
+    defaultKeys: "Ctrl+Alt+ArrowUp",
+  },
+  {
+    id: "execute-query",
+    defaultKeys: "Ctrl+Enter",
   },
 ];
 

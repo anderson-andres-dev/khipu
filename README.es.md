@@ -1,57 +1,73 @@
-# Khipu
+<div align="center">
 
-Khipu es un cliente de escritorio para trabajar con bases de datos SQL, con
-un editor y autocompletado orientados a una sesión de trabajo compacta.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/rowly-logo-dark.svg">
+  <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="400">
+</picture>
 
-## Estado
+<br>
 
-En desarrollo. Actualmente soporta:
+<p>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/releases"><strong>Descargar Rowly DB</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#instalación">Instalación</a>
+  &nbsp;·&nbsp;
+  <a href="README.md">English</a>
+</p>
 
-- MySQL y MariaDB mediante el conector MySQL.
-- PostgreSQL.
-- Catálogo inicial de tablas y metadatos.
-- Editor SQL con sugerencias basadas en el catálogo.
-- Perfiles de conexión locales.
-- Contraseñas en el almacén seguro del sistema cuando se elige Siempre.
+<p>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Estrellas" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/issues"><img alt="Incidencias abiertas" src="https://img.shields.io/github/issues/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=ISSUES&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/pulls"><img alt="Solicitudes de cambio abiertas" src="https://img.shields.io/github/issues-pr/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=PULL%20REQUESTS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="docs/assets/rowly-db.webp"><img alt="Ver captura" src="https://img.shields.io/badge/SHOWCASE-SCREENSHOT-283640?style=for-the-badge&amp;labelColor=283640"></a>
+</p>
 
-El catálogo y la sesión de base de datos todavía son una primera integración;
-la ejecución de consultas y los resultados se incorporarán después.
+</div>
 
-## Stack
+<br>
 
-- Tauri 2 y Rust.
-- Svelte 5 y TypeScript.
-- CodeMirror 6.
-- SQLx para los conectores.
+<p align="center">
+  <img src="docs/assets/rowly-db.webp" alt="Interfaz de Rowly DB con temas claro y oscuro" width="900">
+</p>
 
-## Desarrollo
+## Funciones
 
-Requisitos: Rust y Node.js 20 o posterior.
+Explorador de esquemas · Autocompletado SQL · Resultados editables · Almacén seguro del sistema · Actualizaciones confirmadas
+
+## Instalación
+
+Descarga tu paquete desde [Releases](https://github.com/anderson-andres-dev/rowly-db/releases).
+Ejecuta el comando en la carpeta de descargas. Los paquetes Linux son para **x86_64**.
+
+| Linux | Instalar |
+| :--- | :--- |
+| Basadas en Debian `.deb` | `sudo apt install ./Rowly*.deb` |
+| Basadas en Fedora `.rpm` | `sudo dnf install ./Rowly*.rpm` |
+| Basadas en Arch `.pkg.tar.zst` | `sudo pacman -U ./rowly-db_*.pkg.tar.zst` |
+| AppImage | `chmod +x ./Rowly*.AppImage`<br>`./Rowly*.AppImage` |
+
+En **Windows**, ejecuta el `.msi` o `.exe`. En **macOS**, abre el `.dmg` para tu
+procesador y arrastra Rowly DB a Aplicaciones.
+
+Las nuevas versiones aparecen en **Ajustes → Actualizaciones**.
+
+## Compilar desde el código
+
+Necesitas Rust 1.85+, Node.js 20.19+ y las [dependencias de Tauri](https://tauri.app/start/prerequisites/).
 
 ```bash
-cargo build --workspace
-cargo test --workspace
-
-cd app
-npm install
-npm run check
-npm run tauri dev
+git clone https://github.com/anderson-andres-dev/rowly-db.git
+cd rowly-db/app
+npm ci
+npm run tauri build
 ```
 
-El formato del repositorio se mantiene con `cargo fmt --all` y las
-comprobaciones Rust se pueden ejecutar con `cargo clippy --workspace --all-targets`.
+Los paquetes quedan en `target/release/bundle/`.
 
-## Arquitectura
+## Contribuir
 
-El motor y los conectores viven en `crates/`. La aplicación Tauri está en
-`app/src-tauri/` y la interfaz Svelte en `app/src/`.
-
-La arquitectura de los conectores está documentada en
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-Las credenciales no se escriben en los perfiles de `localStorage`: la opción
-Siempre usa el keyring nativo del sistema operativo mediante `keyring-rs`.
+[Guía de desarrollo](CONTRIBUTING.md) · [Reportar un problema](https://github.com/anderson-andres-dev/rowly-db/issues)
 
 ## Licencia
 
-MIT o Apache-2.0.
+Licencia dual. Elige [MIT](LICENSE-MIT) o [Apache 2.0](LICENSE-APACHE).
