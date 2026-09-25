@@ -9,11 +9,11 @@
  * pisando --border/--focus-ring/--control-border por especificidad de
  * hoja de estilo sin que un valor inline lo tape).
  *
- * Los valores estáticos de --palette-* en :root son DataGrip Dark (el
+ * Los valores estáticos de --palette-* en :root son Rowly oscuro (el
  * tema por defecto), para que coincida con lo que ya escribió el bootstrap
  * de app.html si ambos corrieron. El bloque
  * `@media (prefers-color-scheme: light)` redefine solo las --palette-*
- * (nunca los nombres finales) con los valores de DataGrip Light, como
+ * (nunca los nombres finales) con los valores de Rowly claro, como
  * fallback de primer paint mientras el script de app.html no corrió
  * todavía (p.ej. JS deshabilitado) y el SO está en modo claro.
  *
@@ -26,32 +26,32 @@
 :root {
   color-scheme: light dark;
 
-  /* Paleta cruda (DataGrip Dark) — fuente real, ver comentario arriba */
-  --palette-surface: #191A1C;
-  --palette-surface-elevated: #26282C;
-  --palette-surface-hover: #26282C;
-  --palette-surface-content: #191A1C;
-  --palette-border: #33353B;
-  --palette-grid-line: #33353B;
-  --palette-control-border: #8B8E94;
-  --palette-text-primary: #D1D3D9;
-  --palette-text-secondary: #9FA2A8;
-  --palette-text-on-accent: #FFFFFF;
-  --palette-accent: #3871E1;
-  --palette-accent-hover: #5485E5;
-  --palette-danger: #F57E84;
-  --palette-danger-solid: #E5484D;
-  --palette-danger-solid-hover: #EC5D5E;
-  --palette-success: #4CAF50;
-  --palette-warning: #E8B339;
-  --palette-key-primary: #E8B339;
-  --palette-control-disabled: #4C4F56;
-  --palette-focus-ring: #3871E1;
-  --palette-shadow: 0 8px 30px rgba(0,0,0,0.45);
-  --palette-scrim: rgba(0,0,0,0.5);
-  --palette-scrollbar-thumb: rgba(139,142,148,0.65);
-  --palette-scrollbar-thumb-hover: #9FA2A8;
-  --palette-topbar-background: rgba(25,26,28,0.72);
+  /* Paleta cruda (Rowly oscuro) — fuente real, ver comentario arriba */
+  --palette-surface: #0C262C;
+  --palette-surface-elevated: #133239;
+  --palette-surface-hover: #122F35;
+  --palette-surface-content: #091D22;
+  --palette-border: #1A3C43;
+  --palette-grid-line: #143238;
+  --palette-control-border: #2E5A62;
+  --palette-text-primary: #DCEAEC;
+  --palette-text-secondary: #8FA6AC;
+  --palette-text-on-accent: #04191D;
+  --palette-accent: #2EB8AA;
+  --palette-accent-hover: #49C5B6;
+  --palette-danger: #F28B82;
+  --palette-danger-solid: #D6454D;
+  --palette-danger-solid-hover: #E05A61;
+  --palette-success: #5CCB8A;
+  --palette-warning: #E9B45A;
+  --palette-key-primary: #E9B45A;
+  --palette-control-disabled: #2A474D;
+  --palette-focus-ring: #49C5B6;
+  --palette-shadow: 0 10px 32px rgba(2,12,15,0.55);
+  --palette-scrim: rgba(3,14,17,0.6);
+  --palette-scrollbar-thumb: rgba(73,197,182,0.22);
+  --palette-scrollbar-thumb-hover: rgba(73,197,182,0.4);
+  --palette-topbar-background: rgba(12,38,44,0.78);
 
   /* Color semántico — alias estable sobre --palette-* */
   --surface: var(--palette-surface);
@@ -115,36 +115,36 @@
 
 /*
  * Fallback de primer paint (SO en claro, JS aún no corrió el bootstrap de
- * app.html ni theme.ts): redefine las --palette-* con DataGrip Light,
+ * app.html ni theme.ts): redefine las --palette-* con Rowly claro,
  * nunca los nombres finales.
  */
 @media (prefers-color-scheme: light) {
   :root {
-    --palette-surface: #F7F8FA;
+    --palette-surface: #EEF4F5;
     --palette-surface-elevated: #FFFFFF;
-    --palette-surface-hover: #EBECF0;
-    --palette-surface-content: #FFFFFF;
-    --palette-border: #EBECF0;
-    --palette-grid-line: #EBECF0;
-    --palette-control-border: #C9CCD6;
-    --palette-text-primary: #1E1F22;
-    --palette-text-secondary: #6C707E;
+    --palette-surface-hover: #E3EDEF;
+    --palette-surface-content: #FCFEFE;
+    --palette-border: #D9E5E7;
+    --palette-grid-line: #E7EFF0;
+    --palette-control-border: #B7C9CD;
+    --palette-text-primary: #0B2D33;
+    --palette-text-secondary: #56696F;
     --palette-text-on-accent: #FFFFFF;
-    --palette-accent: #3574F0;
-    --palette-accent-hover: #2B63D6;
-    --palette-danger: #DB3B4B;
-    --palette-danger-solid: #E5484D;
-    --palette-danger-solid-hover: #EC5D5E;
-    --palette-success: #208A3C;
-    --palette-warning: #C27D04;
-    --palette-key-primary: #B98A10;
-    --palette-control-disabled: #A8ADBD;
-    --palette-focus-ring: #3574F0;
-    --palette-shadow: 0 8px 28px rgba(0,0,0,0.10);
-    --palette-scrim: rgba(0,0,0,0.28);
-    --palette-scrollbar-thumb: #C9CCD6;
-    --palette-scrollbar-thumb-hover: #A8ADBD;
-    --palette-topbar-background: rgba(247,248,250,0.8);
+    --palette-accent: #0B8281;
+    --palette-accent-hover: #0A7070;
+    --palette-danger: #C23B45;
+    --palette-danger-solid: #C23B45;
+    --palette-danger-solid-hover: #D0505A;
+    --palette-success: #1F8A5B;
+    --palette-warning: #A87310;
+    --palette-key-primary: #B07A12;
+    --palette-control-disabled: #B7C9CD;
+    --palette-focus-ring: #0E9594;
+    --palette-shadow: 0 10px 30px rgba(11,45,51,0.10);
+    --palette-scrim: rgba(8,33,38,0.28);
+    --palette-scrollbar-thumb: #C9D8DB;
+    --palette-scrollbar-thumb-hover: #A9BEC3;
+    --palette-topbar-background: rgba(238,244,245,0.82);
   }
 }
 

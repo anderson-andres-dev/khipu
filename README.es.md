@@ -1,153 +1,114 @@
+<div align="center">
+
 # Rowly DB
 
-**Cliente SQL libre y de código abierto** (*Free & Open Source SQL Client*)
+**Cliente SQL libre y de código abierto**
 
-**Connect. Query. Explore.**
+Connect. Query. Explore.
 
-Un cliente de escritorio liviano para consultar, explorar y entender bases de
-datos.
+Un cliente de escritorio liviano para consultar, explorar y entender bases de datos.
 
 **100 % gratis · Código abierto · Sin versión Pro**
 
-[Descargar](https://github.com/anderson-andres-dev/rowly-db/releases) · [Documentación](docs/ARCHITECTURE.md)
+[Descargar](https://github.com/anderson-andres-dev/rowly-db/releases) · [Documentación](docs/ARCHITECTURE.md) · [Contribuir](CONTRIBUTING.md) · [English](README.md)
 
-Sin suscripciones. Sin versión Pro. Sin funciones bloqueadas.
+</div>
 
-Leer en otros idiomas: [English](README.md).
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
+  <img alt="Rowly DB con una consulta SQL, el explorador de la base de datos y el grid de resultados" src="docs/assets/screenshot-light.png">
+</picture>
 
-## Bases de datos soportadas
+## Por qué Rowly DB
 
-- PostgreSQL 10+
-- MySQL 5.7+
-- MariaDB 10.3+
+- **Gratis de verdad.** Sin suscripciones, sin versión Pro, sin funciones
+  bloqueadas. Todo lo que se describe aquí es lo que obtienes.
+- **Local y privado.** Rowly DB habla directo con tu base de datos. Las
+  contraseñas se guardan en el almacén seguro de tu sistema operativo, nunca
+  en archivos planos.
+- **Liviano.** Una app de escritorio nativa hecha con Tauri y Rust; el
+  instalador para Linux pesa unos 6 MB.
 
 ## Funcionalidades
 
-Rowly DB está en desarrollo activo. Disponible hoy:
+**Conectar** · PostgreSQL 10+, MySQL 5.7+ y MariaDB 10.3+. Perfiles de
+conexión con grupos y colores, modo SSL por conexión con el estado TLS
+negociado a la vista, y una conexión por ventana.
 
-**Conexiones**
+**Consultar** · Un editor SQL con autocompletado según el esquema, buscar y
+reemplazar, y archivos `.sql`. Las sentencias destructivas (`DELETE` sin
+`WHERE`, `TRUNCATE`, `DROP`…) piden confirmación antes de ejecutarse.
 
-- Perfiles de conexión con grupos, color de identidad y vista de tarjetas o
-  de lista.
-- Modo SSL por conexión: Automático (reintenta sin cifrar si no se puede
-  negociar TLS), Requerido, Verificar CA, Verificar CA y host o Desactivado,
-  con el estado TLS negociado visible.
-- Prueba de conexión con un detalle copiable.
-- Una conexión por ventana, con "abrir en una ventana nueva" desde el
-  selector de conexión.
-- Contraseñas en el almacén seguro del sistema cuando se elige Siempre;
-  nunca se escriben en los perfiles de conexión.
+**Explorar** · Un explorador con tablas, vistas, rutinas, secuencias, claves,
+índices y triggers. Un grid de resultados rápido con paginación en el
+servidor, orden, búsqueda, edición en línea aplicada en una sola
+transacción, copiado como TSV/CSV/JSON/Markdown/SQL y exportación sin límite
+de filas.
 
-**Explorador de base de datos**
+**A tu manera** · Ocho temas: Rowly, DataGrip, VS Code, Gruvbox y Solarized
+en claro y oscuro, además de One Dark, Dracula y Nord. Disponible en español,
+inglés, portugués, francés y alemán.
 
-- Tablas, vistas, vistas materializadas, rutinas, secuencias y eventos.
-- Interior de cada tabla: columnas, claves, claves foráneas, índices,
-  triggers y checks.
-- Selector de schemas visibles y detección de versión y capacidades del
-  servidor.
-- Visor de la definición (DDL) de una tabla.
+## Instalar
 
-**Editor SQL**
-
-- Autocompletado basado en el catálogo.
-- Ejecución con `Ctrl+Enter`, con estado y tiempo por sentencia.
-- Protección ante sentencias destructivas (`DELETE`/`UPDATE` sin `WHERE`,
-  `TRUNCATE`, `DROP ...`) que pide confirmación, revalidada en el backend.
-- Pestañas de consola y archivos `.sql`: guardar, abrir (`Ctrl+S`,
-  `Ctrl+Shift+S`, `Ctrl+O`), indicador de cambios sin guardar y carpeta de
-  scripts por conexión en el sidebar.
-- Buscar y reemplazar.
-
-**Resultados**
-
-- Grid rápido con selección de rango, fila y columna, columnas
-  redimensionables y tooltips de columna (PK/FK/comentario).
-- Paginación en el servidor (`LIMIT`/`OFFSET` reescrito desde el AST),
-  conteo total bajo demanda y orden por columna en la base.
-- Edición en línea con cambios pendientes, deshacer paso a paso, vista
-  previa del SQL y aplicación todo o nada en una transacción.
-- Copiar como TSV, CSV, JSON, Markdown o `INSERT` SQL; pegar desde el grid,
-  planillas o JSON.
-- Exportar resultados a un archivo sin límite de filas.
-- Búsqueda en la página (`Ctrl+F`) con filtro de filas.
-- Pestañas de tabla con filtros `WHERE` / `ORDER BY` (doble clic en una
-  tabla del explorador), pestañas de resultado fijadas y una pestaña Salida
-  con el registro de ejecuciones.
-
-**Apariencia e idioma**
-
-- Temas: DataGrip, VS Code, Gruvbox y Solarized (oscuros y claros), además de
-  One Dark, Dracula y Nord (oscuros), con los colores oficiales de cada tema.
-- Interfaz en español, inglés, portugués (Brasil), francés y alemán; por
-  defecto sigue el idioma del sistema.
-
-## Instalación
-
-Todavía no hay versiones publicadas. Hasta la primera versión, Rowly DB se
-compila desde el código fuente (ver [Desarrollo](#desarrollo)).
-
-Para compilar un binario independiente:
+Rowly DB todavía no tiene una versión publicada. Hasta la primera, puedes
+compilarlo desde el código fuente:
 
 ```bash
 cd app
 npm install
-npm run tauri build -- --no-bundle
-# binario: target/release/khipu-desktop
+npm run tauri build
 ```
 
-Sin `--no-bundle`, Tauri también genera los instaladores de cada plataforma
-(`.deb`, `.rpm` y AppImage en Linux, `.dmg` en macOS, `.msi`/`.exe` en
-Windows) en `target/release/bundle/`.
-
-## Stack
-
-- [Tauri 2](https://tauri.app/) y Rust.
-- Svelte 5 y TypeScript.
-- [CodeMirror 6](https://codemirror.net/).
-- [sqlparser](https://github.com/apache/datafusion-sqlparser-rs) para el
-  análisis de sentencias.
-- [SQLx](https://github.com/launchbadge/sqlx) para los conectores.
+Los instaladores quedan en `target/release/bundle/`: `.deb`, `.rpm` y
+AppImage en Linux, `.dmg` en macOS, `.msi`/`.exe` en Windows.
 
 ## Desarrollo
 
-Requisitos: Rust 1.85 o posterior y Node.js 20 o posterior. En Linux también
-hacen falta las dependencias de sistema de Tauri (WebKitGTK 4.1, GTK 3,
-librsvg); ver los
-[requisitos de Tauri](https://tauri.app/start/prerequisites/).
+Necesitas Rust 1.85+ y Node.js 20+. En Linux, también las
+[dependencias de sistema de Tauri](https://tauri.app/start/prerequisites/)
+(WebKitGTK 4.1, GTK 3, librsvg).
 
 ```bash
-cargo build --workspace
-cargo test --workspace
-
-cd app
-npm install
-npm run check
-npm run tauri dev
+cargo test --workspace          # motor y drivers
+cd app && npm install
+npm run check && npm test       # tipos y tests de la interfaz
+npm run tauri dev               # ejecutar la app
 ```
 
-El formato del repositorio se mantiene con `cargo fmt --all` y las
-comprobaciones Rust se pueden ejecutar con `cargo clippy --workspace --all-targets`.
-
 Los tests que necesitan una base de datos real están marcados `#[ignore]`;
-ver [CONTRIBUTING.md](CONTRIBUTING.md) para correrlos.
+[CONTRIBUTING.md](CONTRIBUTING.md) explica cómo correrlos.
 
-## Rowly DB y Khipu
+## Contribuir
 
-**Rowly DB** es el producto: la aplicación de escritorio y su nombre público.
-**Khipu** es el motor interno y el nombre en clave del proyecto. Los crates de
-Rust (`khipu-engine`, `khipu-driver-*`, `khipu-lsp`), los identificadores
-internos y los lugares donde la app guarda su configuración conservan el nombre
-Khipu, así la configuración y las contraseñas guardadas siguen funcionando.
+Rowly DB se construye en abierto y hay espacio para ayudar en todos los
+niveles:
+
+- **Reporta** un error o propone una idea en los
+  [issues](https://github.com/anderson-andres-dev/rowly-db/issues).
+- **Traduce** la interfaz a un idioma nuevo: cada área es un archivo en
+  `app/src/lib/i18n/messages/`.
+- **Agrega una base de datos**: un driver implementa un solo trait,
+  `DbConnector`.
+- **Mejora el código**: lee [CONTRIBUTING.md](CONTRIBUTING.md) y abre un
+  pull request.
 
 ## Arquitectura
 
-El motor SQL (análisis, protección de ejecución, paginación y edición) y los
-conectores viven en `crates/`. La aplicación Tauri está en `app/src-tauri/`
-y la interfaz Svelte en `app/src/`.
+El motor SQL (análisis, protección de ejecución, paginación, edición) y los
+drivers viven en `crates/`, independientes de la interfaz. La app de
+escritorio está en `app/src-tauri/` y la interfaz Svelte en `app/src/`. Más
+detalles en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-La arquitectura de los conectores está documentada en
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Hecho con [Tauri 2](https://tauri.app/), Rust, Svelte 5,
+[CodeMirror 6](https://codemirror.net/),
+[sqlparser](https://github.com/apache/datafusion-sqlparser-rs) y
+[SQLx](https://github.com/launchbadge/sqlx).
+
+**Rowly DB y Khipu.** Rowly DB es el producto. Khipu es el nombre de su motor
+interno, por eso los crates se llaman `khipu-*`.
 
 ## Licencia
 
-MIT o Apache-2.0.
+Rowly DB tiene doble licencia, [MIT](LICENSE-MIT) o
+[Apache-2.0](LICENSE-APACHE), a tu elección.

@@ -18,7 +18,7 @@ export interface ThemeChoice {
 }
 
 const STORAGE_KEY = 'khipu:theme';
-const DEFAULT_THEME_CHOICE: ThemeChoice = { family: 'datagrip', scheme: 'system' };
+const DEFAULT_THEME_CHOICE: ThemeChoice = { family: 'rowly', scheme: 'system' };
 
 // Mapeo campo de ShellPalette -> variable CSS `--palette-*`. Usado tanto por
 // initThemeEffects() como (con el mismo nombre, duplicado literal) por el

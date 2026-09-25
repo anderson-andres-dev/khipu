@@ -73,7 +73,7 @@ export interface ThemeVariant {
 	editor: EditorPalette;
 }
 
-export type ThemeFamily = 'datagrip' | 'vscode' | 'onedark' | 'dracula' | 'nord' | 'gruvbox' | 'solarized';
+export type ThemeFamily = 'rowly' | 'datagrip' | 'vscode' | 'onedark' | 'dracula' | 'nord' | 'gruvbox' | 'solarized';
 export type ColorScheme = 'dark' | 'light';
 
 // One Dark, Dracula y Nord son temas oscuros por diseño: no tienen variante
@@ -84,6 +84,7 @@ export interface ThemeVariants {
 }
 
 export const THEME_FAMILIES: { id: ThemeFamily; label: string }[] = [
+	{ id: 'rowly', label: 'Rowly' },
 	{ id: 'datagrip', label: 'DataGrip' },
 	{ id: 'vscode', label: 'VS Code' },
 	{ id: 'onedark', label: 'One Dark' },
@@ -116,6 +117,112 @@ export function themeVariant(family: ThemeFamily, scheme: ColorScheme): ThemeVar
 // antes del primer paint) y en tokens.css (fallback); palettes.test.ts
 // falla si quedan desincronizados.
 export const palettes: Record<ThemeFamily, ThemeVariants> = {
+	// Rowly: el tema propio de Rowly DB. Superficies en la misma familia teal
+	// de la marca (#082126 → #F5FAFA) y acento turquesa/menta; la sintaxis usa
+	// complementarios cálidos (arena, coral) y fríos (cielo, lila) para que el
+	// teal mande sin que todo el código sea del mismo color.
+	rowly: {
+		dark: {
+			shell: {
+				surface: '#0C262C',
+				surfaceElevated: '#133239',
+				surfaceHover: '#122F35',
+				surfaceContent: '#091D22',
+				border: '#1A3C43',
+				gridLine: '#143238',
+				controlBorder: '#2E5A62',
+				textPrimary: '#DCEAEC',
+				textSecondary: '#8FA6AC',
+				textOnAccent: '#04191D',
+				accent: '#2EB8AA',
+				accentHover: '#49C5B6',
+				danger: '#F28B82',
+				dangerSolid: '#D6454D',
+				dangerSolidHover: '#E05A61',
+				success: '#5CCB8A',
+				warning: '#E9B45A',
+				keyPrimary: '#E9B45A',
+				controlDisabled: '#2A474D',
+				focusRing: '#49C5B6',
+				shadow: '0 10px 32px rgba(2,12,15,0.55)',
+				scrim: 'rgba(3,14,17,0.6)',
+				scrollbarThumb: 'rgba(73,197,182,0.22)',
+				scrollbarThumbHover: 'rgba(73,197,182,0.4)',
+				topbarBackground: 'rgba(12,38,44,0.78)'
+			},
+			editor: {
+				background: '#091D22',
+				foreground: '#CFDFE2',
+				caret: '#49C5B6',
+				selection: '#16434A',
+				lineNumber: '#46646B',
+				activeLineNumber: '#A9C2C7',
+				comment: '#628087',
+				keyword: '#49C5B6',
+				string: '#E6B87A',
+				number: '#F29E7C',
+				function: '#7CC4F2',
+				constant: '#D59BF0',
+				error: '#F28B82',
+				activeStatement: '#1F5D63',
+				success: '#49C5B6',
+				type: '#9FB8F7',
+				builtin: '#7CC4F2',
+				operator: '#8FB7BC',
+				tokenChrome: true
+			}
+		},
+		light: {
+			shell: {
+				surface: '#EEF4F5',
+				surfaceElevated: '#FFFFFF',
+				surfaceHover: '#E3EDEF',
+				surfaceContent: '#FCFEFE',
+				border: '#D9E5E7',
+				gridLine: '#E7EFF0',
+				controlBorder: '#B7C9CD',
+				textPrimary: '#0B2D33',
+				textSecondary: '#56696F',
+				textOnAccent: '#FFFFFF',
+				accent: '#0B8281',
+				accentHover: '#0A7070',
+				danger: '#C23B45',
+				dangerSolid: '#C23B45',
+				dangerSolidHover: '#D0505A',
+				success: '#1F8A5B',
+				warning: '#A87310',
+				keyPrimary: '#B07A12',
+				controlDisabled: '#B7C9CD',
+				focusRing: '#0E9594',
+				shadow: '0 10px 30px rgba(11,45,51,0.10)',
+				scrim: 'rgba(8,33,38,0.28)',
+				scrollbarThumb: '#C9D8DB',
+				scrollbarThumbHover: '#A9BEC3',
+				topbarBackground: 'rgba(238,244,245,0.82)'
+			},
+			editor: {
+				background: '#FCFEFE',
+				foreground: '#1E3A40',
+				caret: '#0E9594',
+				selection: '#C4E7E3',
+				lineNumber: '#A7B8BC',
+				activeLineNumber: '#0B2D33',
+				comment: '#71868C',
+				keyword: '#0B7F7E',
+				string: '#96570F',
+				number: '#BC4328',
+				function: '#1D6CAD',
+				constant: '#8A3DB3',
+				error: '#C23B45',
+				activeStatement: '#8FD0C8',
+				success: '#0E9594',
+				type: '#4A5CBE',
+				builtin: '#1D6CAD',
+				operator: '#0B7F7E',
+				tokenChrome: true
+			}
+		}
+	},
 	datagrip: {
 		dark: {
 			shell: {

@@ -147,10 +147,10 @@ describe("copias de la paleta del shell", () => {
   it.each([
     ["dark", ":root {"],
     ["light", "@media (prefers-color-scheme: light) {"],
-  ] as const)("tokens.css tiene DataGrip %s como default", (scheme, marker) => {
+  ] as const)("tokens.css tiene Rowly %s como default", (scheme, marker) => {
     const css = tokensCss;
     const block = css.slice(css.indexOf(marker), css.indexOf("}", css.indexOf(marker)));
-    for (const [key, value] of Object.entries(palettes.datagrip[scheme]!.shell)) {
+    for (const [key, value] of Object.entries(palettes.rowly[scheme]!.shell)) {
       expect(block, key).toContain(`--palette-${kebab(key)}: ${value};`);
     }
   });

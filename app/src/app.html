@@ -18,6 +18,62 @@
       (function () {
         try {
           var SHELL_PALETTES = {
+            rowly: {
+              dark: {
+                surface: '#0C262C',
+                surfaceElevated: '#133239',
+                surfaceHover: '#122F35',
+                surfaceContent: '#091D22',
+                border: '#1A3C43',
+                gridLine: '#143238',
+                controlBorder: '#2E5A62',
+                textPrimary: '#DCEAEC',
+                textSecondary: '#8FA6AC',
+                textOnAccent: '#04191D',
+                accent: '#2EB8AA',
+                accentHover: '#49C5B6',
+                danger: '#F28B82',
+                dangerSolid: '#D6454D',
+                dangerSolidHover: '#E05A61',
+                success: '#5CCB8A',
+                warning: '#E9B45A',
+                keyPrimary: '#E9B45A',
+                controlDisabled: '#2A474D',
+                focusRing: '#49C5B6',
+                shadow: '0 10px 32px rgba(2,12,15,0.55)',
+                scrim: 'rgba(3,14,17,0.6)',
+                scrollbarThumb: 'rgba(73,197,182,0.22)',
+                scrollbarThumbHover: 'rgba(73,197,182,0.4)',
+                topbarBackground: 'rgba(12,38,44,0.78)'
+              },
+              light: {
+                surface: '#EEF4F5',
+                surfaceElevated: '#FFFFFF',
+                surfaceHover: '#E3EDEF',
+                surfaceContent: '#FCFEFE',
+                border: '#D9E5E7',
+                gridLine: '#E7EFF0',
+                controlBorder: '#B7C9CD',
+                textPrimary: '#0B2D33',
+                textSecondary: '#56696F',
+                textOnAccent: '#FFFFFF',
+                accent: '#0B8281',
+                accentHover: '#0A7070',
+                danger: '#C23B45',
+                dangerSolid: '#C23B45',
+                dangerSolidHover: '#D0505A',
+                success: '#1F8A5B',
+                warning: '#A87310',
+                keyPrimary: '#B07A12',
+                controlDisabled: '#B7C9CD',
+                focusRing: '#0E9594',
+                shadow: '0 10px 30px rgba(11,45,51,0.10)',
+                scrim: 'rgba(8,33,38,0.28)',
+                scrollbarThumb: '#C9D8DB',
+                scrollbarThumbHover: '#A9BEC3',
+                topbarBackground: 'rgba(238,244,245,0.82)'
+              }
+            },
             datagrip: {
               dark: {
                 surface: '#191A1C',
@@ -361,7 +417,7 @@
             topbarBackground: '--palette-topbar-background'
           };
 
-          var DEFAULT_CHOICE = { family: 'datagrip', scheme: 'system' };
+          var DEFAULT_CHOICE = { family: 'rowly', scheme: 'system' };
           var choice = DEFAULT_CHOICE;
 
           try {
@@ -402,7 +458,7 @@
           root.dataset.scheme = resolvedScheme;
         } catch (e) {
           // Si algo falla acá, se cae al CSS estático de tokens.css
-          // (DataGrip Dark) — nunca debe romper el arranque de la app.
+          // (Rowly oscuro) — nunca debe romper el arranque de la app.
         }
       })();
     </script>
