@@ -272,7 +272,6 @@
       <div class="settings-content">
         <header>
           <h1 id="settings-title">{$t("updates.title")}</h1>
-          <p>{$t("updates.subtitle")}</p>
         </header>
         <UpdatesSection />
       </div>

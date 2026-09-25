@@ -46,6 +46,32 @@
   },
   "nodes": [
     {
+      "id": "app_src_lib_components_connectionavatar_neutral",
+      "label": "neutral",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "neutral",
+      "source_file": "app/src/lib/components/ConnectionAvatar.svelte",
+      "source_location": "L22"
+    },
+    {
+      "id": "app_src_lib_components_connectionswitcher_tinted",
+      "label": "tinted",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "tinted",
+      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
+      "source_location": "L135"
+    },
+    {
       "id": "app_src_lib_connections_backendkind",
       "label": "BackendKind",
       "_callable": true,
@@ -70,6 +96,19 @@
       "norm_label": "driverdefinition",
       "source_file": "app/src/lib/connections.ts",
       "source_location": "L11"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_index_messagekey",
+      "label": "MessageKey",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "messagekey",
+      "source_file": "app/src/lib/i18n/messages/index.ts",
+      "source_location": "L29"
     },
     {
       "id": "app_src_lib_sqlfiles_sqldirentry",
@@ -254,6 +293,19 @@
       "source_location": "L3"
     },
     {
+      "id": "app_src_lib_stores_connection_connectionconfig",
+      "label": "ConnectionConfig",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "connectionProfiles.ts",
+      "file_type": "code",
+      "norm_label": "connectionconfig",
+      "source_file": "app/src/lib/stores/connection.ts",
+      "source_location": "L91"
+    },
+    {
       "id": "app_src_lib_stores_connectionprofiles_connectionprofile",
       "label": "ConnectionProfile",
       "_callable": true,
@@ -265,6 +317,19 @@
       "norm_label": "connectionprofile",
       "source_file": "app/src/lib/stores/connectionProfiles.ts",
       "source_location": "L9"
+    },
+    {
+      "id": "app_src_lib_types_tlsmode",
+      "label": "TlsMode",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "connectionProfiles.ts",
+      "file_type": "code",
+      "norm_label": "tlsmode",
+      "source_file": "app/src/lib/types.ts",
+      "source_location": "L122"
     },
     {
       "id": "app_src_lib_resultediting_pendingedits",
@@ -449,30 +514,82 @@
       "source_location": "L53"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_resolvedshortcut",
-      "label": "ResolvedShortcut",
+      "id": "app_src_lib_stores_updates_installkind",
+      "label": "InstallKind",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 42,
       "community_name": "+layout.svelte",
       "file_type": "code",
-      "norm_label": "resolvedshortcut",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L116"
+      "norm_label": "installkind",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L10"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_shortcutdefinition",
-      "label": "ShortcutDefinition",
+      "id": "app_src_lib_stores_updates_installstate",
+      "label": "installState",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 42,
       "community_name": "+layout.svelte",
       "file_type": "code",
-      "norm_label": "shortcutdefinition",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L10"
+      "norm_label": "installstate",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L87"
+    },
+    {
+      "id": "app_src_lib_stores_updates_releaseinfo",
+      "label": "ReleaseInfo",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "releaseinfo",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L19"
+    },
+    {
+      "id": "app_src_lib_stores_updates_updatecontext",
+      "label": "updateContext",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "updatecontext",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L82"
+    },
+    {
+      "id": "app_src_lib_stores_updates_updateerrorcode",
+      "label": "UpdateErrorCode",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "updateerrorcode",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L31"
+    },
+    {
+      "id": "app_src_lib_stores_updates_updateprefs",
+      "label": "updatePrefs",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "updateprefs",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L70"
     },
     {
       "id": "app_src_lib_editorsearchpanel_newlinemarker",
@@ -512,19 +629,6 @@
       "norm_label": "translate",
       "source_file": "app/src/lib/i18n/index.ts",
       "source_location": "L84"
-    },
-    {
-      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker",
-      "label": "StatusGutterMarker",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "statusguttermarker",
-      "source_file": "app/src/lib/sqlExecutionMarker.ts",
-      "source_location": "L55"
     },
     {
       "id": "app_src_lib_sqlformatter_quote",
@@ -605,39 +709,13 @@
       "source_location": "L160"
     },
     {
-      "id": "app_src_lib_stores_connection_connectionconfig",
-      "label": "ConnectionConfig",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 48,
-      "community_name": "TlsMode",
-      "file_type": "code",
-      "norm_label": "connectionconfig",
-      "source_file": "app/src/lib/stores/connection.ts",
-      "source_location": "L91"
-    },
-    {
-      "id": "app_src_lib_types_tlsmode",
-      "label": "TlsMode",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 48,
-      "community_name": "TlsMode",
-      "file_type": "code",
-      "norm_label": "tlsmode",
-      "source_file": "app/src/lib/types.ts",
-      "source_location": "L122"
-    },
-    {
       "id": "app_src_lib_types_tlsstatus",
       "label": "TlsStatus",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "code",
       "norm_label": "tlsstatus",
       "source_file": "app/src/lib/types.ts",
@@ -1034,19 +1112,6 @@
       "source_location": "L247"
     },
     {
-      "id": "app_src_lib_stores_sqlfolders_sqlfolderstate",
-      "label": "SqlFolderState",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "sqlfolderstate",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L7"
-    },
-    {
       "id": "app_src_lib_types_catalogtable",
       "label": "CatalogTable",
       "_callable": true,
@@ -1216,82 +1281,30 @@
       "source_location": "L28"
     },
     {
-      "id": "app_src_lib_stores_updates_installkind",
-      "label": "InstallKind",
+      "id": "app_src_lib_stores_shortcuts_resolvedshortcut",
+      "label": "ResolvedShortcut",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "installkind",
-      "source_file": "app/src/lib/stores/updates.ts",
+      "norm_label": "resolvedshortcut",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L116"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_shortcutdefinition",
+      "label": "ShortcutDefinition",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 63,
+      "community_name": "stores/shortcuts.ts",
+      "file_type": "code",
+      "norm_label": "shortcutdefinition",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
       "source_location": "L10"
-    },
-    {
-      "id": "app_src_lib_stores_updates_installstate",
-      "label": "installState",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "installstate",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L87"
-    },
-    {
-      "id": "app_src_lib_stores_updates_releaseinfo",
-      "label": "ReleaseInfo",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "releaseinfo",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L19"
-    },
-    {
-      "id": "app_src_lib_stores_updates_updatecontext",
-      "label": "updateContext",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "updatecontext",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L82"
-    },
-    {
-      "id": "app_src_lib_stores_updates_updateerrorcode",
-      "label": "UpdateErrorCode",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "updateerrorcode",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L31"
-    },
-    {
-      "id": "app_src_lib_stores_updates_updateprefs",
-      "label": "updatePrefs",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "updateprefs",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L70"
     },
     {
       "id": "app_src_lib_stores_editorsettings_editorsettings",
@@ -1476,43 +1489,17 @@
       "source_location": "L28"
     },
     {
-      "id": "app_src_lib_components_connectionavatar_neutral",
-      "label": "neutral",
+      "id": "app_src_lib_stores_sqlfolders_sqlfolderstate",
+      "label": "SqlFolderState",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "neutral",
-      "source_file": "app/src/lib/components/ConnectionAvatar.svelte",
-      "source_location": "L22"
-    },
-    {
-      "id": "app_src_lib_components_connectionswitcher_tinted",
-      "label": "tinted",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
-      "file_type": "code",
-      "norm_label": "tinted",
-      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
-      "source_location": "L135"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_index_messagekey",
-      "label": "MessageKey",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
-      "file_type": "code",
-      "norm_label": "messagekey",
-      "source_file": "app/src/lib/i18n/messages/index.ts",
-      "source_location": "L29"
+      "norm_label": "sqlfolderstate",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L7"
     },
     {
       "id": "app_src_lib_stores_notifications_notice",
@@ -1534,7 +1521,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "logentry",
       "source_file": "app/src/lib/stores/executionLog.ts",
@@ -1547,11 +1534,24 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "logkind",
       "source_file": "app/src/lib/stores/executionLog.ts",
       "source_location": "L7"
+    },
+    {
+      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker",
+      "label": "StatusGutterMarker",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "StatusGutterMarker",
+      "file_type": "code",
+      "norm_label": "statusguttermarker",
+      "source_file": "app/src/lib/sqlExecutionMarker.ts",
+      "source_location": "L55"
     },
     {
       "id": "app_src_lib_theming_palettes_colorscheme",
@@ -1670,16 +1670,64 @@
       "source_location": "L294"
     },
     {
-      "id": "app_src_lib_components_filetree_confirmtrash",
-      "label": "confirmTrash()",
+      "id": "app_src_lib_components_connectionlanding_corneractions",
+      "label": "cornerActions()",
       "_callable": true,
       "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
+      "community": 10,
+      "community_name": "svelte",
       "file_type": "code",
-      "norm_label": "confirmtrash()",
-      "source_file": "app/src/lib/components/FileTree.svelte",
-      "source_location": "L151"
+      "norm_label": "corneractions()",
+      "source_file": "app/src/lib/components/ConnectionLanding.svelte",
+      "source_location": "L191"
+    },
+    {
+      "id": "app_src_lib_components_connectionswitcher_indexof",
+      "label": "indexOf()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "indexof()",
+      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
+      "source_location": "L160"
+    },
+    {
+      "id": "app_src_lib_components_connectionswitcher_t",
+      "label": "$t()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "$t()",
+      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
+      "source_location": "L186"
+    },
+    {
+      "id": "app_src_lib_connectioncolors_ispalettecolor",
+      "label": "isPaletteColor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "ispalettecolor()",
+      "source_file": "app/src/lib/connectionColors.ts",
+      "source_location": "L23"
+    },
+    {
+      "id": "app_src_lib_connections_getdriver",
+      "label": "getDriver()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "getdriver()",
+      "source_file": "app/src/lib/connections.ts",
+      "source_location": "L47"
     },
     {
       "id": "app_src_lib_components_filetree_finishedit",
@@ -1802,18 +1850,6 @@
       "source_location": "L41"
     },
     {
-      "id": "app_src_lib_sqlfiles_trashsqlfile",
-      "label": "trashSqlFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "trashsqlfile()",
-      "source_file": "app/src/lib/sqlFiles.ts",
-      "source_location": "L95"
-    },
-    {
       "id": "app_src_lib_sqlfiles_withsqlextension",
       "label": "withSqlExtension()",
       "_callable": true,
@@ -1836,18 +1872,6 @@
       "norm_label": "writefile()",
       "source_file": "app/src/lib/sqlFiles.ts",
       "source_location": "L33"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_detachqueryconsolefile",
-      "label": "detachQueryConsoleFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "detachqueryconsolefile()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L498"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_filenamefrompath",
@@ -2306,18 +2330,6 @@
       "source_location": "L20"
     },
     {
-      "id": "app_src_lib_explorertree_test_table",
-      "label": "table()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "explorerTree.ts",
-      "file_type": "code",
-      "norm_label": "table()",
-      "source_file": "app/src/lib/explorerTree.test.ts",
-      "source_location": "L5"
-    },
-    {
       "id": "app_src_lib_connectionwindow_openconnectionwindow",
       "label": "openConnectionWindow()",
       "_callable": true,
@@ -2762,78 +2774,6 @@
       "source_location": "L199"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_eventmatchesshortcut",
-      "label": "eventMatchesShortcut()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "eventmatchesshortcut()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L164"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_formatshortcutevent",
-      "label": "formatShortcutEvent()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "formatshortcutevent()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L149"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_loadoverrides",
-      "label": "loadOverrides()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "loadoverrides()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L84"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_resetshortcutkeys",
-      "label": "resetShortcutKeys()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "resetshortcutkeys()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L137"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_setshortcutkeys",
-      "label": "setShortcutKeys()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "setshortcutkeys()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L133"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_tocodemirrorkey",
-      "label": "toCodeMirrorKey()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "tocodemirrorkey()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L171"
-    },
-    {
       "id": "app_src_lib_stores_sidebarlayout_clampsidebarwidth",
       "label": "clampSidebarWidth()",
       "_callable": true,
@@ -2882,6 +2822,90 @@
       "source_location": "L101"
     },
     {
+      "id": "app_src_lib_stores_updates_checkforupdates",
+      "label": "checkForUpdates()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "checkforupdates()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L112"
+    },
+    {
+      "id": "app_src_lib_stores_updates_checkonstartup",
+      "label": "checkOnStartup()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "checkonstartup()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L128"
+    },
+    {
+      "id": "app_src_lib_stores_updates_errorcode",
+      "label": "errorCode()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "errorcode()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L99"
+    },
+    {
+      "id": "app_src_lib_stores_updates_installrelease",
+      "label": "installRelease()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "installrelease()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L133"
+    },
+    {
+      "id": "app_src_lib_stores_updates_loadprefs",
+      "label": "loadPrefs()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "loadprefs()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L57"
+    },
+    {
+      "id": "app_src_lib_stores_updates_loadupdatecontext",
+      "label": "loadUpdateContext()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "loadupdatecontext()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L106"
+    },
+    {
+      "id": "app_src_lib_stores_updates_restartapp",
+      "label": "restartApp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "restartapp()",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L154"
+    },
+    {
       "id": "app_src_routes_layout_clampfilepanelheight",
       "label": "clampFilePanelHeight()",
       "_callable": true,
@@ -2892,18 +2916,6 @@
       "norm_label": "clampfilepanelheight()",
       "source_file": "app/src/routes/+layout.svelte",
       "source_location": "L75"
-    },
-    {
-      "id": "app_src_routes_layout_handleglobalkeydown",
-      "label": "handleGlobalKeydown()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "handleglobalkeydown()",
-      "source_file": "app/src/routes/+layout.svelte",
-      "source_location": "L185"
     },
     {
       "id": "app_src_routes_layout_handlesidebarfind",
@@ -3374,42 +3386,6 @@
       "source_location": "L572"
     },
     {
-      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_constructor",
-      "label": ".constructor()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": ".constructor()",
-      "source_file": "app/src/lib/sqlExecutionMarker.ts",
-      "source_location": "L58"
-    },
-    {
-      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_eq",
-      "label": ".eq()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": ".eq()",
-      "source_file": "app/src/lib/sqlExecutionMarker.ts",
-      "source_location": "L66"
-    },
-    {
-      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_todom",
-      "label": ".toDOM()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": ".todom()",
-      "source_file": "app/src/lib/sqlExecutionMarker.ts",
-      "source_location": "L70"
-    },
-    {
       "id": "app_src_lib_sqlformatter_compactstructuredlayout",
       "label": "compactStructuredLayout()",
       "_callable": true,
@@ -3763,7 +3739,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "code",
       "norm_label": "connect()",
       "source_file": "app/src/lib/stores/connection.ts",
@@ -4238,30 +4214,6 @@
       "source_location": "L85"
     },
     {
-      "id": "app_src_lib_stores_sqlfolders_listrecord",
-      "label": "listRecord()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "listrecord()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L34"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_load",
-      "label": "load()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "load()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L44"
-    },
-    {
       "id": "app_src_lib_stores_sqlfolders_setfilepanelcollapsed",
       "label": "setFilePanelCollapsed()",
       "_callable": true,
@@ -4272,30 +4224,6 @@
       "norm_label": "setfilepanelcollapsed()",
       "source_file": "app/src/lib/stores/sqlFolders.ts",
       "source_location": "L105"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_setsqlfolderexpanded",
-      "label": "setSqlFolderExpanded()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "setsqlfolderexpanded()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L93"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_stringrecord",
-      "label": "stringRecord()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "stringrecord()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L26"
     },
     {
       "id": "app_src_lib_sqlschema_extractdefaulttable",
@@ -4523,7 +4451,7 @@
       "file_type": "code",
       "norm_label": "$t()",
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L338"
+      "source_location": "L337"
     },
     {
       "id": "app_src_lib_components_settingspanel_var",
@@ -4535,7 +4463,7 @@
       "file_type": "code",
       "norm_label": "var()",
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L814"
+      "source_location": "L813"
     },
     {
       "id": "app_src_lib_components_updatessection_t",
@@ -4874,88 +4802,88 @@
       "source_location": "L10"
     },
     {
-      "id": "app_src_lib_stores_updates_checkforupdates",
-      "label": "checkForUpdates()",
+      "id": "app_src_lib_stores_shortcuts_eventmatchesshortcut",
+      "label": "eventMatchesShortcut()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "checkforupdates()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L112"
+      "norm_label": "eventmatchesshortcut()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L164"
     },
     {
-      "id": "app_src_lib_stores_updates_checkonstartup",
-      "label": "checkOnStartup()",
+      "id": "app_src_lib_stores_shortcuts_formatshortcutevent",
+      "label": "formatShortcutEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "checkonstartup()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L128"
+      "norm_label": "formatshortcutevent()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L149"
     },
     {
-      "id": "app_src_lib_stores_updates_errorcode",
-      "label": "errorCode()",
+      "id": "app_src_lib_stores_shortcuts_loadoverrides",
+      "label": "loadOverrides()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "errorcode()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L99"
+      "norm_label": "loadoverrides()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L84"
     },
     {
-      "id": "app_src_lib_stores_updates_installrelease",
-      "label": "installRelease()",
+      "id": "app_src_lib_stores_shortcuts_resetshortcutkeys",
+      "label": "resetShortcutKeys()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "installrelease()",
-      "source_file": "app/src/lib/stores/updates.ts",
+      "norm_label": "resetshortcutkeys()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L137"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_setshortcutkeys",
+      "label": "setShortcutKeys()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 63,
+      "community_name": "stores/shortcuts.ts",
+      "file_type": "code",
+      "norm_label": "setshortcutkeys()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
       "source_location": "L133"
     },
     {
-      "id": "app_src_lib_stores_updates_loadprefs",
-      "label": "loadPrefs()",
+      "id": "app_src_lib_stores_shortcuts_tocodemirrorkey",
+      "label": "toCodeMirrorKey()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "loadprefs()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L57"
+      "norm_label": "tocodemirrorkey()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L171"
     },
     {
-      "id": "app_src_lib_stores_updates_loadupdatecontext",
-      "label": "loadUpdateContext()",
+      "id": "app_src_routes_layout_handleglobalkeydown",
+      "label": "handleGlobalKeydown()",
       "_callable": true,
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "loadupdatecontext()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L106"
-    },
-    {
-      "id": "app_src_lib_stores_updates_restartapp",
-      "label": "restartApp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "restartapp()",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L154"
+      "norm_label": "handleglobalkeydown()",
+      "source_file": "app/src/routes/+layout.svelte",
+      "source_location": "L185"
     },
     {
       "id": "app_src_lib_theming_palettes_test_contrast",
@@ -5258,18 +5186,6 @@
       "source_location": "L44"
     },
     {
-      "id": "app_src_lib_components_workspace_tabexists",
-      "label": "tabExists()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "tabexists()",
-      "source_file": "app/src/lib/components/Workspace.svelte",
-      "source_location": "L114"
-    },
-    {
       "id": "app_src_lib_stores_queryconsoles_activatequeryconsole",
       "label": "activateQueryConsole()",
       "_callable": true,
@@ -5292,42 +5208,6 @@
       "norm_label": "appendconsole()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
       "source_location": "L199"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_beginqueryexecution",
-      "label": "beginQueryExecution()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "beginqueryexecution()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L265"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_cancelqueryconfirmation",
-      "label": "cancelQueryConfirmation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "cancelqueryconfirmation()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L356"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_clearqueryresult",
-      "label": "clearQueryResult()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "clearqueryresult()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L328"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_closequeryconsole",
@@ -5388,30 +5268,6 @@
       "norm_label": "ensurequeryconsole()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
       "source_location": "L374"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_executionforconsole",
-      "label": "executionForConsole()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "executionforconsole()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L239"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_finishqueryexecution",
-      "label": "finishQueryExecution()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "finishqueryexecution()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L275"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_forgetexecutionstate",
@@ -5534,54 +5390,6 @@
       "source_location": "L534"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_requirequeryconfirmation",
-      "label": "requireQueryConfirmation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "requirequeryconfirmation()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L350"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_setquerycounting",
-      "label": "setQueryCounting()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "setquerycounting()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L338"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_setquerysort",
-      "label": "setQuerySort()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "setquerysort()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L334"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_setquerytotalrows",
-      "label": "setQueryTotalRows()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "setquerytotalrows()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L342"
-    },
-    {
       "id": "app_src_lib_stores_queryconsoles_settablefilters",
       "label": "setTableFilters()",
       "_callable": true,
@@ -5594,52 +5402,28 @@
       "source_location": "L458"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_stopqueryexecution",
-      "label": "stopQueryExecution()",
+      "id": "app_src_lib_stores_queryconsoles_test_creatememorystorage",
+      "label": "createMemoryStorage()",
       "_callable": true,
       "_origin": "ast",
       "community": 7,
       "community_name": "queryConsoles.ts",
       "file_type": "code",
-      "norm_label": "stopqueryexecution()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L318"
+      "norm_label": "creatememorystorage()",
+      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
+      "source_location": "L11"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_takequeryconfirmation",
-      "label": "takeQueryConfirmation()",
+      "id": "app_src_lib_stores_queryconsoles_test_freshqueryconsoles",
+      "label": "freshQueryConsoles()",
       "_callable": true,
       "_origin": "ast",
       "community": 7,
       "community_name": "queryConsoles.ts",
       "file_type": "code",
-      "norm_label": "takequeryconfirmation()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L363"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_updatequeryconsolesql",
-      "label": "updateQueryConsoleSql()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "updatequeryconsolesql()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L405"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_withexecution",
-      "label": "withExecution()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "withexecution()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L243"
+      "norm_label": "freshqueryconsoles()",
+      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
+      "source_location": "L32"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_withoutexecution",
@@ -5750,6 +5534,18 @@
       "source_location": "L1425"
     },
     {
+      "id": "app_src_lib_components_workspace_tabexists",
+      "label": "tabExists()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "tabexists()",
+      "source_file": "app/src/lib/components/Workspace.svelte",
+      "source_location": "L114"
+    },
+    {
       "id": "app_src_lib_components_workspace_var",
       "label": "var()",
       "_callable": true,
@@ -5760,6 +5556,18 @@
       "norm_label": "var()",
       "source_file": "app/src/lib/components/Workspace.svelte",
       "source_location": "L1879"
+    },
+    {
+      "id": "app_src_lib_explorertree_test_table",
+      "label": "table()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "table()",
+      "source_file": "app/src/lib/explorerTree.test.ts",
+      "source_location": "L5"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_isqueryconsoledirty",
@@ -5892,30 +5700,6 @@
       "norm_label": "unpinnedtabs()",
       "source_file": "app/src/lib/stores/pinnedResults.ts",
       "source_location": "L51"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_test_creatememorystorage",
-      "label": "createMemoryStorage()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 72,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "creatememorystorage()",
-      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
-      "source_location": "L11"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_test_freshqueryconsoles",
-      "label": "freshQueryConsoles()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 72,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "freshqueryconsoles()",
-      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
-      "source_location": "L32"
     },
     {
       "id": "app_src_lib_components_workspace_reorderresulttabs",
@@ -6086,64 +5870,88 @@
       "source_location": "L15"
     },
     {
-      "id": "app_src_lib_components_connectionlanding_corneractions",
-      "label": "cornerActions()",
+      "id": "app_src_lib_sqlfiles_picksqlfolder",
+      "label": "pickSqlFolder()",
       "_callable": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "corneractions()",
-      "source_file": "app/src/lib/components/ConnectionLanding.svelte",
-      "source_location": "L191"
+      "norm_label": "picksqlfolder()",
+      "source_file": "app/src/lib/sqlFiles.ts",
+      "source_location": "L76"
     },
     {
-      "id": "app_src_lib_components_connectionswitcher_indexof",
-      "label": "indexOf()",
+      "id": "app_src_lib_stores_sqlfolders_listrecord",
+      "label": "listRecord()",
       "_callable": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "indexof()",
-      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
-      "source_location": "L160"
+      "norm_label": "listrecord()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L34"
     },
     {
-      "id": "app_src_lib_components_connectionswitcher_t",
-      "label": "$t()",
+      "id": "app_src_lib_stores_sqlfolders_load",
+      "label": "load()",
       "_callable": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "$t()",
-      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
-      "source_location": "L186"
+      "norm_label": "load()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L44"
     },
     {
-      "id": "app_src_lib_connectioncolors_ispalettecolor",
-      "label": "isPaletteColor()",
+      "id": "app_src_lib_stores_sqlfolders_setsqlfolder",
+      "label": "setSqlFolder()",
       "_callable": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "ispalettecolor()",
-      "source_file": "app/src/lib/connectionColors.ts",
-      "source_location": "L23"
+      "norm_label": "setsqlfolder()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L76"
     },
     {
-      "id": "app_src_lib_connections_getdriver",
-      "label": "getDriver()",
+      "id": "app_src_lib_stores_sqlfolders_setsqlfolderexpanded",
+      "label": "setSqlFolderExpanded()",
       "_callable": true,
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "getdriver()",
-      "source_file": "app/src/lib/connections.ts",
-      "source_location": "L47"
+      "norm_label": "setsqlfolderexpanded()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L93"
+    },
+    {
+      "id": "app_src_lib_stores_sqlfolders_stringrecord",
+      "label": "stringRecord()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "sqlFolders.ts",
+      "file_type": "code",
+      "norm_label": "stringrecord()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L26"
+    },
+    {
+      "id": "app_src_routes_layout_handleopenfolder",
+      "label": "handleOpenFolder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 75,
+      "community_name": "sqlFolders.ts",
+      "file_type": "code",
+      "norm_label": "handleopenfolder()",
+      "source_file": "app/src/routes/+layout.svelte",
+      "source_location": "L115"
     },
     {
       "id": "app_src_lib_theming_codemirrortheme_buildcmtheme",
@@ -6170,16 +5978,28 @@
       "source_location": "L132"
     },
     {
-      "id": "app_src_lib_sqlfiles_picksqlfolder",
-      "label": "pickSqlFolder()",
+      "id": "app_src_lib_components_filetree_confirmtrash",
+      "label": "confirmTrash()",
       "_callable": true,
       "_origin": "ast",
       "community": 77,
       "community_name": "notifications.ts",
       "file_type": "code",
-      "norm_label": "picksqlfolder()",
+      "norm_label": "confirmtrash()",
+      "source_file": "app/src/lib/components/FileTree.svelte",
+      "source_location": "L151"
+    },
+    {
+      "id": "app_src_lib_sqlfiles_trashsqlfile",
+      "label": "trashSqlFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 77,
+      "community_name": "notifications.ts",
+      "file_type": "code",
+      "norm_label": "trashsqlfile()",
       "source_file": "app/src/lib/sqlFiles.ts",
-      "source_location": "L76"
+      "source_location": "L95"
     },
     {
       "id": "app_src_lib_stores_notifications_dismissnotice",
@@ -6230,28 +6050,16 @@
       "source_location": "L16"
     },
     {
-      "id": "app_src_lib_stores_sqlfolders_setsqlfolder",
-      "label": "setSqlFolder()",
+      "id": "app_src_lib_stores_queryconsoles_detachqueryconsolefile",
+      "label": "detachQueryConsoleFile()",
       "_callable": true,
       "_origin": "ast",
       "community": 77,
       "community_name": "notifications.ts",
       "file_type": "code",
-      "norm_label": "setsqlfolder()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L76"
-    },
-    {
-      "id": "app_src_routes_layout_handleopenfolder",
-      "label": "handleOpenFolder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 77,
-      "community_name": "notifications.ts",
-      "file_type": "code",
-      "norm_label": "handleopenfolder()",
-      "source_file": "app/src/routes/+layout.svelte",
-      "source_location": "L115"
+      "norm_label": "detachqueryconsolefile()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L498"
     },
     {
       "id": "app_src_lib_stores_executionlog_appendlog",
@@ -6259,7 +6067,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "appendlog()",
       "source_file": "app/src/lib/stores/executionLog.ts",
@@ -6271,11 +6079,167 @@
       "_callable": true,
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "forgetlog()",
       "source_file": "app/src/lib/stores/executionLog.ts",
       "source_location": "L35"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_beginqueryexecution",
+      "label": "beginQueryExecution()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "beginqueryexecution()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L265"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_cancelqueryconfirmation",
+      "label": "cancelQueryConfirmation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "cancelqueryconfirmation()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L356"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_clearqueryresult",
+      "label": "clearQueryResult()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "clearqueryresult()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L328"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_executionforconsole",
+      "label": "executionForConsole()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "executionforconsole()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L239"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_finishqueryexecution",
+      "label": "finishQueryExecution()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "finishqueryexecution()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L275"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_requirequeryconfirmation",
+      "label": "requireQueryConfirmation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "requirequeryconfirmation()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L350"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_setquerycounting",
+      "label": "setQueryCounting()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "setquerycounting()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L338"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_setquerysort",
+      "label": "setQuerySort()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "setquerysort()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L334"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_setquerytotalrows",
+      "label": "setQueryTotalRows()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "setquerytotalrows()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L342"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_stopqueryexecution",
+      "label": "stopQueryExecution()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "stopqueryexecution()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L318"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_takequeryconfirmation",
+      "label": "takeQueryConfirmation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "takequeryconfirmation()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L363"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_updatequeryconsolesql",
+      "label": "updateQueryConsoleSql()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "updatequeryconsolesql()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L405"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_withexecution",
+      "label": "withExecution()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 80,
+      "community_name": "withExecution",
+      "file_type": "code",
+      "norm_label": "withexecution()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L243"
     },
     {
       "id": "app_src_lib_components_results_datagrid_for",
@@ -6336,6 +6300,42 @@
       "norm_label": "main()",
       "source_file": "packaging/arch/add-to-manifest.py",
       "source_location": "L15"
+    },
+    {
+      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_constructor",
+      "label": ".constructor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "StatusGutterMarker",
+      "file_type": "code",
+      "norm_label": ".constructor()",
+      "source_file": "app/src/lib/sqlExecutionMarker.ts",
+      "source_location": "L58"
+    },
+    {
+      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_eq",
+      "label": ".eq()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "StatusGutterMarker",
+      "file_type": "code",
+      "norm_label": ".eq()",
+      "source_file": "app/src/lib/sqlExecutionMarker.ts",
+      "source_location": "L66"
+    },
+    {
+      "id": "app_src_lib_sqlexecutionmarker_statusguttermarker_todom",
+      "label": ".toDOM()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 83,
+      "community_name": "StatusGutterMarker",
+      "file_type": "code",
+      "norm_label": ".todom()",
+      "source_file": "app/src/lib/sqlExecutionMarker.ts",
+      "source_location": "L70"
     },
     {
       "id": "app_src_lib_theming_palettes_resolvescheme",
@@ -8590,6 +8590,17 @@
       "source_location": ""
     },
     {
+      "id": "instant",
+      "label": "Instant",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "mysql/src/lib.rs",
+      "file_type": "code",
+      "norm_label": "instant",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
       "id": "mysql",
       "label": "MySql",
       "_origin": "ast",
@@ -8610,17 +8621,6 @@
       "norm_label": "mysqlconnection",
       "source_file": "",
       "source_location": ""
-    },
-    {
-      "id": "animate",
-      "label": "svelte/animate",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "svelte/animate",
-      "source_file": "svelte/animate"
     },
     {
       "id": "elements",
@@ -8678,6 +8678,17 @@
       "source_location": "L1"
     },
     {
+      "id": "app_src_lib_components_connectionavatar",
+      "label": "ConnectionAvatar.svelte",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "connectionavatar.svelte",
+      "source_file": "app/src/lib/components/ConnectionAvatar.svelte",
+      "source_location": "L1"
+    },
+    {
       "id": "app_src_lib_components_connectionform",
       "label": "ConnectionForm.svelte",
       "_origin": "ast",
@@ -8697,6 +8708,17 @@
       "file_type": "code",
       "norm_label": "connectionlanding.svelte",
       "source_file": "app/src/lib/components/ConnectionLanding.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_connectionswitcher",
+      "label": "ConnectionSwitcher.svelte",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "connectionswitcher.svelte",
+      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
       "source_location": "L1"
     },
     {
@@ -8733,47 +8755,14 @@
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_components_results_findbar",
-      "label": "FindBar.svelte",
+      "id": "app_src_lib_components_grouppicker",
+      "label": "GroupPicker.svelte",
       "_origin": "ast",
       "community": 10,
       "community_name": "svelte",
       "file_type": "code",
-      "norm_label": "findbar.svelte",
-      "source_file": "app/src/lib/components/results/FindBar.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_components_results_outputlog",
-      "label": "OutputLog.svelte",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "outputlog.svelte",
-      "source_file": "app/src/lib/components/results/OutputLog.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_components_results_resultpane",
-      "label": "ResultPane.svelte",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "resultpane.svelte",
-      "source_file": "app/src/lib/components/results/ResultPane.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_components_results_toolbarbutton",
-      "label": "ToolbarButton.svelte",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "toolbarbutton.svelte",
-      "source_file": "app/src/lib/components/results/ToolbarButton.svelte",
+      "norm_label": "grouppicker.svelte",
+      "source_file": "app/src/lib/components/GroupPicker.svelte",
       "source_location": "L1"
     },
     {
@@ -8786,6 +8775,39 @@
       "norm_label": "rowlymark.svelte",
       "source_file": "app/src/lib/components/RowlyMark.svelte",
       "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_connectioncolors",
+      "label": "connectionColors.ts",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "connectioncolors.ts",
+      "source_file": "app/src/lib/connectionColors.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_connectioncolors_connection_colors",
+      "label": "CONNECTION_COLORS",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "connection_colors",
+      "source_file": "app/src/lib/connectionColors.ts",
+      "source_location": "L8"
+    },
+    {
+      "id": "app_src_lib_connectioncolors_neutral_identity_color",
+      "label": "NEUTRAL_IDENTITY_COLOR",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "neutral_identity_color",
+      "source_file": "app/src/lib/connectionColors.ts",
+      "source_location": "L21"
     },
     {
       "id": "app_src_lib_connections",
@@ -8819,17 +8841,6 @@
       "norm_label": "+page.svelte",
       "source_file": "app/src/routes/+page.svelte",
       "source_location": "L1"
-    },
-    {
-      "id": "ref_devicon",
-      "label": "devicon",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "file_type": "concept",
-      "norm_label": "devicon",
-      "source_file": "app/package.json",
-      "source_location": "L32"
     },
     {
       "id": "app_src_tauri_tauri_conf",
@@ -9204,17 +9215,6 @@
       "norm_label": "setlinkrange",
       "source_file": "app/src/lib/sqlDefinitionLink.ts",
       "source_location": "L16"
-    },
-    {
-      "id": "ref_codemirror_view",
-      "label": "@codemirror/view",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "sqlDefinitionLink.ts",
-      "file_type": "concept",
-      "norm_label": "@codemirror/view",
-      "source_file": "app/package.json",
-      "source_location": "L24"
     },
     {
       "id": "app_src_lib_credentials",
@@ -9688,6 +9688,17 @@
       "norm_label": "@codemirror/commands",
       "source_file": "app/package.json",
       "source_location": "L19"
+    },
+    {
+      "id": "ref_devicon",
+      "label": "devicon",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "package.json",
+      "file_type": "concept",
+      "norm_label": "devicon",
+      "source_file": "app/package.json",
+      "source_location": "L32"
     },
     {
       "id": "ref_lucide_svelte",
@@ -10973,17 +10984,6 @@
       "community_name": "drivers.rs",
       "file_type": "code",
       "norm_label": "c",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "instant",
-      "label": "Instant",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "drivers.rs",
-      "file_type": "code",
-      "norm_label": "instant",
       "source_file": "",
       "source_location": ""
     },
@@ -14654,17 +14654,6 @@
       "source_location": "L1"
     },
     {
-      "id": "tauri_apps_api_window_window",
-      "label": "@tauri-apps/api/window",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/api/window",
-      "source_file": "@tauri-apps/api/window"
-    },
-    {
       "id": "transition",
       "label": "svelte/transition",
       "_origin": "ast",
@@ -14685,61 +14674,6 @@
       "norm_label": "dialogmotion.ts",
       "source_file": "app/src/lib/dialogMotion.ts",
       "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts",
-      "label": "stores/shortcuts.ts",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "stores/shortcuts.ts",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_modifier_keys",
-      "label": "MODIFIER_KEYS",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "modifier_keys",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L144"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_shortcutdefinitions",
-      "label": "shortcutDefinitions",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "shortcutdefinitions",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L15"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_shortcutoverrides",
-      "label": "shortcutOverrides",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "shortcutoverrides",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L104"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_shortcuts",
-      "label": "shortcuts",
-      "_origin": "ast",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "file_type": "code",
-      "norm_label": "shortcuts",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L123"
     },
     {
       "id": "app_src_lib_stores_sidebarlayout",
@@ -14806,6 +14740,105 @@
       "norm_label": "sidebarlayout.test.ts",
       "source_file": "app/src/lib/stores/sidebarLayout.test.ts",
       "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_updates",
+      "label": "stores/updates.ts",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "stores/updates.ts",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_updates_checking",
+      "label": "checking",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "checking",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L85"
+    },
+    {
+      "id": "app_src_lib_stores_updates_default_prefs",
+      "label": "DEFAULT_PREFS",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "default_prefs",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L55"
+    },
+    {
+      "id": "app_src_lib_stores_updates_lastchecked",
+      "label": "lastChecked",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "lastchecked",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L86"
+    },
+    {
+      "id": "app_src_lib_stores_updates_newerrelease",
+      "label": "newerRelease",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "newerrelease",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L95"
+    },
+    {
+      "id": "app_src_lib_stores_updates_releases",
+      "label": "releases",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "releases",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L83"
+    },
+    {
+      "id": "app_src_lib_stores_updates_releaseserror",
+      "label": "releasesError",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "releaseserror",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L84"
+    },
+    {
+      "id": "app_src_lib_stores_updates_test",
+      "label": "updates.test.ts",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "updates.test.ts",
+      "source_file": "app/src/lib/stores/updates.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_updates_visiblereleases",
+      "label": "visibleReleases",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "visiblereleases",
+      "source_file": "app/src/lib/stores/updates.ts",
+      "source_location": "L90"
     },
     {
       "id": "app_src_routes_layout_svelte_app_src_routes_layout",
@@ -15439,7 +15472,7 @@
       "label": "explorador-base-de-datos.md",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "explorador-base-de-datos.md",
@@ -15451,7 +15484,7 @@
       "label": "Compatibilidad entre versiones",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "compatibilidad entre versiones",
@@ -15463,7 +15496,7 @@
       "label": "Contrato del driver",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "contrato del driver",
@@ -15475,7 +15508,7 @@
       "label": "Explorador de base de datos",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "explorador de base de datos",
@@ -15487,7 +15520,7 @@
       "label": "Flujo de datos",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "flujo de datos",
@@ -15499,7 +15532,7 @@
       "label": "Limitaciones conocidas",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "limitaciones conocidas",
@@ -15511,7 +15544,7 @@
       "label": "MySQL / MariaDB \u2014 `information_schema`",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "mysql / mariadb \u2014 `information_schema`",
@@ -15523,7 +15556,7 @@
       "label": "PostgreSQL \u2014 `pg_catalog`",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "postgresql \u2014 `pg_catalog`",
@@ -15535,7 +15568,7 @@
       "label": "Pr\u00f3ximos pasos",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "proximos pasos",
@@ -15547,7 +15580,7 @@
       "label": "SSL/TLS por conexi\u00f3n",
       "_origin": "ast",
       "community": 48,
-      "community_name": "TlsMode",
+      "community_name": "Explorador de base de datos",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "ssl/tls por conexion",
@@ -16033,61 +16066,6 @@
       "norm_label": "editvalue",
       "source_file": "app/src/lib/components/FileTree.svelte",
       "source_location": "L91"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders",
-      "label": "sqlFolders.ts",
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "sqlfolders.ts",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_default_file_panel_height",
-      "label": "DEFAULT_FILE_PANEL_HEIGHT",
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "default_file_panel_height",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L16"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_empty",
-      "label": "EMPTY",
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "empty",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L19"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_min_file_panel_height",
-      "label": "MIN_FILE_PANEL_HEIGHT",
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "min_file_panel_height",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L17"
-    },
-    {
-      "id": "app_src_lib_stores_sqlfolders_sqlfolders",
-      "label": "sqlFolders",
-      "_origin": "ast",
-      "community": 53,
-      "community_name": "FileTree.svelte",
-      "file_type": "code",
-      "norm_label": "sqlfolders",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L64"
     },
     {
       "id": "app_src_tauri_src_result_editing",
@@ -17553,17 +17531,6 @@
       "source_file": "@tauri-apps/plugin-dialog"
     },
     {
-      "id": "tauri_apps_api_path_path",
-      "label": "@tauri-apps/api/path",
-      "_origin": "ast",
-      "community": 58,
-      "community_name": "vitest",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/api/path",
-      "source_file": "@tauri-apps/api/path"
-    },
-    {
       "id": "app_src_lib_components_results_changespreview",
       "label": "ChangesPreview.svelte",
       "_origin": "ast",
@@ -17694,17 +17661,6 @@
       "file_type": "code",
       "norm_label": "@tauri-apps/plugin-opener",
       "source_file": "@tauri-apps/plugin-opener"
-    },
-    {
-      "id": "app_src_lib_components_grouppicker",
-      "label": "GroupPicker.svelte",
-      "_origin": "ast",
-      "community": 59,
-      "community_name": "SettingsPanel.svelte",
-      "file_type": "code",
-      "norm_label": "grouppicker.svelte",
-      "source_file": "app/src/lib/components/GroupPicker.svelte",
-      "source_location": "L1"
     },
     {
       "id": "app_src_lib_components_settingspanel",
@@ -18499,103 +18455,70 @@
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_updates",
-      "label": "stores/updates.ts",
+      "id": "app_src_lib_stores_shortcuts",
+      "label": "stores/shortcuts.ts",
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "stores/updates.ts",
-      "source_file": "app/src/lib/stores/updates.ts",
+      "norm_label": "stores/shortcuts.ts",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_updates_checking",
-      "label": "checking",
+      "id": "app_src_lib_stores_shortcuts_modifier_keys",
+      "label": "MODIFIER_KEYS",
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "checking",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L85"
+      "norm_label": "modifier_keys",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L144"
     },
     {
-      "id": "app_src_lib_stores_updates_default_prefs",
-      "label": "DEFAULT_PREFS",
+      "id": "app_src_lib_stores_shortcuts_shortcutdefinitions",
+      "label": "shortcutDefinitions",
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "default_prefs",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L55"
+      "norm_label": "shortcutdefinitions",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L15"
     },
     {
-      "id": "app_src_lib_stores_updates_lastchecked",
-      "label": "lastChecked",
+      "id": "app_src_lib_stores_shortcuts_shortcutoverrides",
+      "label": "shortcutOverrides",
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "lastchecked",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L86"
+      "norm_label": "shortcutoverrides",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L104"
     },
     {
-      "id": "app_src_lib_stores_updates_newerrelease",
-      "label": "newerRelease",
+      "id": "app_src_lib_stores_shortcuts_shortcuts",
+      "label": "shortcuts",
       "_origin": "ast",
       "community": 63,
-      "community_name": "stores/updates.ts",
+      "community_name": "stores/shortcuts.ts",
       "file_type": "code",
-      "norm_label": "newerrelease",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L95"
+      "norm_label": "shortcuts",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L123"
     },
     {
-      "id": "app_src_lib_stores_updates_releases",
-      "label": "releases",
+      "id": "app_src_lib_theming_palettes_palettes",
+      "label": "palettes",
       "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
+      "community": 64,
+      "community_name": "palettes.test.ts",
       "file_type": "code",
-      "norm_label": "releases",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L83"
-    },
-    {
-      "id": "app_src_lib_stores_updates_releaseserror",
-      "label": "releasesError",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "releaseserror",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L84"
-    },
-    {
-      "id": "app_src_lib_stores_updates_test",
-      "label": "updates.test.ts",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "updates.test.ts",
-      "source_file": "app/src/lib/stores/updates.test.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_updates_visiblereleases",
-      "label": "visibleReleases",
-      "_origin": "ast",
-      "community": 63,
-      "community_name": "stores/updates.ts",
-      "file_type": "code",
-      "norm_label": "visiblereleases",
-      "source_file": "app/src/lib/stores/updates.ts",
-      "source_location": "L90"
+      "norm_label": "palettes",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L123"
     },
     {
       "id": "app_src_lib_theming_palettes_test",
@@ -18697,114 +18620,15 @@
       "source_location": "L8"
     },
     {
-      "id": "autocomplete",
-      "label": "@codemirror/autocomplete",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/autocomplete",
-      "source_file": "@codemirror/autocomplete"
-    },
-    {
-      "id": "codemirror",
-      "label": "codemirror",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "codemirror",
-      "source_file": "codemirror"
-    },
-    {
       "id": "codemirror_state_state",
       "label": "@codemirror/state",
       "_origin": "ast",
       "community": 66,
-      "community_name": "SqlEditor.svelte",
+      "community_name": "@codemirror/state",
       "confidence": "EXTRACTED",
       "file_type": "code",
       "norm_label": "@codemirror/state",
       "source_file": "@codemirror/state"
-    },
-    {
-      "id": "commands",
-      "label": "@codemirror/commands",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/commands",
-      "source_file": "@codemirror/commands"
-    },
-    {
-      "id": "lang_sql",
-      "label": "@codemirror/lang-sql",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/lang-sql",
-      "source_file": "@codemirror/lang-sql"
-    },
-    {
-      "id": "language",
-      "label": "@codemirror/language",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/language",
-      "source_file": "@codemirror/language"
-    },
-    {
-      "id": "store",
-      "label": "svelte/store",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "svelte/store",
-      "source_file": "svelte/store"
-    },
-    {
-      "id": "view",
-      "label": "@codemirror/view",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/view",
-      "source_file": "@codemirror/view"
-    },
-    {
-      "id": "app_src_lib_components_tabledefinitionmodal",
-      "label": "TableDefinitionModal.svelte",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "file_type": "code",
-      "norm_label": "tabledefinitionmodal.svelte",
-      "source_file": "app/src/lib/components/TableDefinitionModal.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_sqleditor",
-      "label": "SqlEditor.svelte",
-      "_origin": "ast",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "file_type": "code",
-      "norm_label": "sqleditor.svelte",
-      "source_file": "app/src/lib/SqlEditor.svelte",
-      "source_location": "L1"
     },
     {
       "id": "app_src_lib_stores_editorsettings",
@@ -18928,6 +18752,94 @@
       "source_location": "L87"
     },
     {
+      "id": "app_src_lib_stores_queryconsoles_test",
+      "label": "queryConsoles.test.ts",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "queryConsoles.ts",
+      "file_type": "code",
+      "norm_label": "queryconsoles.test.ts",
+      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "autocomplete",
+      "label": "@codemirror/autocomplete",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/autocomplete",
+      "source_file": "@codemirror/autocomplete"
+    },
+    {
+      "id": "codemirror",
+      "label": "codemirror",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "codemirror",
+      "source_file": "codemirror"
+    },
+    {
+      "id": "commands",
+      "label": "@codemirror/commands",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/commands",
+      "source_file": "@codemirror/commands"
+    },
+    {
+      "id": "lang_sql",
+      "label": "@codemirror/lang-sql",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/lang-sql",
+      "source_file": "@codemirror/lang-sql"
+    },
+    {
+      "id": "language",
+      "label": "@codemirror/language",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/language",
+      "source_file": "@codemirror/language"
+    },
+    {
+      "id": "store",
+      "label": "svelte/store",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "svelte/store",
+      "source_file": "svelte/store"
+    },
+    {
+      "id": "view",
+      "label": "@codemirror/view",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/view",
+      "source_file": "@codemirror/view"
+    },
+    {
       "id": "app_src_lib_components_contextmenu",
       "label": "ContextMenu.svelte",
       "_origin": "ast",
@@ -18961,6 +18873,17 @@
       "source_location": "L1"
     },
     {
+      "id": "app_src_lib_components_tabledefinitionmodal",
+      "label": "TableDefinitionModal.svelte",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "tabledefinitionmodal.svelte",
+      "source_file": "app/src/lib/components/TableDefinitionModal.svelte",
+      "source_location": "L1"
+    },
+    {
       "id": "app_src_lib_components_workspace",
       "label": "Workspace.svelte",
       "_origin": "ast",
@@ -18980,6 +18903,17 @@
       "file_type": "code",
       "norm_label": "contextmenu.ts",
       "source_file": "app/src/lib/contextMenu.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_sqleditor",
+      "label": "SqlEditor.svelte",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "sqleditor.svelte",
+      "source_file": "app/src/lib/SqlEditor.svelte",
       "source_location": "L1"
     },
     {
@@ -19038,6 +18972,17 @@
       "source_location": "L21"
     },
     {
+      "id": "ref_codemirror_view",
+      "label": "@codemirror/view",
+      "_origin": "ast",
+      "community": 71,
+      "community_name": "sqlEditorBehavior.ts",
+      "file_type": "concept",
+      "norm_label": "@codemirror/view",
+      "source_file": "app/package.json",
+      "source_location": "L24"
+    },
+    {
       "id": "app_src_lib_stores_pinnedresults",
       "label": "pinnedResults.ts",
       "_origin": "ast",
@@ -19068,17 +19013,6 @@
       "file_type": "code",
       "norm_label": "pinnedresults.test.ts",
       "source_file": "app/src/lib/stores/pinnedResults.test.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_test",
-      "label": "queryConsoles.test.ts",
-      "_origin": "ast",
-      "community": 72,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "queryconsoles.test.ts",
-      "source_file": "app/src/lib/stores/queryConsoles.test.ts",
       "source_location": "L1"
     },
     {
@@ -19137,59 +19071,59 @@
       "source_location": "L13"
     },
     {
-      "id": "app_src_lib_components_connectionavatar",
-      "label": "ConnectionAvatar.svelte",
+      "id": "app_src_lib_stores_sqlfolders",
+      "label": "sqlFolders.ts",
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "connectionavatar.svelte",
-      "source_file": "app/src/lib/components/ConnectionAvatar.svelte",
+      "norm_label": "sqlfolders.ts",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_components_connectionswitcher",
-      "label": "ConnectionSwitcher.svelte",
+      "id": "app_src_lib_stores_sqlfolders_default_file_panel_height",
+      "label": "DEFAULT_FILE_PANEL_HEIGHT",
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "connectionswitcher.svelte",
-      "source_file": "app/src/lib/components/ConnectionSwitcher.svelte",
-      "source_location": "L1"
+      "norm_label": "default_file_panel_height",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L16"
     },
     {
-      "id": "app_src_lib_connectioncolors",
-      "label": "connectionColors.ts",
+      "id": "app_src_lib_stores_sqlfolders_empty",
+      "label": "EMPTY",
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "connectioncolors.ts",
-      "source_file": "app/src/lib/connectionColors.ts",
-      "source_location": "L1"
+      "norm_label": "empty",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L19"
     },
     {
-      "id": "app_src_lib_connectioncolors_connection_colors",
-      "label": "CONNECTION_COLORS",
+      "id": "app_src_lib_stores_sqlfolders_min_file_panel_height",
+      "label": "MIN_FILE_PANEL_HEIGHT",
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "connection_colors",
-      "source_file": "app/src/lib/connectionColors.ts",
-      "source_location": "L8"
+      "norm_label": "min_file_panel_height",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L17"
     },
     {
-      "id": "app_src_lib_connectioncolors_neutral_identity_color",
-      "label": "NEUTRAL_IDENTITY_COLOR",
+      "id": "app_src_lib_stores_sqlfolders_sqlfolders",
+      "label": "sqlFolders",
       "_origin": "ast",
       "community": 75,
-      "community_name": "ConnectionSwitcher.svelte",
+      "community_name": "sqlFolders.ts",
       "file_type": "code",
-      "norm_label": "neutral_identity_color",
-      "source_file": "app/src/lib/connectionColors.ts",
-      "source_location": "L21"
+      "norm_label": "sqlfolders",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L64"
     },
     {
       "id": "app_src_lib_theming_codemirrortheme",
@@ -19291,11 +19225,66 @@
       "source_location": "L1"
     },
     {
+      "id": "animate",
+      "label": "svelte/animate",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "ResultPane.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "svelte/animate",
+      "source_file": "svelte/animate"
+    },
+    {
+      "id": "app_src_lib_components_results_findbar",
+      "label": "FindBar.svelte",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "findbar.svelte",
+      "source_file": "app/src/lib/components/results/FindBar.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_results_outputlog",
+      "label": "OutputLog.svelte",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "outputlog.svelte",
+      "source_file": "app/src/lib/components/results/OutputLog.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_results_resultpane",
+      "label": "ResultPane.svelte",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "resultpane.svelte",
+      "source_file": "app/src/lib/components/results/ResultPane.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_results_toolbarbutton",
+      "label": "ToolbarButton.svelte",
+      "_origin": "ast",
+      "community": 78,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "toolbarbutton.svelte",
+      "source_file": "app/src/lib/components/results/ToolbarButton.svelte",
+      "source_location": "L1"
+    },
+    {
       "id": "app_src_lib_stores_executionlog",
       "label": "executionLog.ts",
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "executionlog.ts",
       "source_file": "app/src/lib/stores/executionLog.ts",
@@ -19306,7 +19295,7 @@
       "label": "executionLog",
       "_origin": "ast",
       "community": 78,
-      "community_name": "executionLog.ts",
+      "community_name": "ResultPane.svelte",
       "file_type": "code",
       "norm_label": "executionlog",
       "source_file": "app/src/lib/stores/executionLog.ts",
@@ -19401,6 +19390,28 @@
       "source_location": "L2"
     },
     {
+      "id": "tauri_apps_api_path_path",
+      "label": "@tauri-apps/api/path",
+      "_origin": "ast",
+      "community": 84,
+      "community_name": "@tauri-apps/api/path",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/api/path",
+      "source_file": "@tauri-apps/api/path"
+    },
+    {
+      "id": "tauri_apps_api_window_window",
+      "label": "@tauri-apps/api/window",
+      "_origin": "ast",
+      "community": 85,
+      "community_name": "@tauri-apps/api/window",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/api/window",
+      "source_file": "@tauri-apps/api/window"
+    },
+    {
       "id": "app_src_lib_theming_palettes",
       "label": "palettes.ts",
       "_origin": "ast",
@@ -19410,17 +19421,6 @@
       "norm_label": "palettes.ts",
       "source_file": "app/src/lib/theming/palettes.ts",
       "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_theming_palettes_palettes",
-      "label": "palettes",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "theme.ts",
-      "file_type": "code",
-      "norm_label": "palettes",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L123"
     },
     {
       "id": "app_src_lib_theming_palettes_theme_families",
@@ -20178,6 +20178,30 @@
       "source_url": null
     },
     {
+      "id": "async_trait",
+      "label": "async_trait",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "mysql/src/lib.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "async_trait",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "trystreamext",
+      "label": "trystreamext",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "mysql/src/lib.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "trystreamext",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "svelte",
       "label": "svelte",
       "_origin": "semantic",
@@ -20286,18 +20310,6 @@
       "type": "external"
     },
     {
-      "id": "serde",
-      "label": "serde",
-      "_origin": "semantic",
-      "community": 23,
-      "community_name": "drivers.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "serde",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "rawstatement",
       "label": "rawstatement",
       "_origin": "semantic",
@@ -20330,18 +20342,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "keyring",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "trystreamext",
-      "label": "trystreamext",
-      "_origin": "semantic",
-      "community": 3,
-      "community_name": "postgres/src/lib.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "trystreamext",
       "source_file": "",
       "type": "external"
     },
@@ -20466,6 +20466,18 @@
       "type": "external"
     },
     {
+      "id": "serde",
+      "label": "serde",
+      "_origin": "semantic",
+      "community": 55,
+      "community_name": "updates.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "serde",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "tauri",
       "label": "tauri",
       "_origin": "semantic",
@@ -20486,18 +20498,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "updaterext",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "async_trait",
-      "label": "async_trait",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "driver-core/src/lib.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "async_trait",
       "source_file": "",
       "type": "external"
     },
@@ -20526,11 +20526,23 @@
       "type": "external"
     },
     {
+      "id": "ref_app",
+      "label": "ref_app",
+      "_origin": "semantic",
+      "community": 69,
+      "community_name": "ref_app",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_app",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "app_src_lib_sqleditoricons",
       "label": "app_src_lib_sqleditoricons",
       "_origin": "semantic",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
+      "community": 70,
+      "community_name": "Workspace.svelte",
       "external": true,
       "file_type": "concept",
       "norm_label": "app_src_lib_sqleditoricons",
@@ -20541,23 +20553,11 @@
       "id": "app_src_lib_styles_editorsearch",
       "label": "app_src_lib_styles_editorsearch",
       "_origin": "semantic",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
+      "community": 70,
+      "community_name": "Workspace.svelte",
       "external": true,
       "file_type": "concept",
       "norm_label": "app_src_lib_styles_editorsearch",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_app",
-      "label": "ref_app",
-      "_origin": "semantic",
-      "community": 69,
-      "community_name": "ref_app",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_app",
       "source_file": "",
       "type": "external"
     },
@@ -20582,6 +20582,39 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "sys",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "window",
+      "label": "window",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "window",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "path",
+      "label": "path",
+      "community": 58,
+      "community_name": "vitest",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "path",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "state",
+      "label": "state",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "state",
       "source_file": "",
       "type": "external"
     }
@@ -20932,7 +20965,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L339",
+      "source_location": "L338",
       "weight": 1.0
     },
     {
@@ -39592,7 +39625,7 @@
     },
     {
       "source": "app_src_tauri_src_sql_files",
-      "target": "tauri_apps_api_path_path",
+      "target": "path",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -46862,7 +46895,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L338",
+      "source_location": "L337",
       "weight": 1.0
     },
     {
@@ -46873,7 +46906,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L814",
+      "source_location": "L813",
       "weight": 1.0
     },
     {
@@ -59039,6 +59072,15 @@
     },
     {
       "source": "app_src_lib_components_results_exportdialog",
+      "target": "path",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/components/results/ExportDialog.svelte"
+    },
+    {
+      "source": "app_src_lib_components_results_exportdialog",
       "target": "plugin_dialog",
       "relation": "imports_from",
       "_origin": "ast",
@@ -59049,15 +59091,6 @@
     {
       "source": "app_src_lib_components_results_exportdialog",
       "target": "svelte",
-      "relation": "imports_from",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/components/results/ExportDialog.svelte"
-    },
-    {
-      "source": "app_src_lib_components_results_exportdialog",
-      "target": "tauri_apps_api_path_path",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -59516,7 +59549,7 @@
     },
     {
       "source": "app_src_lib_components_tabledefinitionmodal",
-      "target": "codemirror_state_state",
+      "target": "lang_sql",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -59525,7 +59558,7 @@
     },
     {
       "source": "app_src_lib_components_tabledefinitionmodal",
-      "target": "lang_sql",
+      "target": "state",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -60083,15 +60116,6 @@
     },
     {
       "source": "app_src_lib_sqleditor",
-      "target": "codemirror_state_state",
-      "relation": "imports_from",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/SqlEditor.svelte"
-    },
-    {
-      "source": "app_src_lib_sqleditor",
       "target": "commands",
       "relation": "imports_from",
       "_origin": "ast",
@@ -60111,6 +60135,15 @@
     {
       "source": "app_src_lib_sqleditor",
       "target": "language",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/SqlEditor.svelte"
+    },
+    {
+      "source": "app_src_lib_sqleditor",
+      "target": "state",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -60308,7 +60341,7 @@
     },
     {
       "source": "app_src_routes_layout_svelte_app_src_routes_layout",
-      "target": "tauri_apps_api_window_window",
+      "target": "transition",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -60317,7 +60350,7 @@
     },
     {
       "source": "app_src_routes_layout_svelte_app_src_routes_layout",
-      "target": "transition",
+      "target": "window",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -61796,7 +61829,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "app/src/lib/components/SettingsPanel.svelte",
-      "source_location": "L295",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -63152,5 +63185,5 @@
       "source_file": "docs/design/tableplus-ux-arquitectura.md"
     }
   ],
-  "built_at_commit": "49fbbc4cd447b2bfaa7ac156f65004ff4facec9e"
+  "built_at_commit": "937f356543dc9189956fa6ee117eab58352fe721"
 }

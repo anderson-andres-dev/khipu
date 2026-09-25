@@ -100,7 +100,7 @@
     </p>
   {/if}
 
-  {#if $updateContext && !$updateContext.canInstall}
+  {#if $updateContext && !$updateContext.canInstall && $releases?.length}
     <p class="notice">{$t("updates.sourceNotice")}</p>
   {/if}
 
@@ -231,7 +231,6 @@
     <div class="setting-row">
       <div class="setting-text">
         <span class="setting-label">{$t("updates.autoCheck")}</span>
-        <span>{$t("updates.autoCheck.description")}</span>
       </div>
       <button
         class="switch"
@@ -248,7 +247,6 @@
     <div class="setting-row">
       <div class="setting-text">
         <span class="setting-label">{$t("updates.prereleases")}</span>
-        <span>{$t("updates.prereleases.description")}</span>
       </div>
       <button
         class="switch"
@@ -582,11 +580,6 @@
   .setting-label {
     font-size: 0.8125rem;
     font-weight: 600;
-  }
-
-  .setting-text span:not(.setting-label) {
-    color: var(--text-secondary);
-    font-size: 0.75rem;
   }
 
   .switch {
