@@ -137,19 +137,6 @@
       "source_location": "L16"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_queryconsole",
-      "label": "QueryConsole",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "queryconsole",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L8"
-    },
-    {
       "id": "app_src_lib_sqldefinitionlink_catalogtableref",
       "label": "CatalogTableRef",
       "_callable": true,
@@ -228,6 +215,32 @@
       "source_location": "L4"
     },
     {
+      "id": "app_src_lib_stores_queryconsoles_pendingqueryconfirmation",
+      "label": "PendingQueryConfirmation",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "types.ts",
+      "file_type": "code",
+      "norm_label": "pendingqueryconfirmation",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L35"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_queryexecutionstate",
+      "label": "QueryExecutionState",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "types.ts",
+      "file_type": "code",
+      "norm_label": "queryexecutionstate",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L45"
+    },
+    {
       "id": "app_src_lib_types_catalogcolumn",
       "label": "CatalogColumn",
       "_callable": true,
@@ -252,6 +265,19 @@
       "norm_label": "columncataloginfo",
       "source_file": "app/src/lib/types.ts",
       "source_location": "L13"
+    },
+    {
+      "id": "app_src_lib_types_destructivestatement",
+      "label": "DestructiveStatement",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "types.ts",
+      "file_type": "code",
+      "norm_label": "destructivestatement",
+      "source_file": "app/src/lib/types.ts",
+      "source_location": "L183"
     },
     {
       "id": "app_src_lib_types_executequeryresponse",
@@ -397,6 +423,19 @@
       "source_location": "L149"
     },
     {
+      "id": "app_src_lib_types_queryexecutionresult",
+      "label": "QueryExecutionResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "types.ts",
+      "file_type": "code",
+      "norm_label": "queryexecutionresult",
+      "source_file": "app/src/lib/types.ts",
+      "source_location": "L162"
+    },
+    {
       "id": "app_src_lib_types_queryvalue",
       "label": "QueryValue",
       "_callable": true,
@@ -421,6 +460,19 @@
       "norm_label": "relationkind",
       "source_file": "app/src/lib/types.ts",
       "source_location": "L38"
+    },
+    {
+      "id": "app_src_lib_types_resultpage",
+      "label": "ResultPage",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "types.ts",
+      "file_type": "code",
+      "norm_label": "resultpage",
+      "source_file": "app/src/lib/types.ts",
+      "source_location": "L195"
     },
     {
       "id": "app_src_lib_types_sortkey",
@@ -462,19 +514,6 @@
       "source_location": "L3"
     },
     {
-      "id": "app_src_lib_stores_connection_connectionconfig",
-      "label": "ConnectionConfig",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "connectionProfiles.ts",
-      "file_type": "code",
-      "norm_label": "connectionconfig",
-      "source_file": "app/src/lib/stores/connection.ts",
-      "source_location": "L89"
-    },
-    {
       "id": "app_src_lib_stores_connectionprofiles_connectionprofile",
       "label": "ConnectionProfile",
       "_callable": true,
@@ -486,19 +525,6 @@
       "norm_label": "connectionprofile",
       "source_file": "app/src/lib/stores/connectionProfiles.ts",
       "source_location": "L9"
-    },
-    {
-      "id": "app_src_lib_types_tlsmode",
-      "label": "TlsMode",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "connectionProfiles.ts",
-      "file_type": "code",
-      "norm_label": "tlsmode",
-      "source_file": "app/src/lib/types.ts",
-      "source_location": "L122"
     },
     {
       "id": "app_src_lib_resultediting_pendingedits",
@@ -566,19 +592,6 @@
       "source_location": "L17"
     },
     {
-      "id": "app_src_lib_i18n_define_otherlocale",
-      "label": "OtherLocale",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "otherlocale",
-      "source_file": "app/src/lib/i18n/define.ts",
-      "source_location": "L3"
-    },
-    {
       "id": "app_src_lib_i18n_index_messageparams",
       "label": "MessageParams",
       "_callable": true,
@@ -616,19 +629,6 @@
       "norm_label": "localepreference",
       "source_file": "app/src/lib/i18n/locales.ts",
       "source_location": "L3"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_index_namespaces",
-      "label": "Namespaces",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "namespaces",
-      "source_file": "app/src/lib/i18n/messages/index.ts",
-      "source_location": "L26"
     },
     {
       "id": "app_src_lib_sqlcontext_clausekind",
@@ -707,6 +707,32 @@
       "norm_label": "tokenkind",
       "source_file": "app/src/lib/sqlContext.ts",
       "source_location": "L53"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_resolvedshortcut",
+      "label": "ResolvedShortcut",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "resolvedshortcut",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L116"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_shortcutdefinition",
+      "label": "ShortcutDefinition",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "shortcutdefinition",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L10"
     },
     {
       "id": "app_src_lib_editorsearchpanel_newlinemarker",
@@ -1060,58 +1086,6 @@
       "source_location": "L247"
     },
     {
-      "id": "app_src_lib_theming_palettes_colorscheme",
-      "label": "ColorScheme",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "codemirrorTheme.ts",
-      "file_type": "code",
-      "norm_label": "colorscheme",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L77"
-    },
-    {
-      "id": "app_src_lib_theming_palettes_editorpalette",
-      "label": "EditorPalette",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "codemirrorTheme.ts",
-      "file_type": "code",
-      "norm_label": "editorpalette",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L41"
-    },
-    {
-      "id": "app_src_lib_theming_palettes_shellpalette",
-      "label": "ShellPalette",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "codemirrorTheme.ts",
-      "file_type": "code",
-      "norm_label": "shellpalette",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_theming_palettes_themevariants",
-      "label": "ThemeVariants",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "codemirrorTheme.ts",
-      "file_type": "code",
-      "norm_label": "themevariants",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L81"
-    },
-    {
       "id": "app_src_lib_types_catalogtable",
       "label": "CatalogTable",
       "_callable": true,
@@ -1281,30 +1255,56 @@
       "source_location": "L9"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_resolvedshortcut",
-      "label": "ResolvedShortcut",
+      "id": "app_src_lib_i18n_define_otherlocale",
+      "label": "OtherLocale",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "resolvedshortcut",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L116"
+      "norm_label": "otherlocale",
+      "source_file": "app/src/lib/i18n/define.ts",
+      "source_location": "L3"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_shortcutdefinition",
-      "label": "ShortcutDefinition",
+      "id": "app_src_lib_i18n_messages_index_namespaces",
+      "label": "Namespaces",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "shortcutdefinition",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L10"
+      "norm_label": "namespaces",
+      "source_file": "app/src/lib/i18n/messages/index.ts",
+      "source_location": "L26"
+    },
+    {
+      "id": "app_src_lib_stores_connection_connectionconfig",
+      "label": "ConnectionConfig",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 64,
+      "community_name": "TlsMode",
+      "file_type": "code",
+      "norm_label": "connectionconfig",
+      "source_file": "app/src/lib/stores/connection.ts",
+      "source_location": "L89"
+    },
+    {
+      "id": "app_src_lib_types_tlsmode",
+      "label": "TlsMode",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 64,
+      "community_name": "TlsMode",
+      "file_type": "code",
+      "norm_label": "tlsmode",
+      "source_file": "app/src/lib/types.ts",
+      "source_location": "L122"
     },
     {
       "id": "app_src_lib_types_tlsstatus",
@@ -1313,7 +1313,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "code",
       "norm_label": "tlsstatus",
       "source_file": "app/src/lib/types.ts",
@@ -1333,17 +1333,17 @@
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_pendingqueryconfirmation",
-      "label": "PendingQueryConfirmation",
+      "id": "app_src_lib_stores_queryconsoles_queryconsole",
+      "label": "QueryConsole",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 7,
       "community_name": "queryConsoles.ts",
       "file_type": "code",
-      "norm_label": "pendingqueryconfirmation",
+      "norm_label": "queryconsole",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L35"
+      "source_location": "L8"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_queryconsolestate",
@@ -1359,19 +1359,6 @@
       "source_location": "L80"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_queryexecutionstate",
-      "label": "QueryExecutionState",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "queryexecutionstate",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L45"
-    },
-    {
       "id": "app_src_lib_stores_queryconsoles_tabletab",
       "label": "TableTab",
       "_callable": true,
@@ -1385,45 +1372,6 @@
       "source_location": "L28"
     },
     {
-      "id": "app_src_lib_types_destructivestatement",
-      "label": "DestructiveStatement",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "destructivestatement",
-      "source_file": "app/src/lib/types.ts",
-      "source_location": "L183"
-    },
-    {
-      "id": "app_src_lib_types_queryexecutionresult",
-      "label": "QueryExecutionResult",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "queryexecutionresult",
-      "source_file": "app/src/lib/types.ts",
-      "source_location": "L162"
-    },
-    {
-      "id": "app_src_lib_types_resultpage",
-      "label": "ResultPage",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "queryConsoles.ts",
-      "file_type": "code",
-      "norm_label": "resultpage",
-      "source_file": "app/src/lib/types.ts",
-      "source_location": "L195"
-    },
-    {
       "id": "app_src_lib_sqleditorbehavior_uppercasekeywordedit",
       "label": "uppercaseKeywordEdit",
       "_callable": true,
@@ -1435,6 +1383,45 @@
       "norm_label": "uppercasekeywordedit",
       "source_file": "app/src/lib/sqlEditorBehavior.ts",
       "source_location": "L15"
+    },
+    {
+      "id": "app_src_lib_gridclipboard_copyformat",
+      "label": "CopyFormat",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "copyformat",
+      "source_file": "app/src/lib/gridClipboard.ts",
+      "source_location": "L16"
+    },
+    {
+      "id": "app_src_lib_stores_copyformat_copysettings",
+      "label": "copySettings",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "copysettings",
+      "source_file": "app/src/lib/stores/copyFormat.ts",
+      "source_location": "L28"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_editorsettings",
+      "label": "editorSettings",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "editorsettings",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L41"
     },
     {
       "id": "app_src_lib_stores_pinnedresults_pinnedtab",
@@ -1463,19 +1450,6 @@
       "source_location": "L21"
     },
     {
-      "id": "app_src_lib_stores_editorsettings_editorsettings",
-      "label": "editorSettings",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "editorsettings",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L41"
-    },
-    {
       "id": "app_src_lib_sqlexecutionmarker_statusguttermarker",
       "label": "StatusGutterMarker",
       "_callable": true,
@@ -1502,30 +1476,43 @@
       "source_location": "L11"
     },
     {
-      "id": "app_src_lib_gridclipboard_copyformat",
-      "label": "CopyFormat",
+      "id": "app_src_lib_theming_palettes_colorscheme",
+      "label": "ColorScheme",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
+      "community": 9,
+      "community_name": "theme.ts",
       "file_type": "code",
-      "norm_label": "copyformat",
-      "source_file": "app/src/lib/gridClipboard.ts",
-      "source_location": "L16"
+      "norm_label": "colorscheme",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L81"
     },
     {
-      "id": "app_src_lib_stores_copyformat_copysettings",
-      "label": "copySettings",
+      "id": "app_src_lib_theming_palettes_editorpalette",
+      "label": "EditorPalette",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
+      "community": 9,
+      "community_name": "theme.ts",
       "file_type": "code",
-      "norm_label": "copysettings",
-      "source_file": "app/src/lib/stores/copyFormat.ts",
-      "source_location": "L28"
+      "norm_label": "editorpalette",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L41"
+    },
+    {
+      "id": "app_src_lib_theming_palettes_shellpalette",
+      "label": "ShellPalette",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "theme.ts",
+      "file_type": "code",
+      "norm_label": "shellpalette",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L1"
     },
     {
       "id": "app_src_lib_theming_palettes_themefamily",
@@ -1538,7 +1525,7 @@
       "file_type": "code",
       "norm_label": "themefamily",
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L76"
+      "source_location": "L80"
     },
     {
       "id": "app_src_lib_theming_palettes_themevariant",
@@ -1551,7 +1538,20 @@
       "file_type": "code",
       "norm_label": "themevariant",
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L102"
+      "source_location": "L106"
+    },
+    {
+      "id": "app_src_lib_theming_palettes_themevariants",
+      "label": "ThemeVariants",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "theme.ts",
+      "file_type": "code",
+      "norm_label": "themevariants",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L85"
     },
     {
       "id": "app_src_lib_theming_theme_schemepreference",
@@ -1628,18 +1628,6 @@
       "source_location": "L186"
     },
     {
-      "id": "app_src_lib_connectioncolors_colorlabel",
-      "label": "colorLabel()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "svelte",
-      "file_type": "code",
-      "norm_label": "colorlabel()",
-      "source_file": "app/src/lib/connectionColors.ts",
-      "source_location": "L28"
-    },
-    {
       "id": "app_src_lib_connectioncolors_ispalettecolor",
       "label": "isPaletteColor()",
       "_callable": true,
@@ -1662,42 +1650,6 @@
       "norm_label": "getdriver()",
       "source_file": "app/src/lib/connections.ts",
       "source_location": "L47"
-    },
-    {
-      "id": "app_src_lib_components_filetree_finishedit",
-      "label": "finishEdit()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "finishedit()",
-      "source_file": "app/src/lib/components/FileTree.svelte",
-      "source_location": "L115"
-    },
-    {
-      "id": "app_src_lib_components_filetree_oneditkeydown",
-      "label": "onEditKeydown()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "oneditkeydown()",
-      "source_file": "app/src/lib/components/FileTree.svelte",
-      "source_location": "L134"
-    },
-    {
-      "id": "app_src_lib_sqlfiles_createsqlfile",
-      "label": "createSqlFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "createsqlfile()",
-      "source_file": "app/src/lib/sqlFiles.ts",
-      "source_location": "L85"
     },
     {
       "id": "app_src_lib_sqlfiles_listsqldir",
@@ -1796,18 +1748,6 @@
       "source_location": "L41"
     },
     {
-      "id": "app_src_lib_sqlfiles_trashsqlfile",
-      "label": "trashSqlFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "trashsqlfile()",
-      "source_file": "app/src/lib/sqlFiles.ts",
-      "source_location": "L95"
-    },
-    {
       "id": "app_src_lib_sqlfiles_withsqlextension",
       "label": "withSqlExtension()",
       "_callable": true,
@@ -1844,18 +1784,6 @@
       "source_location": "L114"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_detachqueryconsolefile",
-      "label": "detachQueryConsoleFile()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "detachqueryconsolefile()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L498"
-    },
-    {
       "id": "app_src_lib_stores_queryconsoles_filenamefrompath",
       "label": "fileNameFromPath()",
       "_callable": true,
@@ -1878,6 +1806,18 @@
       "norm_label": "markqueryconsolesaved()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
       "source_location": "L475"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_opensqlfileconsole",
+      "label": "openSqlFileConsole()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "sqlFiles.ts",
+      "file_type": "code",
+      "norm_label": "opensqlfileconsole()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L507"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_retargetqueryconsolefile",
@@ -2060,6 +2000,18 @@
       "source_location": "L122"
     },
     {
+      "id": "app_src_lib_stores_connection_connect",
+      "label": "connect()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "connection.ts",
+      "file_type": "code",
+      "norm_label": "connect()",
+      "source_file": "app/src/lib/stores/connection.ts",
+      "source_location": "L99"
+    },
+    {
       "id": "app_src_lib_stores_connection_connecttoprofile",
       "label": "connectToProfile()",
       "_callable": true,
@@ -2142,18 +2094,6 @@
       "norm_label": "handlerefreshtables()",
       "source_file": "app/src/routes/+layout.svelte",
       "source_location": "L128"
-    },
-    {
-      "id": "app_src_lib_components_executionguard_var",
-      "label": "var()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "types.ts",
-      "file_type": "code",
-      "norm_label": "var()",
-      "source_file": "app/src/lib/components/ExecutionGuard.svelte",
-      "source_location": "L33"
     },
     {
       "id": "app_src_lib_gridsort_nextsort",
@@ -2444,18 +2384,6 @@
       "source_location": "L69"
     },
     {
-      "id": "app_src_lib_i18n_define_definemessages",
-      "label": "defineMessages()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "definemessages()",
-      "source_file": "app/src/lib/i18n/define.ts",
-      "source_location": "L10"
-    },
-    {
       "id": "app_src_lib_i18n_i18n_test_placeholders",
       "label": "placeholders()",
       "_callable": true,
@@ -2648,6 +2576,78 @@
       "source_location": "L197"
     },
     {
+      "id": "app_src_lib_stores_shortcuts_eventmatchesshortcut",
+      "label": "eventMatchesShortcut()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "eventmatchesshortcut()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L164"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_formatshortcutevent",
+      "label": "formatShortcutEvent()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "formatshortcutevent()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L149"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_loadoverrides",
+      "label": "loadOverrides()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "loadoverrides()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L84"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_resetshortcutkeys",
+      "label": "resetShortcutKeys()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "resetshortcutkeys()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L137"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_setshortcutkeys",
+      "label": "setShortcutKeys()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "setshortcutkeys()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L133"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_tocodemirrorkey",
+      "label": "toCodeMirrorKey()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "tocodemirrorkey()",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L171"
+    },
+    {
       "id": "app_src_lib_stores_sidebarlayout_clampsidebarwidth",
       "label": "clampSidebarWidth()",
       "_callable": true,
@@ -2706,6 +2706,18 @@
       "norm_label": "clampfilepanelheight()",
       "source_file": "app/src/routes/+layout.svelte",
       "source_location": "L74"
+    },
+    {
+      "id": "app_src_routes_layout_handleglobalkeydown",
+      "label": "handleGlobalKeydown()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "handleglobalkeydown()",
+      "source_file": "app/src/routes/+layout.svelte",
+      "source_location": "L184"
     },
     {
       "id": "app_src_routes_layout_handlesidebarfind",
@@ -2838,54 +2850,6 @@
       "norm_label": "trackpointerregion()",
       "source_file": "app/src/routes/+layout.svelte",
       "source_location": "L149"
-    },
-    {
-      "id": "app_src_lib_components_results_datagrid_for",
-      "label": "for()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "for()",
-      "source_file": "app/src/lib/components/results/DataGrid.svelte",
-      "source_location": "L856"
-    },
-    {
-      "id": "app_src_lib_components_results_datagrid_onglobalpointerup",
-      "label": "onGlobalPointerUp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "onglobalpointerup()",
-      "source_file": "app/src/lib/components/results/DataGrid.svelte",
-      "source_location": "L1235"
-    },
-    {
-      "id": "app_src_lib_components_results_datagrid_onmove",
-      "label": "onMove()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "onmove()",
-      "source_file": "app/src/lib/components/results/DataGrid.svelte",
-      "source_location": "L1474"
-    },
-    {
-      "id": "app_src_lib_components_results_datagrid_onup",
-      "label": "onUp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "onup()",
-      "source_file": "app/src/lib/components/results/DataGrid.svelte",
-      "source_location": "L1478"
     },
     {
       "id": "app_src_lib_editorsearchpanel_createsearchpanel",
@@ -3548,6 +3512,30 @@
       "source_location": "L434"
     },
     {
+      "id": "app_src_lib_stores_resultpaging_clamppagesize",
+      "label": "clampPageSize()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "clamppagesize()",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L13"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging_load",
+      "label": "load()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "load()",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L17"
+    },
+    {
       "id": "app_src_lib_stores_sqlfolders_listrecord",
       "label": "listRecord()",
       "_callable": true,
@@ -3572,6 +3560,18 @@
       "source_location": "L44"
     },
     {
+      "id": "app_src_lib_stores_sqlfolders_setsqlfolder",
+      "label": "setSqlFolder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "sqlFolders.ts",
+      "file_type": "code",
+      "norm_label": "setsqlfolder()",
+      "source_file": "app/src/lib/stores/sqlFolders.ts",
+      "source_location": "L76"
+    },
+    {
       "id": "app_src_lib_stores_sqlfolders_setsqlfolderexpanded",
       "label": "setSqlFolderExpanded()",
       "_callable": true,
@@ -3594,6 +3594,30 @@
       "norm_label": "stringrecord()",
       "source_file": "app/src/lib/stores/sqlFolders.ts",
       "source_location": "L26"
+    },
+    {
+      "id": "app_src_routes_layout_handleopenfolder",
+      "label": "handleOpenFolder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 48,
+      "community_name": "sqlFolders.ts",
+      "file_type": "code",
+      "norm_label": "handleopenfolder()",
+      "source_file": "app/src/routes/+layout.svelte",
+      "source_location": "L114"
+    },
+    {
+      "id": "app_src_lib_components_results_datagrid_for",
+      "label": "for()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 49,
+      "community_name": "resultEditing.ts",
+      "file_type": "code",
+      "norm_label": "for()",
+      "source_file": "app/src/lib/components/results/DataGrid.svelte",
+      "source_location": "L856"
     },
     {
       "id": "app_src_lib_resultediting_addrow",
@@ -4040,18 +4064,6 @@
       "source_location": "L20"
     },
     {
-      "id": "app_src_lib_stores_connection_connect",
-      "label": "connect()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "explorerTree.ts",
-      "file_type": "code",
-      "norm_label": "connect()",
-      "source_file": "app/src/lib/stores/connection.ts",
-      "source_location": "L99"
-    },
-    {
       "id": "app_src_lib_components_filetree_editrow",
       "label": "editRow()",
       "_callable": true,
@@ -4076,6 +4088,18 @@
       "source_location": "L184"
     },
     {
+      "id": "app_src_lib_components_filetree_finishedit",
+      "label": "finishEdit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 53,
+      "community_name": "FileTree.svelte",
+      "file_type": "code",
+      "norm_label": "finishedit()",
+      "source_file": "app/src/lib/components/FileTree.svelte",
+      "source_location": "L115"
+    },
+    {
       "id": "app_src_lib_components_filetree_foldermenuitems",
       "label": "folderMenuItems()",
       "_callable": true,
@@ -4086,6 +4110,18 @@
       "norm_label": "foldermenuitems()",
       "source_file": "app/src/lib/components/FileTree.svelte",
       "source_location": "L173"
+    },
+    {
+      "id": "app_src_lib_components_filetree_oneditkeydown",
+      "label": "onEditKeydown()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 53,
+      "community_name": "FileTree.svelte",
+      "file_type": "code",
+      "norm_label": "oneditkeydown()",
+      "source_file": "app/src/lib/components/FileTree.svelte",
+      "source_location": "L134"
     },
     {
       "id": "app_src_lib_components_filetree_openmenu",
@@ -4148,6 +4184,18 @@
       "source_location": "L272"
     },
     {
+      "id": "app_src_lib_sqlfiles_createsqlfile",
+      "label": "createSqlFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 53,
+      "community_name": "FileTree.svelte",
+      "file_type": "code",
+      "norm_label": "createsqlfile()",
+      "source_file": "app/src/lib/sqlFiles.ts",
+      "source_location": "L85"
+    },
+    {
       "id": "app_src_lib_stores_sqlfolders_closesqlfolder",
       "label": "closeSqlFolder()",
       "_callable": true,
@@ -4181,19 +4229,19 @@
       "file_type": "code",
       "norm_label": "buildcmtheme()",
       "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L159"
+      "source_location": "L170"
     },
     {
-      "id": "app_src_lib_theming_codemirrortheme_findbuiltincalls",
-      "label": "findBuiltinCalls()",
+      "id": "app_src_lib_theming_codemirrortheme_findwordclasses",
+      "label": "findWordClasses()",
       "_callable": true,
       "_origin": "ast",
       "community": 55,
       "community_name": "codemirrorTheme.ts",
       "file_type": "code",
-      "norm_label": "findbuiltincalls()",
+      "norm_label": "findwordclasses()",
       "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L125"
+      "source_location": "L132"
     },
     {
       "id": "app_src_lib_sqlschema_applyandrecord",
@@ -4268,6 +4316,18 @@
       "source_location": "L53"
     },
     {
+      "id": "app_src_lib_connectioncolors_colorlabel",
+      "label": "colorLabel()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 57,
+      "community_name": "connectionTest.ts",
+      "file_type": "code",
+      "norm_label": "colorlabel()",
+      "source_file": "app/src/lib/connectionColors.ts",
+      "source_location": "L28"
+    },
+    {
       "id": "app_src_lib_connectiontest_describetls",
       "label": "describeTls()",
       "_callable": true,
@@ -4316,12 +4376,24 @@
       "source_location": "L61"
     },
     {
+      "id": "app_src_lib_components_results_resultpager_format",
+      "label": "format()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "format()",
+      "source_file": "app/src/lib/components/results/ResultPager.svelte",
+      "source_location": "L210"
+    },
+    {
       "id": "app_src_lib_jsonhighlight_detectjsoncolumns",
       "label": "detectJsonColumns()",
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "detectjsoncolumns()",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -4333,7 +4405,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "escapehtml()",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -4345,7 +4417,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "highlightjson()",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -4357,7 +4429,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "isjsoncolumntype()",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -4369,7 +4441,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "lookslikejsondocument()",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -4380,12 +4452,48 @@
       "label": "highlightSql()",
       "_callable": true,
       "_origin": "ast",
-      "community": 59,
-      "community_name": "ResultPane.svelte",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "highlightsql()",
       "source_file": "app/src/lib/sqlHighlight.ts",
       "source_location": "L22"
+    },
+    {
+      "id": "app_src_lib_components_results_datagrid_onglobalpointerup",
+      "label": "onGlobalPointerUp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 59,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "onglobalpointerup()",
+      "source_file": "app/src/lib/components/results/DataGrid.svelte",
+      "source_location": "L1235"
+    },
+    {
+      "id": "app_src_lib_components_results_datagrid_onmove",
+      "label": "onMove()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 59,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "onmove()",
+      "source_file": "app/src/lib/components/results/DataGrid.svelte",
+      "source_location": "L1474"
+    },
+    {
+      "id": "app_src_lib_components_results_datagrid_onup",
+      "label": "onUp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 59,
+      "community_name": "ResultPane.svelte",
+      "file_type": "code",
+      "norm_label": "onup()",
+      "source_file": "app/src/lib/components/results/DataGrid.svelte",
+      "source_location": "L1478"
     },
     {
       "id": "app_src_lib_stores_executionlog_appendlog",
@@ -4712,88 +4820,16 @@
       "source_location": "L203"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_eventmatchesshortcut",
-      "label": "eventMatchesShortcut()",
+      "id": "app_src_lib_i18n_define_definemessages",
+      "label": "defineMessages()",
       "_callable": true,
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "eventmatchesshortcut()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L164"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_formatshortcutevent",
-      "label": "formatShortcutEvent()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "formatshortcutevent()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L149"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_loadoverrides",
-      "label": "loadOverrides()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "loadoverrides()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L84"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_resetshortcutkeys",
-      "label": "resetShortcutKeys()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "resetshortcutkeys()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L137"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_setshortcutkeys",
-      "label": "setShortcutKeys()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "setshortcutkeys()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L133"
-    },
-    {
-      "id": "app_src_lib_stores_shortcuts_tocodemirrorkey",
-      "label": "toCodeMirrorKey()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "tocodemirrorkey()",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L171"
-    },
-    {
-      "id": "app_src_routes_layout_handleglobalkeydown",
-      "label": "handleGlobalKeydown()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 62,
-      "community_name": "stores/shortcuts.ts",
-      "file_type": "code",
-      "norm_label": "handleglobalkeydown()",
-      "source_file": "app/src/routes/+layout.svelte",
-      "source_location": "L184"
+      "norm_label": "definemessages()",
+      "source_file": "app/src/lib/i18n/define.ts",
+      "source_location": "L10"
     },
     {
       "id": "app_src_lib_components_settingspanel_option",
@@ -5048,6 +5084,18 @@
       "source_location": "L44"
     },
     {
+      "id": "app_src_lib_stores_queryconsoles_activatequeryconsole",
+      "label": "activateQueryConsole()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "queryConsoles.ts",
+      "file_type": "code",
+      "norm_label": "activatequeryconsole()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L398"
+    },
+    {
       "id": "app_src_lib_stores_queryconsoles_appendconsole",
       "label": "appendConsole()",
       "_callable": true,
@@ -5118,6 +5166,18 @@
       "norm_label": "consoletitle()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
       "source_location": "L106"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_createid",
+      "label": "createId()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "queryConsoles.ts",
+      "file_type": "code",
+      "norm_label": "createid()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L177"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_createqueryconsole",
@@ -5214,6 +5274,18 @@
       "norm_label": "nextconsoleordinal()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
       "source_location": "L186"
+    },
+    {
+      "id": "app_src_lib_stores_queryconsoles_opentableconsole",
+      "label": "openTableConsole()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "queryConsoles.ts",
+      "file_type": "code",
+      "norm_label": "opentableconsole()",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L432"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_parseconsole",
@@ -5384,6 +5456,18 @@
       "source_location": "L257"
     },
     {
+      "id": "app_src_lib_components_executionguard_var",
+      "label": "var()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "var()",
+      "source_file": "app/src/lib/components/ExecutionGuard.svelte",
+      "source_location": "L33"
+    },
+    {
       "id": "app_src_lib_components_workspace_each",
       "label": "#each()",
       "_callable": true,
@@ -5538,6 +5622,90 @@
       "norm_label": "editfor()",
       "source_file": "app/src/lib/sqlEditorBehavior.test.ts",
       "source_location": "L6"
+    },
+    {
+      "id": "app_src_lib_stores_copyformat_load",
+      "label": "load()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "load()",
+      "source_file": "app/src/lib/stores/copyFormat.ts",
+      "source_location": "L15"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_defaulteditorsettings",
+      "label": "defaultEditorSettings()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "defaulteditorsettings()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L20"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_loadeditorsettings",
+      "label": "loadEditorSettings()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "loadeditorsettings()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L24"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_normalizelinewidth",
+      "label": "normalizeLineWidth()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "normalizelinewidth()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L15"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_setautouppercasekeywords",
+      "label": "setAutoUppercaseKeywords()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "setautouppercasekeywords()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L67"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_setformatterlinewidth",
+      "label": "setFormatterLineWidth()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "setformatterlinewidth()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L60"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_settabnavigatescompletion",
+      "label": "setTabNavigatesCompletion()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "settabnavigatescompletion()",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L71"
     },
     {
       "id": "app_src_lib_stores_pinnedresults_addpinnedtab",
@@ -5780,78 +5948,6 @@
       "source_location": "L66"
     },
     {
-      "id": "app_src_lib_stores_editorsettings_defaulteditorsettings",
-      "label": "defaultEditorSettings()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "defaulteditorsettings()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L20"
-    },
-    {
-      "id": "app_src_lib_stores_editorsettings_loadeditorsettings",
-      "label": "loadEditorSettings()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "loadeditorsettings()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L24"
-    },
-    {
-      "id": "app_src_lib_stores_editorsettings_normalizelinewidth",
-      "label": "normalizeLineWidth()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "normalizelinewidth()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L15"
-    },
-    {
-      "id": "app_src_lib_stores_editorsettings_setautouppercasekeywords",
-      "label": "setAutoUppercaseKeywords()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "setautouppercasekeywords()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L67"
-    },
-    {
-      "id": "app_src_lib_stores_editorsettings_setformatterlinewidth",
-      "label": "setFormatterLineWidth()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "setformatterlinewidth()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L60"
-    },
-    {
-      "id": "app_src_lib_stores_editorsettings_settabnavigatescompletion",
-      "label": "setTabNavigatesCompletion()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "settabnavigatescompletion()",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L71"
-    },
-    {
       "id": "app_src_lib_stores_queryconsoles_test_creatememorystorage",
       "label": "createMemoryStorage()",
       "_callable": true,
@@ -5924,6 +6020,18 @@
       "source_location": "L151"
     },
     {
+      "id": "app_src_lib_sqlfiles_trashsqlfile",
+      "label": "trashSqlFile()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 77,
+      "community_name": "notifications.ts",
+      "file_type": "code",
+      "norm_label": "trashsqlfile()",
+      "source_file": "app/src/lib/sqlFiles.ts",
+      "source_location": "L95"
+    },
+    {
       "id": "app_src_lib_stores_notifications_dismissnotice",
       "label": "dismissNotice()",
       "_callable": true,
@@ -5972,124 +6080,16 @@
       "source_location": "L16"
     },
     {
-      "id": "app_src_lib_stores_sqlfolders_setsqlfolder",
-      "label": "setSqlFolder()",
+      "id": "app_src_lib_stores_queryconsoles_detachqueryconsolefile",
+      "label": "detachQueryConsoleFile()",
       "_callable": true,
       "_origin": "ast",
       "community": 77,
       "community_name": "notifications.ts",
       "file_type": "code",
-      "norm_label": "setsqlfolder()",
-      "source_file": "app/src/lib/stores/sqlFolders.ts",
-      "source_location": "L76"
-    },
-    {
-      "id": "app_src_routes_layout_handleopenfolder",
-      "label": "handleOpenFolder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 77,
-      "community_name": "notifications.ts",
-      "file_type": "code",
-      "norm_label": "handleopenfolder()",
-      "source_file": "app/src/routes/+layout.svelte",
-      "source_location": "L114"
-    },
-    {
-      "id": "app_src_lib_stores_resultpaging_clamppagesize",
-      "label": "clampPageSize()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
-      "file_type": "code",
-      "norm_label": "clamppagesize()",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L13"
-    },
-    {
-      "id": "app_src_lib_stores_resultpaging_load",
-      "label": "load()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
-      "file_type": "code",
-      "norm_label": "load()",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L17"
-    },
-    {
-      "id": "app_src_lib_stores_copyformat_load",
-      "label": "load()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
-      "file_type": "code",
-      "norm_label": "load()",
-      "source_file": "app/src/lib/stores/copyFormat.ts",
-      "source_location": "L15"
-    },
-    {
-      "id": "app_src_lib_components_results_resultpager_format",
-      "label": "format()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 80,
-      "community_name": "ExportDialog.svelte",
-      "file_type": "code",
-      "norm_label": "format()",
-      "source_file": "app/src/lib/components/results/ResultPager.svelte",
-      "source_location": "L210"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_activatequeryconsole",
-      "label": "activateQueryConsole()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 81,
-      "community_name": "openSqlFileConsole",
-      "file_type": "code",
-      "norm_label": "activatequeryconsole()",
+      "norm_label": "detachqueryconsolefile()",
       "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L398"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_createid",
-      "label": "createId()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 81,
-      "community_name": "openSqlFileConsole",
-      "file_type": "code",
-      "norm_label": "createid()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L177"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_opensqlfileconsole",
-      "label": "openSqlFileConsole()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 81,
-      "community_name": "openSqlFileConsole",
-      "file_type": "code",
-      "norm_label": "opensqlfileconsole()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L507"
-    },
-    {
-      "id": "app_src_lib_stores_queryconsoles_opentableconsole",
-      "label": "openTableConsole()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 81,
-      "community_name": "openSqlFileConsole",
-      "file_type": "code",
-      "norm_label": "opentableconsole()",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L432"
+      "source_location": "L498"
     },
     {
       "id": "app_src_lib_theming_palettes_resolvescheme",
@@ -6101,7 +6101,7 @@
       "file_type": "code",
       "norm_label": "resolvescheme()",
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L98"
+      "source_location": "L102"
     },
     {
       "id": "app_src_lib_theming_theme_initthemeeffects",
@@ -6368,18 +6368,6 @@
       "source_location": "L52"
     },
     {
-      "id": "crates_driver_core_src_assembly_triggereventrow",
-      "label": "TriggerEventRow",
-      "_origin": "ast",
-      "_rust_declaration_count": 1,
-      "community": 30,
-      "community_name": "DriverError",
-      "file_type": "code",
-      "norm_label": "triggereventrow",
-      "source_file": "crates/driver-core/src/assembly.rs",
-      "source_location": "L43"
-    },
-    {
       "id": "crates_driver_core_src_lib_drivererror",
       "label": "DriverError",
       "_origin": "ast",
@@ -6438,6 +6426,18 @@
       "norm_label": "tableset",
       "source_file": "crates/driver-core/src/assembly.rs",
       "source_location": "L17"
+    },
+    {
+      "id": "crates_driver_core_src_assembly_triggereventrow",
+      "label": "TriggerEventRow",
+      "_origin": "ast",
+      "_rust_declaration_count": 1,
+      "community": 32,
+      "community_name": "assembly.rs",
+      "file_type": "code",
+      "norm_label": "triggereventrow",
+      "source_file": "crates/driver-core/src/assembly.rs",
+      "source_location": "L43"
     },
     {
       "id": "crates_drivers_mysql_src_version_capabilities",
@@ -8248,17 +8248,6 @@
       "source_location": ""
     },
     {
-      "id": "instant",
-      "label": "Instant",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "mysql/src/lib.rs",
-      "file_type": "code",
-      "norm_label": "instant",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "mysql",
       "label": "MySql",
       "_origin": "ast",
@@ -8488,6 +8477,17 @@
       "norm_label": "+page.svelte",
       "source_file": "app/src/routes/+page.svelte",
       "source_location": "L1"
+    },
+    {
+      "id": "ref_devicon",
+      "label": "devicon",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "svelte",
+      "file_type": "concept",
+      "norm_label": "devicon",
+      "source_file": "app/package.json",
+      "source_location": "L31"
     },
     {
       "id": "app_src_tauri_tauri_conf",
@@ -8743,17 +8743,6 @@
       "source_location": "L27"
     },
     {
-      "id": "app_src_lib_stores_queryconsoles_queryconsoles",
-      "label": "queryConsoles",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "sqlFiles.ts",
-      "file_type": "code",
-      "norm_label": "queryconsoles",
-      "source_file": "app/src/lib/stores/queryConsoles.ts",
-      "source_location": "L220"
-    },
-    {
       "id": "app_src_lib_sqldefinitionlink",
       "label": "sqlDefinitionLink.ts",
       "_origin": "ast",
@@ -8908,6 +8897,18 @@
       "source_location": "L27"
     },
     {
+      "id": "docs_design_explorador_base_de_datos_flujo_de_datos",
+      "label": "Flujo de datos",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "connection.ts",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "flujo de datos",
+      "source_file": "docs/design/explorador-base-de-datos.md",
+      "source_location": "L22"
+    },
+    {
       "id": "client",
       "label": "Client",
       "_origin": "ast",
@@ -9051,17 +9052,6 @@
       "source_location": ""
     },
     {
-      "id": "app_src_lib_components_executionguard",
-      "label": "ExecutionGuard.svelte",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "types.ts",
-      "file_type": "code",
-      "norm_label": "executionguard.svelte",
-      "source_file": "app/src/lib/components/ExecutionGuard.svelte",
-      "source_location": "L1"
-    },
-    {
       "id": "app_src_lib_gridsort",
       "label": "gridSort.ts",
       "_origin": "ast",
@@ -9172,17 +9162,6 @@
       "source_location": "L31"
     },
     {
-      "id": "kit",
-      "label": "@sveltejs/kit",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@sveltejs/kit",
-      "source_file": "@sveltejs/kit"
-    },
-    {
       "id": "app_package",
       "label": "package.json",
       "_origin": "ast",
@@ -9249,28 +9228,6 @@
       "source_location": "L3"
     },
     {
-      "id": "app_svelte_config",
-      "label": "svelte.config.js",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "file_type": "code",
-      "norm_label": "svelte.config.js",
-      "source_file": "app/svelte.config.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_svelte_config_config",
-      "label": "config",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "file_type": "code",
-      "norm_label": "config",
-      "source_file": "app/svelte.config.js",
-      "source_location": "L9"
-    },
-    {
       "id": "app_vite_config",
       "label": "vite.config.js",
       "_origin": "ast",
@@ -9304,17 +9261,6 @@
       "source_location": "L19"
     },
     {
-      "id": "ref_devicon",
-      "label": "devicon",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "file_type": "concept",
-      "norm_label": "devicon",
-      "source_file": "app/package.json",
-      "source_location": "L31"
-    },
-    {
       "id": "ref_lucide_svelte",
       "label": "@lucide/svelte",
       "_origin": "ast",
@@ -9337,17 +9283,6 @@
       "source_location": "L40"
     },
     {
-      "id": "ref_sveltejs_adapter_static",
-      "label": "@sveltejs/adapter-static",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "file_type": "concept",
-      "norm_label": "@sveltejs/adapter-static",
-      "source_file": "app/package.json",
-      "source_location": "L35"
-    },
-    {
       "id": "ref_sveltejs_kit",
       "label": "@sveltejs/kit",
       "_origin": "ast",
@@ -9357,17 +9292,6 @@
       "norm_label": "@sveltejs/kit",
       "source_file": "app/package.json",
       "source_location": "L36"
-    },
-    {
-      "id": "ref_sveltejs_vite_plugin_svelte",
-      "label": "@sveltejs/vite-plugin-svelte",
-      "_origin": "ast",
-      "community": 18,
-      "community_name": "package.json",
-      "file_type": "concept",
-      "norm_label": "@sveltejs/vite-plugin-svelte",
-      "source_file": "app/package.json",
-      "source_location": "L37"
     },
     {
       "id": "ref_tauri_apps_cli",
@@ -9601,6 +9525,17 @@
       "source_location": "L29"
     },
     {
+      "id": "app_src_lib_resultediting_empty_edits",
+      "label": "EMPTY_EDITS",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "resultEdits.ts",
+      "file_type": "code",
+      "norm_label": "empty_edits",
+      "source_file": "app/src/lib/resultEditing.ts",
+      "source_location": "L43"
+    },
+    {
       "id": "app_src_lib_stores_resultedits",
       "label": "resultEdits.ts",
       "_origin": "ast",
@@ -9642,17 +9577,6 @@
       "file_type": "code",
       "norm_label": "resultedits.test.ts",
       "source_file": "app/src/lib/stores/resultEdits.test.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_define",
-      "label": "define.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "define.ts",
-      "source_file": "app/src/lib/i18n/define.ts",
       "source_location": "L1"
     },
     {
@@ -9755,72 +9679,6 @@
       "source_location": "L7"
     },
     {
-      "id": "app_src_lib_i18n_messages_common",
-      "label": "common.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "common.ts",
-      "source_file": "app/src/lib/i18n/messages/common.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_connections",
-      "label": "messages/connections.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "messages/connections.ts",
-      "source_file": "app/src/lib/i18n/messages/connections.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_editor",
-      "label": "editor.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "editor.ts",
-      "source_file": "app/src/lib/i18n/messages/editor.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_explorer",
-      "label": "explorer.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "explorer.ts",
-      "source_file": "app/src/lib/i18n/messages/explorer.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_grid",
-      "label": "grid.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "grid.ts",
-      "source_file": "app/src/lib/i18n/messages/grid.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_index",
-      "label": "messages/index.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "messages/index.ts",
-      "source_file": "app/src/lib/i18n/messages/index.ts",
-      "source_location": "L1"
-    },
-    {
       "id": "app_src_lib_i18n_messages_index_messages",
       "label": "messages",
       "_origin": "ast",
@@ -9830,61 +9688,6 @@
       "norm_label": "messages",
       "source_file": "app/src/lib/i18n/messages/index.ts",
       "source_location": "L13"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_results",
-      "label": "results.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "results.ts",
-      "source_file": "app/src/lib/i18n/messages/results.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_settings",
-      "label": "settings.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "settings.ts",
-      "source_file": "app/src/lib/i18n/messages/settings.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_shell",
-      "label": "shell.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "shell.ts",
-      "source_file": "app/src/lib/i18n/messages/shell.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_shortcuts",
-      "label": "messages/shortcuts.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "messages/shortcuts.ts",
-      "source_file": "app/src/lib/i18n/messages/shortcuts.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_i18n_messages_workspace",
-      "label": "workspace.ts",
-      "_origin": "ast",
-      "community": 20,
-      "community_name": "i18n/index.ts",
-      "file_type": "code",
-      "norm_label": "workspace.ts",
-      "source_file": "app/src/lib/i18n/messages/workspace.ts",
-      "source_location": "L1"
     },
     {
       "id": "app_src_tauri_src_catalog_adapter",
@@ -10741,6 +10544,17 @@
       "community_name": "drivers.rs",
       "file_type": "code",
       "norm_label": "c",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "instant",
+      "label": "Instant",
+      "_origin": "ast",
+      "community": 23,
+      "community_name": "drivers.rs",
+      "file_type": "code",
+      "norm_label": "instant",
       "source_file": "",
       "source_location": ""
     },
@@ -14411,6 +14225,17 @@
       "source_location": "L1"
     },
     {
+      "id": "tauri_apps_api_window_window",
+      "label": "@tauri-apps/api/window",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/api/window",
+      "source_file": "@tauri-apps/api/window"
+    },
+    {
       "id": "transition",
       "label": "svelte/transition",
       "_origin": "ast",
@@ -14431,6 +14256,61 @@
       "norm_label": "dialogmotion.ts",
       "source_file": "app/src/lib/dialogMotion.ts",
       "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts",
+      "label": "stores/shortcuts.ts",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "stores/shortcuts.ts",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_modifier_keys",
+      "label": "MODIFIER_KEYS",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "modifier_keys",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L144"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_shortcutdefinitions",
+      "label": "shortcutDefinitions",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "shortcutdefinitions",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L15"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_shortcutoverrides",
+      "label": "shortcutOverrides",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "shortcutoverrides",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L104"
+    },
+    {
+      "id": "app_src_lib_stores_shortcuts_shortcuts",
+      "label": "shortcuts",
+      "_origin": "ast",
+      "community": 42,
+      "community_name": "+layout.svelte",
+      "file_type": "code",
+      "norm_label": "shortcuts",
+      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "source_location": "L123"
     },
     {
       "id": "app_src_lib_stores_sidebarlayout",
@@ -14818,17 +14698,6 @@
       "source_location": ""
     },
     {
-      "id": "app_src_lib_components_results_datagrid",
-      "label": "DataGrid.svelte",
-      "_origin": "ast",
-      "community": 44,
-      "community_name": "editorSearchPanel.ts",
-      "file_type": "code",
-      "norm_label": "datagrid.svelte",
-      "source_file": "app/src/lib/components/results/DataGrid.svelte",
-      "source_location": "L1"
-    },
-    {
       "id": "app_src_lib_editorsearchpanel",
       "label": "editorSearchPanel.ts",
       "_origin": "ast",
@@ -15060,17 +14929,6 @@
       "source_location": "L5"
     },
     {
-      "id": "app_src_lib_resultediting_empty_edits",
-      "label": "EMPTY_EDITS",
-      "_origin": "ast",
-      "community": 46,
-      "community_name": "gridFind.ts",
-      "file_type": "code",
-      "norm_label": "empty_edits",
-      "source_file": "app/src/lib/resultEditing.ts",
-      "source_location": "L43"
-    },
-    {
       "id": "app_src_lib_components_results_resultpager",
       "label": "ResultPager.svelte",
       "_origin": "ast",
@@ -15080,6 +14938,61 @@
       "norm_label": "resultpager.svelte",
       "source_file": "app/src/lib/components/results/ResultPager.svelte",
       "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging",
+      "label": "resultPaging.ts",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "resultpaging.ts",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging_defaultpagesize",
+      "label": "defaultPageSize",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "defaultpagesize",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L27"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging_factory_page_size",
+      "label": "FACTORY_PAGE_SIZE",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "factory_page_size",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L7"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging_max_page_size",
+      "label": "MAX_PAGE_SIZE",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "max_page_size",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L9"
+    },
+    {
+      "id": "app_src_lib_stores_resultpaging_page_size_options",
+      "label": "PAGE_SIZE_OPTIONS",
+      "_origin": "ast",
+      "community": 47,
+      "community_name": "ResultPager.svelte",
+      "file_type": "code",
+      "norm_label": "page_size_options",
+      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "source_location": "L6"
     },
     {
       "id": "app_src_lib_stores_sqlfolders",
@@ -15366,18 +15279,6 @@
       "norm_label": "core",
       "source_file": "app/src/lib/explorerTree.test.ts",
       "source_location": "L38"
-    },
-    {
-      "id": "docs_design_explorador_base_de_datos_flujo_de_datos",
-      "label": "Flujo de datos",
-      "_origin": "ast",
-      "community": 51,
-      "community_name": "explorerTree.ts",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "flujo de datos",
-      "source_file": "docs/design/explorador-base-de-datos.md",
-      "source_location": "L22"
     },
     {
       "id": "docs_specs_borrador_copiado_de_resultados",
@@ -16553,17 +16454,6 @@
       "source_location": "L112"
     },
     {
-      "id": "app_src_lib_theming_codemirrortheme_builtincallhighlight",
-      "label": "builtinCallHighlight",
-      "_origin": "ast",
-      "community": 55,
-      "community_name": "codemirrorTheme.ts",
-      "file_type": "code",
-      "norm_label": "builtincallhighlight",
-      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L144"
-    },
-    {
       "id": "app_src_lib_theming_codemirrortheme_builtincallmark",
       "label": "builtinCallMark",
       "_origin": "ast",
@@ -16572,7 +16462,7 @@
       "file_type": "code",
       "norm_label": "builtincallmark",
       "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L123"
+      "source_location": "L129"
     },
     {
       "id": "app_src_lib_theming_codemirrortheme_token_chrome",
@@ -16586,37 +16476,37 @@
       "source_location": "L27"
     },
     {
-      "id": "app_src_lib_theming_palettes",
-      "label": "palettes.ts",
+      "id": "app_src_lib_theming_codemirrortheme_word_operators",
+      "label": "WORD_OPERATORS",
       "_origin": "ast",
       "community": 55,
       "community_name": "codemirrorTheme.ts",
       "file_type": "code",
-      "norm_label": "palettes.ts",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L1"
+      "norm_label": "word_operators",
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L125"
     },
     {
-      "id": "app_src_lib_theming_palettes_palettes",
-      "label": "palettes",
+      "id": "app_src_lib_theming_codemirrortheme_wordclasshighlight",
+      "label": "wordClassHighlight",
       "_origin": "ast",
       "community": 55,
       "community_name": "codemirrorTheme.ts",
       "file_type": "code",
-      "norm_label": "palettes",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L119"
+      "norm_label": "wordclasshighlight",
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L155"
     },
     {
-      "id": "app_src_lib_theming_palettes_theme_families",
-      "label": "THEME_FAMILIES",
+      "id": "app_src_lib_theming_codemirrortheme_wordoperatormark",
+      "label": "wordOperatorMark",
       "_origin": "ast",
       "community": 55,
       "community_name": "codemirrorTheme.ts",
       "file_type": "code",
-      "norm_label": "theme_families",
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L86"
+      "norm_label": "wordoperatormark",
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L130"
     },
     {
       "id": "ref_lezer_highlight",
@@ -16729,11 +16619,66 @@
       "source_location": "L81"
     },
     {
+      "id": "core",
+      "label": "@tauri-apps/api/core",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/api/core",
+      "source_file": "@tauri-apps/api/core"
+    },
+    {
+      "id": "plugin_dialog",
+      "label": "@tauri-apps/plugin-dialog",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/plugin-dialog",
+      "source_file": "@tauri-apps/plugin-dialog"
+    },
+    {
+      "id": "tauri_apps_api_path_path",
+      "label": "@tauri-apps/api/path",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@tauri-apps/api/path",
+      "source_file": "@tauri-apps/api/path"
+    },
+    {
+      "id": "app_src_lib_components_results_changespreview",
+      "label": "ChangesPreview.svelte",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "changespreview.svelte",
+      "source_file": "app/src/lib/components/results/ChangesPreview.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_results_exportdialog",
+      "label": "ExportDialog.svelte",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "exportdialog.svelte",
+      "source_file": "app/src/lib/components/results/ExportDialog.svelte",
+      "source_location": "L1"
+    },
+    {
       "id": "app_src_lib_jsonhighlight",
       "label": "jsonHighlight.ts",
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "jsonhighlight.ts",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -16744,7 +16689,7 @@
       "label": "HTML_ESCAPES",
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "html_escapes",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -16755,7 +16700,7 @@
       "label": "MAX_HIGHLIGHTED_CHARS",
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "max_highlighted_chars",
       "source_file": "app/src/lib/jsonHighlight.ts",
@@ -16766,10 +16711,43 @@
       "label": "jsonHighlight.test.ts",
       "_origin": "ast",
       "community": 58,
-      "community_name": "jsonHighlight.ts",
+      "community_name": "ExportDialog.svelte",
       "file_type": "code",
       "norm_label": "jsonhighlight.test.ts",
       "source_file": "app/src/lib/jsonHighlight.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_sqlhighlight",
+      "label": "sqlHighlight.ts",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "sqlhighlight.ts",
+      "source_file": "app/src/lib/sqlHighlight.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_sqlhighlight_keywords",
+      "label": "KEYWORDS",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "keywords",
+      "source_file": "app/src/lib/sqlHighlight.ts",
+      "source_location": "L9"
+    },
+    {
+      "id": "app_src_lib_sqlhighlight_test",
+      "label": "sqlHighlight.test.ts",
+      "_origin": "ast",
+      "community": 58,
+      "community_name": "ExportDialog.svelte",
+      "file_type": "code",
+      "norm_label": "sqlhighlight.test.ts",
+      "source_file": "app/src/lib/sqlHighlight.test.ts",
       "source_location": "L1"
     },
     {
@@ -16784,14 +16762,14 @@
       "source_file": "svelte/animate"
     },
     {
-      "id": "app_src_lib_components_results_changespreview",
-      "label": "ChangesPreview.svelte",
+      "id": "app_src_lib_components_results_datagrid",
+      "label": "DataGrid.svelte",
       "_origin": "ast",
       "community": 59,
       "community_name": "ResultPane.svelte",
       "file_type": "code",
-      "norm_label": "changespreview.svelte",
-      "source_file": "app/src/lib/components/results/ChangesPreview.svelte",
+      "norm_label": "datagrid.svelte",
+      "source_file": "app/src/lib/components/results/DataGrid.svelte",
       "source_location": "L1"
     },
     {
@@ -16836,39 +16814,6 @@
       "file_type": "code",
       "norm_label": "toolbarbutton.svelte",
       "source_file": "app/src/lib/components/results/ToolbarButton.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_sqlhighlight",
-      "label": "sqlHighlight.ts",
-      "_origin": "ast",
-      "community": 59,
-      "community_name": "ResultPane.svelte",
-      "file_type": "code",
-      "norm_label": "sqlhighlight.ts",
-      "source_file": "app/src/lib/sqlHighlight.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_sqlhighlight_keywords",
-      "label": "KEYWORDS",
-      "_origin": "ast",
-      "community": 59,
-      "community_name": "ResultPane.svelte",
-      "file_type": "code",
-      "norm_label": "keywords",
-      "source_file": "app/src/lib/sqlHighlight.ts",
-      "source_location": "L9"
-    },
-    {
-      "id": "app_src_lib_sqlhighlight_test",
-      "label": "sqlHighlight.test.ts",
-      "_origin": "ast",
-      "community": 59,
-      "community_name": "ResultPane.svelte",
-      "file_type": "code",
-      "norm_label": "sqlhighlight.test.ts",
-      "source_file": "app/src/lib/sqlHighlight.test.ts",
       "source_location": "L1"
     },
     {
@@ -17521,59 +17466,136 @@
       "source_location": "L23"
     },
     {
-      "id": "app_src_lib_stores_shortcuts",
-      "label": "stores/shortcuts.ts",
+      "id": "app_src_lib_i18n_define",
+      "label": "define.ts",
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "stores/shortcuts.ts",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
+      "norm_label": "define.ts",
+      "source_file": "app/src/lib/i18n/define.ts",
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_modifier_keys",
-      "label": "MODIFIER_KEYS",
+      "id": "app_src_lib_i18n_messages_common",
+      "label": "common.ts",
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "modifier_keys",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L144"
+      "norm_label": "common.ts",
+      "source_file": "app/src/lib/i18n/messages/common.ts",
+      "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_shortcutdefinitions",
-      "label": "shortcutDefinitions",
+      "id": "app_src_lib_i18n_messages_connections",
+      "label": "messages/connections.ts",
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "shortcutdefinitions",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L15"
+      "norm_label": "messages/connections.ts",
+      "source_file": "app/src/lib/i18n/messages/connections.ts",
+      "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_shortcutoverrides",
-      "label": "shortcutOverrides",
+      "id": "app_src_lib_i18n_messages_editor",
+      "label": "editor.ts",
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "shortcutoverrides",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L104"
+      "norm_label": "editor.ts",
+      "source_file": "app/src/lib/i18n/messages/editor.ts",
+      "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_shortcuts_shortcuts",
-      "label": "shortcuts",
+      "id": "app_src_lib_i18n_messages_explorer",
+      "label": "explorer.ts",
       "_origin": "ast",
       "community": 62,
-      "community_name": "stores/shortcuts.ts",
+      "community_name": "messages/index.ts",
       "file_type": "code",
-      "norm_label": "shortcuts",
-      "source_file": "app/src/lib/stores/shortcuts.ts",
-      "source_location": "L123"
+      "norm_label": "explorer.ts",
+      "source_file": "app/src/lib/i18n/messages/explorer.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_grid",
+      "label": "grid.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "grid.ts",
+      "source_file": "app/src/lib/i18n/messages/grid.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_index",
+      "label": "messages/index.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "messages/index.ts",
+      "source_file": "app/src/lib/i18n/messages/index.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_results",
+      "label": "results.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "results.ts",
+      "source_file": "app/src/lib/i18n/messages/results.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_settings",
+      "label": "settings.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "settings.ts",
+      "source_file": "app/src/lib/i18n/messages/settings.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_shell",
+      "label": "shell.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "shell.ts",
+      "source_file": "app/src/lib/i18n/messages/shell.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_shortcuts",
+      "label": "messages/shortcuts.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "messages/shortcuts.ts",
+      "source_file": "app/src/lib/i18n/messages/shortcuts.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_i18n_messages_workspace",
+      "label": "workspace.ts",
+      "_origin": "ast",
+      "community": 62,
+      "community_name": "messages/index.ts",
+      "file_type": "code",
+      "norm_label": "workspace.ts",
+      "source_file": "app/src/lib/i18n/messages/workspace.ts",
+      "source_location": "L1"
     },
     {
       "id": "app_src_lib_components_settingspanel",
@@ -17591,7 +17613,7 @@
       "label": "explorador-base-de-datos.md",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "explorador-base-de-datos.md",
@@ -17603,7 +17625,7 @@
       "label": "Compatibilidad entre versiones",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "compatibilidad entre versiones",
@@ -17615,7 +17637,7 @@
       "label": "Contrato del driver",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "contrato del driver",
@@ -17627,7 +17649,7 @@
       "label": "Explorador de base de datos",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "explorador de base de datos",
@@ -17639,7 +17661,7 @@
       "label": "Limitaciones conocidas",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "limitaciones conocidas",
@@ -17651,7 +17673,7 @@
       "label": "MySQL / MariaDB \u2014 `information_schema`",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "mysql / mariadb \u2014 `information_schema`",
@@ -17663,7 +17685,7 @@
       "label": "PostgreSQL \u2014 `pg_catalog`",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "postgresql \u2014 `pg_catalog`",
@@ -17675,7 +17697,7 @@
       "label": "Pr\u00f3ximos pasos",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "proximos pasos",
@@ -17687,7 +17709,7 @@
       "label": "SSL/TLS por conexi\u00f3n",
       "_origin": "ast",
       "community": 64,
-      "community_name": "Explorador de base de datos",
+      "community_name": "TlsMode",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "ssl/tls por conexion",
@@ -17715,6 +17737,17 @@
       "file_type": "code",
       "norm_label": "codemirror",
       "source_file": "codemirror"
+    },
+    {
+      "id": "codemirror_state_state",
+      "label": "@codemirror/state",
+      "_origin": "ast",
+      "community": 66,
+      "community_name": "SqlEditor.svelte",
+      "confidence": "EXTRACTED",
+      "file_type": "code",
+      "norm_label": "@codemirror/state",
+      "source_file": "@codemirror/state"
     },
     {
       "id": "commands",
@@ -17814,6 +17847,17 @@
       "norm_label": "sqleditor.svelte",
       "source_file": "app/src/lib/SqlEditor.svelte",
       "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_theming_palettes_palettes",
+      "label": "palettes",
+      "_origin": "ast",
+      "community": 67,
+      "community_name": "palettes.test.ts",
+      "file_type": "code",
+      "norm_label": "palettes",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L123"
     },
     {
       "id": "app_src_lib_theming_palettes_test",
@@ -18014,6 +18058,17 @@
       "source_location": "L87"
     },
     {
+      "id": "app_src_lib_stores_queryconsoles_queryconsoles",
+      "label": "queryConsoles",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "queryConsoles.ts",
+      "file_type": "code",
+      "norm_label": "queryconsoles",
+      "source_file": "app/src/lib/stores/queryConsoles.ts",
+      "source_location": "L220"
+    },
+    {
       "id": "app_src_lib_components_confirmdialog",
       "label": "ConfirmDialog.svelte",
       "_origin": "ast",
@@ -18022,6 +18077,17 @@
       "file_type": "code",
       "norm_label": "confirmdialog.svelte",
       "source_file": "app/src/lib/components/ConfirmDialog.svelte",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_components_executionguard",
+      "label": "ExecutionGuard.svelte",
+      "_origin": "ast",
+      "community": 70,
+      "community_name": "Workspace.svelte",
+      "file_type": "code",
+      "norm_label": "executionguard.svelte",
+      "source_file": "app/src/lib/components/ExecutionGuard.svelte",
       "source_location": "L1"
     },
     {
@@ -18124,6 +18190,83 @@
       "source_location": "L24"
     },
     {
+      "id": "app_src_lib_gridclipboard_copy_formats",
+      "label": "COPY_FORMATS",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "copy_formats",
+      "source_file": "app/src/lib/gridClipboard.ts",
+      "source_location": "L18"
+    },
+    {
+      "id": "app_src_lib_stores_copyformat",
+      "label": "copyFormat.ts",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "copyformat.ts",
+      "source_file": "app/src/lib/stores/copyFormat.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_copyformat_defaults",
+      "label": "DEFAULTS",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "defaults",
+      "source_file": "app/src/lib/stores/copyFormat.ts",
+      "source_location": "L13"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings",
+      "label": "editorSettings.ts",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "editorsettings.ts",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_default_formatter_line_width",
+      "label": "DEFAULT_FORMATTER_LINE_WIDTH",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "default_formatter_line_width",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L5"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_max_formatter_line_width",
+      "label": "MAX_FORMATTER_LINE_WIDTH",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "max_formatter_line_width",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L7"
+    },
+    {
+      "id": "app_src_lib_stores_editorsettings_min_formatter_line_width",
+      "label": "MIN_FORMATTER_LINE_WIDTH",
+      "_origin": "ast",
+      "community": 72,
+      "community_name": "svelte",
+      "file_type": "code",
+      "norm_label": "min_formatter_line_width",
+      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "source_location": "L6"
+    },
+    {
       "id": "app_src_lib_stores_pinnedresults",
       "label": "pinnedResults.ts",
       "_origin": "ast",
@@ -18179,48 +18322,59 @@
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_editorsettings",
-      "label": "editorSettings.ts",
+      "id": "kit",
+      "label": "@sveltejs/kit",
       "_origin": "ast",
       "community": 74,
-      "community_name": "editorSettings.ts",
+      "community_name": "svelte.config.js",
+      "confidence": "EXTRACTED",
       "file_type": "code",
-      "norm_label": "editorsettings.ts",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
+      "norm_label": "@sveltejs/kit",
+      "source_file": "@sveltejs/kit"
+    },
+    {
+      "id": "app_svelte_config",
+      "label": "svelte.config.js",
+      "_origin": "ast",
+      "community": 74,
+      "community_name": "svelte.config.js",
+      "file_type": "code",
+      "norm_label": "svelte.config.js",
+      "source_file": "app/svelte.config.js",
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_editorsettings_default_formatter_line_width",
-      "label": "DEFAULT_FORMATTER_LINE_WIDTH",
+      "id": "app_svelte_config_config",
+      "label": "config",
       "_origin": "ast",
       "community": 74,
-      "community_name": "editorSettings.ts",
+      "community_name": "svelte.config.js",
       "file_type": "code",
-      "norm_label": "default_formatter_line_width",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L5"
+      "norm_label": "config",
+      "source_file": "app/svelte.config.js",
+      "source_location": "L9"
     },
     {
-      "id": "app_src_lib_stores_editorsettings_max_formatter_line_width",
-      "label": "MAX_FORMATTER_LINE_WIDTH",
+      "id": "ref_sveltejs_adapter_static",
+      "label": "@sveltejs/adapter-static",
       "_origin": "ast",
       "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "max_formatter_line_width",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L7"
+      "community_name": "svelte.config.js",
+      "file_type": "concept",
+      "norm_label": "@sveltejs/adapter-static",
+      "source_file": "app/package.json",
+      "source_location": "L35"
     },
     {
-      "id": "app_src_lib_stores_editorsettings_min_formatter_line_width",
-      "label": "MIN_FORMATTER_LINE_WIDTH",
+      "id": "ref_sveltejs_vite_plugin_svelte",
+      "label": "@sveltejs/vite-plugin-svelte",
       "_origin": "ast",
       "community": 74,
-      "community_name": "editorSettings.ts",
-      "file_type": "code",
-      "norm_label": "min_formatter_line_width",
-      "source_file": "app/src/lib/stores/editorSettings.ts",
-      "source_location": "L6"
+      "community_name": "svelte.config.js",
+      "file_type": "concept",
+      "norm_label": "@sveltejs/vite-plugin-svelte",
+      "source_file": "app/package.json",
+      "source_location": "L37"
     },
     {
       "id": "app_src_lib_stores_queryconsoles_test",
@@ -18245,158 +18399,26 @@
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_resultpaging",
-      "label": "resultPaging.ts",
+      "id": "app_src_lib_theming_palettes",
+      "label": "palettes.ts",
       "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
+      "community": 9,
+      "community_name": "theme.ts",
       "file_type": "code",
-      "norm_label": "resultpaging.ts",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
+      "norm_label": "palettes.ts",
+      "source_file": "app/src/lib/theming/palettes.ts",
       "source_location": "L1"
     },
     {
-      "id": "app_src_lib_stores_resultpaging_defaultpagesize",
-      "label": "defaultPageSize",
+      "id": "app_src_lib_theming_palettes_theme_families",
+      "label": "THEME_FAMILIES",
       "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
+      "community": 9,
+      "community_name": "theme.ts",
       "file_type": "code",
-      "norm_label": "defaultpagesize",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L27"
-    },
-    {
-      "id": "app_src_lib_stores_resultpaging_factory_page_size",
-      "label": "FACTORY_PAGE_SIZE",
-      "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
-      "file_type": "code",
-      "norm_label": "factory_page_size",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L7"
-    },
-    {
-      "id": "app_src_lib_stores_resultpaging_max_page_size",
-      "label": "MAX_PAGE_SIZE",
-      "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
-      "file_type": "code",
-      "norm_label": "max_page_size",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L9"
-    },
-    {
-      "id": "app_src_lib_stores_resultpaging_page_size_options",
-      "label": "PAGE_SIZE_OPTIONS",
-      "_origin": "ast",
-      "community": 78,
-      "community_name": "resultPaging.ts",
-      "file_type": "code",
-      "norm_label": "page_size_options",
-      "source_file": "app/src/lib/stores/resultPaging.ts",
-      "source_location": "L6"
-    },
-    {
-      "id": "app_src_lib_gridclipboard_copy_formats",
-      "label": "COPY_FORMATS",
-      "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
-      "file_type": "code",
-      "norm_label": "copy_formats",
-      "source_file": "app/src/lib/gridClipboard.ts",
-      "source_location": "L18"
-    },
-    {
-      "id": "app_src_lib_stores_copyformat",
-      "label": "copyFormat.ts",
-      "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
-      "file_type": "code",
-      "norm_label": "copyformat.ts",
-      "source_file": "app/src/lib/stores/copyFormat.ts",
-      "source_location": "L1"
-    },
-    {
-      "id": "app_src_lib_stores_copyformat_defaults",
-      "label": "DEFAULTS",
-      "_origin": "ast",
-      "community": 79,
-      "community_name": "copyFormat.ts",
-      "file_type": "code",
-      "norm_label": "defaults",
-      "source_file": "app/src/lib/stores/copyFormat.ts",
-      "source_location": "L13"
-    },
-    {
-      "id": "core",
-      "label": "@tauri-apps/api/core",
-      "_origin": "ast",
-      "community": 80,
-      "community_name": "ExportDialog.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/api/core",
-      "source_file": "@tauri-apps/api/core"
-    },
-    {
-      "id": "plugin_dialog",
-      "label": "@tauri-apps/plugin-dialog",
-      "_origin": "ast",
-      "community": 80,
-      "community_name": "ExportDialog.svelte",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/plugin-dialog",
-      "source_file": "@tauri-apps/plugin-dialog"
-    },
-    {
-      "id": "app_src_lib_components_results_exportdialog",
-      "label": "ExportDialog.svelte",
-      "_origin": "ast",
-      "community": 80,
-      "community_name": "ExportDialog.svelte",
-      "file_type": "code",
-      "norm_label": "exportdialog.svelte",
-      "source_file": "app/src/lib/components/results/ExportDialog.svelte",
-      "source_location": "L1"
-    },
-    {
-      "id": "codemirror_state_state",
-      "label": "@codemirror/state",
-      "_origin": "ast",
-      "community": 82,
-      "community_name": "@codemirror/state",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@codemirror/state",
-      "source_file": "@codemirror/state"
-    },
-    {
-      "id": "tauri_apps_api_path_path",
-      "label": "@tauri-apps/api/path",
-      "_origin": "ast",
-      "community": 83,
-      "community_name": "@tauri-apps/api/path",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/api/path",
-      "source_file": "@tauri-apps/api/path"
-    },
-    {
-      "id": "tauri_apps_api_window_window",
-      "label": "@tauri-apps/api/window",
-      "_origin": "ast",
-      "community": 84,
-      "community_name": "@tauri-apps/api/window",
-      "confidence": "EXTRACTED",
-      "file_type": "code",
-      "norm_label": "@tauri-apps/api/window",
-      "source_file": "@tauri-apps/api/window"
+      "norm_label": "theme_families",
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L90"
     },
     {
       "id": "app_src_lib_theming_theme",
@@ -19143,6 +19165,30 @@
       "source_url": null
     },
     {
+      "id": "async_trait",
+      "label": "async_trait",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "mysql/src/lib.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "async_trait",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "trystreamext",
+      "label": "trystreamext",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "mysql/src/lib.rs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "trystreamext",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "svelte",
       "label": "svelte",
       "_origin": "semantic",
@@ -19295,30 +19341,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "keyring",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "async_trait",
-      "label": "async_trait",
-      "_origin": "semantic",
-      "community": 3,
-      "community_name": "postgres/src/lib.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "async_trait",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "trystreamext",
-      "label": "trystreamext",
-      "_origin": "semantic",
-      "community": 3,
-      "community_name": "postgres/src/lib.rs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "trystreamext",
       "source_file": "",
       "type": "external"
     },
@@ -19499,39 +19521,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_app",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "window",
-      "label": "window",
-      "community": 42,
-      "community_name": "+layout.svelte",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "window",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "state",
-      "label": "state",
-      "community": 66,
-      "community_name": "SqlEditor.svelte",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "state",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "path",
-      "label": "path",
-      "community": 80,
-      "community_name": "ExportDialog.svelte",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "path",
       "source_file": "",
       "type": "external"
     }
@@ -22498,7 +22487,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L104",
+      "source_location": "L108",
       "weight": 1.0
     },
     {
@@ -37403,7 +37392,7 @@
     },
     {
       "source": "app_src_tauri_src_sql_files",
-      "target": "path",
+      "target": "tauri_apps_api_path_path",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -49078,18 +49067,7 @@
     },
     {
       "source": "app_src_lib_theming_codemirrortheme",
-      "target": "app_src_lib_theming_codemirrortheme_builtincallmark",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L123",
-      "weight": 1.0
-    },
-    {
-      "source": "app_src_lib_theming_codemirrortheme",
-      "target": "app_src_lib_theming_codemirrortheme_findbuiltincalls",
+      "target": "app_src_lib_theming_codemirrortheme_word_operators",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -49100,13 +49078,46 @@
     },
     {
       "source": "app_src_lib_theming_codemirrortheme",
-      "target": "app_src_lib_theming_codemirrortheme_builtincallhighlight",
+      "target": "app_src_lib_theming_codemirrortheme_builtincallmark",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L144",
+      "source_location": "L129",
+      "weight": 1.0
+    },
+    {
+      "source": "app_src_lib_theming_codemirrortheme",
+      "target": "app_src_lib_theming_codemirrortheme_wordoperatormark",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L130",
+      "weight": 1.0
+    },
+    {
+      "source": "app_src_lib_theming_codemirrortheme",
+      "target": "app_src_lib_theming_codemirrortheme_findwordclasses",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L132",
+      "weight": 1.0
+    },
+    {
+      "source": "app_src_lib_theming_codemirrortheme",
+      "target": "app_src_lib_theming_codemirrortheme_wordclasshighlight",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/theming/codemirrorTheme.ts",
+      "source_location": "L155",
       "weight": 1.0
     },
     {
@@ -49117,7 +49128,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/codemirrorTheme.ts",
-      "source_location": "L159",
+      "source_location": "L170",
       "weight": 1.0
     },
     {
@@ -49144,7 +49155,7 @@
     },
     {
       "source": "app_src_lib_theming_palettes",
-      "target": "app_src_lib_theming_palettes_themevariant",
+      "target": "app_src_lib_theming_palettes_resolvescheme",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -49155,13 +49166,24 @@
     },
     {
       "source": "app_src_lib_theming_palettes",
+      "target": "app_src_lib_theming_palettes_themevariant",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/theming/palettes.ts",
+      "source_location": "L106",
+      "weight": 1.0
+    },
+    {
+      "source": "app_src_lib_theming_palettes",
       "target": "app_src_lib_theming_palettes_palettes",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L119",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -49183,7 +49205,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L76",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -49194,7 +49216,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L77",
+      "source_location": "L81",
       "weight": 1.0
     },
     {
@@ -49205,7 +49227,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L81",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -49216,18 +49238,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L86",
-      "weight": 1.0
-    },
-    {
-      "source": "app_src_lib_theming_palettes",
-      "target": "app_src_lib_theming_palettes_resolvescheme",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/theming/palettes.ts",
-      "source_location": "L98",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -55728,15 +55739,6 @@
     },
     {
       "source": "app_src_lib_components_results_exportdialog",
-      "target": "path",
-      "relation": "imports_from",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/components/results/ExportDialog.svelte"
-    },
-    {
-      "source": "app_src_lib_components_results_exportdialog",
       "target": "plugin_dialog",
       "relation": "imports_from",
       "_origin": "ast",
@@ -55747,6 +55749,15 @@
     {
       "source": "app_src_lib_components_results_exportdialog",
       "target": "svelte",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/components/results/ExportDialog.svelte"
+    },
+    {
+      "source": "app_src_lib_components_results_exportdialog",
+      "target": "tauri_apps_api_path_path",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -56187,7 +56198,7 @@
     },
     {
       "source": "app_src_lib_components_tabledefinitionmodal",
-      "target": "lang_sql",
+      "target": "codemirror_state_state",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -56196,7 +56207,7 @@
     },
     {
       "source": "app_src_lib_components_tabledefinitionmodal",
-      "target": "state",
+      "target": "lang_sql",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -56709,6 +56720,15 @@
     },
     {
       "source": "app_src_lib_sqleditor",
+      "target": "codemirror_state_state",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/src/lib/SqlEditor.svelte"
+    },
+    {
+      "source": "app_src_lib_sqleditor",
       "target": "commands",
       "relation": "imports_from",
       "_origin": "ast",
@@ -56728,15 +56748,6 @@
     {
       "source": "app_src_lib_sqleditor",
       "target": "language",
-      "relation": "imports_from",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "app/src/lib/SqlEditor.svelte"
-    },
-    {
-      "source": "app_src_lib_sqleditor",
-      "target": "state",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -56925,7 +56936,7 @@
     },
     {
       "source": "app_src_routes_layout_svelte_app_src_routes_layout",
-      "target": "transition",
+      "target": "tauri_apps_api_window_window",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -56934,7 +56945,7 @@
     },
     {
       "source": "app_src_routes_layout_svelte_app_src_routes_layout",
-      "target": "window",
+      "target": "transition",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -59695,5 +59706,5 @@
       "source_file": "docs/design/tableplus-ux-arquitectura.md"
     }
   ],
-  "built_at_commit": "a006b5e891aa5c295f63207fc7fa59acf3e2d3cf"
+  "built_at_commit": "9597b7d52f01653c0a1549118d14d2cc4d49f8b9"
 }
