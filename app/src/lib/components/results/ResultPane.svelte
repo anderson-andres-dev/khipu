@@ -1,19 +1,44 @@
 <script lang="ts">
-  import { Table } from "@lucide/svelte";
+  import { Table, TableProperties } from "@lucide/svelte";
   import type { ColumnCatalogInfo, QueryExecutionResult } from "$lib/types";
   import DataGrid from "$lib/components/results/DataGrid.svelte";
 
   let {
     isExecuting,
     result,
+    resultSql = null,
+    resultAt = null,
     sourceLabel = null,
     columnCatalogInfo = null,
   }: {
     isExecuting: boolean;
     result: QueryExecutionResult | null;
+    resultSql?: string | null;
+    resultAt?: number | null;
     sourceLabel?: string | null;
     columnCatalogInfo?: Map<string, ColumnCatalogInfo> | null;
   } = $props();
+
+  // Marca de tiempo al estilo del log de DataGrip: 2026-09-24 19:15:48.801,
+  // en hora local.
+  function formatTimestamp(epochMs: number): string {
+    const date = new Date(epochMs);
+    const pad = (value: number, length = 2) => String(value).padStart(length, "0");
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
+    );
+  }
+
+  // "[1064] You have an error in your SQL syntax…" (+ la posicion, si el
+  // driver la informa). pre-wrap respeta los saltos de linea del mensaje.
+  function errorText(error: { message: string; code?: string; position?: number }): string {
+    const code = error.code ? `[${error.code}] ` : "";
+    const position = error.position !== undefined ? ` (posición ${error.position})` : "";
+    return `${code}${error.message}${position}`;
+  }
+
+  const timestamp = $derived(resultAt === null ? "" : formatTimestamp(resultAt));
 </script>
 
 <div class="result-pane">
@@ -26,19 +51,24 @@
     </div>
   {/if}
   {#if isExecuting}
-    <div class="placeholder">Ejecutando…</div>
+    <div class="centered">
+      <div class="spinner" role="status" aria-label="Ejecutando consulta"></div>
+    </div>
   {:else if result === null}
-    <div class="placeholder">Ejecuta una consulta para ver los resultados aquí.</div>
+    <div class="centered empty-state">
+      <TableProperties size={28} strokeWidth={1.25} aria-hidden="true" />
+      <span>Sin resultados</span>
+    </div>
   {:else if result.type === "error"}
-    <div class="error">
-      <p class="message">{result.message}</p>
-      {#if result.code || result.position !== undefined}
-        <p class="meta">
-          {#if result.code}{result.code}{/if}
-          {#if result.code && result.position !== undefined} · {/if}
-          {#if result.position !== undefined}posición {result.position}{/if}
-        </p>
+    <!-- Log al estilo consola: la consulta ejecutada y debajo el error, cada
+         bloque con su marca de tiempo y las lineas siguientes alineadas. -->
+    <div class="error-log" role="alert">
+      {#if resultSql}
+        <span class="log-time">[{timestamp}]</span>
+        <span class="log-sql"><span class="log-prompt">&gt;</span> {resultSql.trim()}</span>
       {/if}
+      <span class="log-time">[{timestamp}]</span>
+      <span class="log-error">{errorText(result)}</span>
     </div>
   {:else if result.type === "command"}
     <div class="output">
@@ -78,21 +108,101 @@
   }
 
   .placeholder {
+    margin: 0;
     padding: var(--space-3);
     color: var(--text-secondary);
     font-size: 0.8125rem;
   }
 
-  .error,
   .output {
     padding: var(--space-3);
     font-size: 0.8125rem;
   }
 
-  .error .message {
-    margin: 0;
+  .centered {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-state {
+    flex-direction: column;
+    gap: var(--space-2);
+    color: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+    font-size: 0.8125rem;
+    user-select: none;
+  }
+
+  .empty-state :global(svg) {
+    opacity: 0.6;
+  }
+
+  .spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    box-sizing: border-box;
+    border: 2px solid color-mix(in srgb, var(--text-secondary) 25%, transparent);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation-duration: 2s;
+    }
+  }
+
+  /* Dos columnas: la marca de tiempo y el texto. Las lineas siguientes de
+     una consulta o mensaje multilinea quedan alineadas bajo el texto, no
+     bajo la hora. */
+  .error-log {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-content: start;
+    column-gap: var(--space-2);
+    row-gap: var(--space-1);
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+    padding: var(--space-3);
+    background: var(--surface-content);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .log-time {
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  .log-sql,
+  .log-error {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .log-sql {
+    color: var(--text-primary);
+  }
+
+  .log-prompt {
+    color: var(--text-secondary);
+  }
+
+  .log-error {
     color: var(--danger);
   }
+
 
   .output p {
     margin: 0;

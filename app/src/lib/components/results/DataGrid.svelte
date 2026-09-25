@@ -79,6 +79,21 @@
     selection = { startRow: 0, startCol: col, endRow: Math.max(0, rows.length - 1), endCol: col };
   }
 
+  // Toggle: si ya esta todo seleccionado, un segundo clic lo limpia.
+  function toggleSelectAll() {
+    if (rows.length === 0 || columns.length === 0) return;
+    const lastRow = rows.length - 1;
+    const lastCol = columns.length - 1;
+    if (selection) {
+      const { minRow, maxRow, minCol, maxCol } = normalized(selection);
+      if (minRow === 0 && minCol === 0 && maxRow === lastRow && maxCol === lastCol) {
+        selection = null;
+        return;
+      }
+    }
+    selection = { startRow: 0, startCol: 0, endRow: lastRow, endCol: lastCol };
+  }
+
   function selectRow(row: number) {
     selection = { startRow: row, startCol: 0, endRow: row, endCol: Math.max(0, columns.length - 1) };
   }
@@ -672,7 +687,15 @@
       <!-- Esquina: hermana (no hija) del header para no anidar un sticky
            dentro de otro; el margin-bottom negativo la superpone al hueco
            que .grid-header-spacer deja libre a la izquierda del header. -->
-      <div class="grid-corner" bind:this={cornerEl} aria-hidden="true"></div>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div
+        class="grid-corner"
+        bind:this={cornerEl}
+        role="button"
+        tabindex="-1"
+        aria-label="Seleccionar todo"
+        onclick={toggleSelectAll}
+      ></div>
 
       <div class="grid-header">
         <div class="grid-header-spacer" aria-hidden="true"></div>
@@ -854,6 +877,11 @@
     box-shadow:
       inset -1px 0 0 var(--border),
       inset 0 -1px 0 var(--border);
+    cursor: pointer;
+  }
+
+  .grid-corner:hover {
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface-elevated));
   }
 
   .grid-header {
