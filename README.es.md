@@ -53,7 +53,7 @@ Las nuevas versiones aparecen en **Ajustes → Actualizaciones**.
 
 ## Compilar desde el código
 
-Necesitas Rust 1.85+, Node.js 20+ y las [dependencias de Tauri](https://tauri.app/start/prerequisites/).
+Necesitas Rust 1.85+, Node.js 20.19+ y las [dependencias de Tauri](https://tauri.app/start/prerequisites/).
 
 ```bash
 git clone https://github.com/anderson-andres-dev/rowly-db.git

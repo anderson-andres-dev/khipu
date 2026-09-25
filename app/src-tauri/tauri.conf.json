@@ -28,6 +28,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": {
+      "../../LICENSE": "licenses/LICENSE",
+      "../../LICENSE-MIT": "licenses/LICENSE-MIT",
+      "../../LICENSE-APACHE": "licenses/LICENSE-APACHE"
+    },
     "category": "DeveloperTool",
     "shortDescription": "Free & Open Source SQL Client",
     "longDescription": "A lightweight desktop client for querying, exploring and understanding databases. 100% free, open source, no Pro edition.",
