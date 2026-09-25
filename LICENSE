@@ -1,4 +1,4 @@
-Khipu is dual-licensed under either of:
+Rowly DB, including its internal Khipu engine, is dual-licensed under either of:
 
 - MIT License (see [LICENSE-MIT](LICENSE-MIT))
 - Apache License, Version 2.0 (see [LICENSE-APACHE](LICENSE-APACHE))
@@ -6,6 +6,6 @@ Khipu is dual-licensed under either of:
 at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion in Khipu by you, as defined in the Apache-2.0
+submitted for inclusion in Rowly DB by you, as defined in the Apache-2.0
 license, shall be dual licensed as above, without any additional terms
 or conditions.

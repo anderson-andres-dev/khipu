@@ -15,7 +15,7 @@ edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/anderson-andres-dev/rowly-db"
-authors = ["Khipu contributors"]
+authors = ["Rowly DB contributors"]
 
 [workspace.dependencies]
 khipu-engine = { path = "crates/engine" }

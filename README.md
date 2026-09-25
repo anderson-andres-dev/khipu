@@ -5,16 +5,22 @@
   <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="400">
 </picture>
 
-<br><br>
+<br>
 
 <p>
-  <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=505050&amp;color=e8bd25"></a>
-  <a href="https://github.com/anderson-andres-dev/rowly-db/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=ISSUES&amp;labelColor=505050&amp;color=1689ca"></a>
-  <a href="https://github.com/anderson-andres-dev/rowly-db/pulls"><img alt="Open pull requests" src="https://img.shields.io/github/issues-pr/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=PULL%20REQUESTS&amp;labelColor=505050&amp;color=7853d8"></a>
-  <a href="docs/assets/rowly-db.webp"><img alt="View screenshot" src="https://img.shields.io/badge/SHOWCASE-SCREENSHOT-151515?style=for-the-badge&amp;labelColor=505050"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/releases"><strong>Download Rowly DB</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#installation">Installation</a>
+  &nbsp;·&nbsp;
+  <a href="README.es.md">Español</a>
 </p>
 
-[Download](https://github.com/anderson-andres-dev/rowly-db/releases) · [Install](#installation) · [Español](README.es.md)
+<p>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=ISSUES&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="https://github.com/anderson-andres-dev/rowly-db/pulls"><img alt="Open pull requests" src="https://img.shields.io/github/issues-pr/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=PULL%20REQUESTS&amp;labelColor=283640&amp;color=00AFAF"></a>
+  <a href="docs/assets/rowly-db.webp"><img alt="View screenshot" src="https://img.shields.io/badge/SHOWCASE-SCREENSHOT-283640?style=for-the-badge&amp;labelColor=283640"></a>
+</p>
 
 </div>
 
@@ -64,4 +70,4 @@ Packages are written to `target/release/bundle/`.
 
 ## License
 
-[MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE).
+Dual licensed. Choose [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE).
