@@ -1,5 +1,6 @@
 pub mod catalog;
 pub mod execution_guard;
+pub mod pagination;
 pub mod parser;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

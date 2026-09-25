@@ -68,6 +68,18 @@ export const shortcutDefinitions: ShortcutDefinition[] = [
     defaultKeys: "Ctrl+L",
   },
   {
+    id: "next-result-page",
+    label: "Página siguiente",
+    description: "Muestra la siguiente página del resultado.",
+    defaultKeys: "Ctrl+Alt+ArrowDown",
+  },
+  {
+    id: "previous-result-page",
+    label: "Página anterior",
+    description: "Muestra la página anterior del resultado.",
+    defaultKeys: "Ctrl+Alt+ArrowUp",
+  },
+  {
     id: "execute-query",
     label: "Ejecutar consulta",
     description: "Ejecuta la seleccion o la sentencia donde esta el cursor.",

@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import { get, writable } from "svelte/store";
-import type { DestructiveStatement, QueryExecutionResult } from "$lib/types";
+import type { DestructiveStatement, QueryExecutionResult, ResultPage } from "$lib/types";
 
 const STORAGE_KEY = "khipu:query-consoles:v1";
 
@@ -40,6 +40,13 @@ export interface QueryExecutionState {
   // Momento (epoch ms) en que termino la ejecucion que produjo `result`:
   // el panel de resultados lo muestra como marca de tiempo del log.
   resultAt: number | null;
+  // Pagina que muestra `result` (null si no es un conjunto de filas).
+  page: ResultPage | null;
+  // Total de filas de resultSql, si se conoce: porque la consulta cupo en
+  // una pagina, porque se llego a la ultima, o porque el usuario pidio el
+  // COUNT(*). Se conserva al cambiar de pagina (es la misma consulta).
+  totalRows: number | null;
+  counting: boolean;
   pendingConfirmation: PendingQueryConfirmation | null;
 }
 
@@ -48,6 +55,9 @@ const EMPTY_EXECUTION_STATE: QueryExecutionState = {
   result: null,
   resultSql: null,
   resultAt: null,
+  page: null,
+  totalRows: null,
+  counting: false,
   pendingConfirmation: null,
 };
 
@@ -221,9 +231,44 @@ export function beginQueryExecution(consoleId: string): boolean {
   return true;
 }
 
-export function finishQueryExecution(consoleId: string, sql: string, result: QueryExecutionResult): void {
+// `paging`: es otra pagina de la misma consulta (no una ejecucion nueva),
+// asi que el total ya conocido sigue valiendo.
+export function finishQueryExecution(
+  consoleId: string,
+  sql: string,
+  result: QueryExecutionResult,
+  page: ResultPage | null = null,
+  paging = false,
+): void {
+  queryConsoles.update((state) => {
+    const previous = executionForConsole(state, consoleId);
+    let totalRows = paging && previous.resultSql === sql ? previous.totalRows : null;
+    // Si no llego la fila extra, esta es la ultima pagina: el total sale solo.
+    if (result.type === "resultSet" && !result.truncated && (page?.pageable || page?.offset === 0)) {
+      totalRows = (page?.offset ?? 0) + result.rows.length;
+    }
+    return withExecution(state, consoleId, {
+      isExecuting: false,
+      result,
+      resultSql: sql,
+      resultAt: Date.now(),
+      page: result.type === "resultSet" ? page : null,
+      totalRows: result.type === "resultSet" ? totalRows : null,
+      counting: false,
+      pendingConfirmation: null,
+    });
+  });
+}
+
+export function setQueryCounting(consoleId: string, counting: boolean): void {
+  queryConsoles.update((state) => withExecution(state, consoleId, { counting }));
+}
+
+export function setQueryTotalRows(consoleId: string, sql: string, totalRows: number): void {
   queryConsoles.update((state) =>
-    withExecution(state, consoleId, { isExecuting: false, result, resultSql: sql, resultAt: Date.now(), pendingConfirmation: null }),
+    executionForConsole(state, consoleId).resultSql === sql
+      ? withExecution(state, consoleId, { totalRows, counting: false })
+      : state,
   );
 }
 

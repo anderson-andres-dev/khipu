@@ -189,6 +189,15 @@ export type DestructiveStatement =
   | "dropDatabase"
   | "dropColumn";
 
+// Como se ubican las filas devueltas dentro del resultado completo.
+// pageable: false -> la sentencia no se pudo paginar (SHOW, FOR UPDATE...),
+// solo existe la primera pagina.
+export interface ResultPage {
+  offset: number;
+  pageSize: number;
+  pageable: boolean;
+}
+
 export type ExecuteQueryResponse =
   | { type: "confirmationRequired"; statement: DestructiveStatement }
-  | { type: "completed"; result: QueryExecutionResult };
+  | { type: "completed"; result: QueryExecutionResult; page?: ResultPage };

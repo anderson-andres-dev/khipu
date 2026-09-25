@@ -17,10 +17,31 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
-/// How many rows `execute_query` returns before reporting `truncated: true`.
-/// Not configurable from the frontend yet: accepting an arbitrary value from
-/// the WebView would let it opt out of the protection entirely.
+/// Page size when the frontend doesn't ask for one.
 const DEFAULT_QUERY_ROW_LIMIT: usize = 500;
+/// Upper bound for a requested page size ("Todas" included): the result grid
+/// mounts every row it receives, so this keeps a single page from freezing
+/// the WebView. Whatever the WebView asks for is clamped to this.
+const MAX_QUERY_ROW_LIMIT: usize = 10_000;
+
+/// Page requested by the frontend (row offset + page size).
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PageRequest {
+    offset: u64,
+    page_size: usize,
+}
+
+/// How the returned rows map onto the full result. `pageable: false` means
+/// the statement couldn't be rewritten with LIMIT/OFFSET (SHOW, FOR
+/// UPDATE, ...): only the first page is available.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PageInfo {
+    offset: u64,
+    page_size: usize,
+    pageable: bool,
+}
 
 /// The connector from the most recent successful `connect` and every schema
 /// introspected through it, kept alive so `execute_query` and the database
@@ -88,8 +109,14 @@ struct AppState {
     rename_all_fields = "camelCase"
 )]
 enum ExecuteQueryResponse {
-    ConfirmationRequired { statement: DestructiveStatement },
-    Completed { result: QueryExecutionResult },
+    ConfirmationRequired {
+        statement: DestructiveStatement,
+    },
+    Completed {
+        result: QueryExecutionResult,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        page: Option<PageInfo>,
+    },
 }
 
 /// Tables and views of every loaded schema, for completion: adding a schema
@@ -244,12 +271,14 @@ fn disconnect(window: tauri::Window, state: tauri::State<'_, AppState>) {
 async fn execute_query(
     sql: String,
     confirmed_statement: Option<DestructiveStatement>,
+    page: Option<PageRequest>,
     window: tauri::Window,
     state: tauri::State<'_, AppState>,
 ) -> Result<ExecuteQueryResponse, String> {
     let sql = sql.trim();
     if sql.is_empty() {
         return Ok(ExecuteQueryResponse::Completed {
+            page: None,
             result: QueryExecutionResult::Error {
                 message: "No hay ninguna consulta para ejecutar.".to_string(),
                 code: None,
@@ -267,6 +296,7 @@ async fn execute_query(
             Some(active) => (Arc::clone(&active.connector), active.dialect),
             None => {
                 return Ok(ExecuteQueryResponse::Completed {
+                    page: None,
                     result: QueryExecutionResult::Error {
                         message: "No hay ninguna conexión activa.".to_string(),
                         code: None,
@@ -281,6 +311,7 @@ async fn execute_query(
         Ok(classification) => classification,
         Err(error) => {
             return Ok(ExecuteQueryResponse::Completed {
+                page: None,
                 result: QueryExecutionResult::Error {
                     message: error.to_string(),
                     code: None,
@@ -299,6 +330,7 @@ async fn execute_query(
         }
         (DestructiveClassification::NotDestructive, Some(_)) => {
             return Ok(ExecuteQueryResponse::Completed {
+                page: None,
                 result: QueryExecutionResult::Error {
                     message: "La confirmación ya no corresponde a esta consulta.".to_string(),
                     code: None,
@@ -308,16 +340,66 @@ async fn execute_query(
         }
     }
 
+    let offset = page.map_or(0, |page| page.offset);
+    let page_size = page
+        .map_or(DEFAULT_QUERY_ROW_LIMIT, |page| page.page_size)
+        .clamp(1, MAX_QUERY_ROW_LIMIT);
+    // Se piden page_size + 1 filas: si llega la extra, hay pagina siguiente
+    // (el driver la descarta y marca `truncated`).
+    let paged_sql =
+        khipu_engine::pagination::paginate_sql(sql, dialect, offset, page_size as u64 + 1);
+    let pageable = paged_sql.is_some();
     let result = connector
         .execute_query(
-            sql,
+            paged_sql.as_deref().unwrap_or(sql),
             QueryExecutionOptions {
-                max_rows: DEFAULT_QUERY_ROW_LIMIT,
+                max_rows: page_size,
             },
         )
         .await;
 
-    Ok(ExecuteQueryResponse::Completed { result })
+    let page = matches!(result, QueryExecutionResult::ResultSet { .. }).then_some(PageInfo {
+        offset: if pageable { offset } else { 0 },
+        page_size,
+        pageable,
+    });
+    Ok(ExecuteQueryResponse::Completed { result, page })
+}
+
+/// Total rows `sql` would return, via `SELECT COUNT(*) FROM (...)`. Only
+/// for statements `execute_query` can paginate.
+#[tauri::command]
+async fn count_query_rows(
+    sql: String,
+    window: tauri::Window,
+    state: tauri::State<'_, AppState>,
+) -> Result<u64, String> {
+    let (connector, dialect) = {
+        let guard = state
+            .connections
+            .lock()
+            .expect("connections mutex poisoned");
+        let active = guard
+            .get(window.label())
+            .ok_or_else(|| "No hay ninguna conexión activa.".to_string())?;
+        (Arc::clone(&active.connector), active.dialect)
+    };
+    let count_sql = khipu_engine::pagination::count_sql(sql.trim(), dialect)
+        .ok_or_else(|| "No se puede contar el total de esta consulta.".to_string())?;
+    match connector
+        .execute_query(&count_sql, QueryExecutionOptions { max_rows: 1 })
+        .await
+    {
+        QueryExecutionResult::ResultSet { rows, .. } => rows
+            .first()
+            .and_then(|row| row.first().cloned().flatten())
+            .and_then(|value| value.parse::<u64>().ok())
+            .ok_or_else(|| "El servidor no devolvió un total.".to_string()),
+        QueryExecutionResult::Error { message, .. } => Err(message),
+        QueryExecutionResult::Command { .. } => {
+            Err("El servidor no devolvió un total.".to_string())
+        }
+    }
 }
 
 #[tauri::command]
@@ -432,7 +514,8 @@ pub fn run() {
             rename_sql_file,
             list_sql_dir,
             create_sql_file,
-            trash_sql_file
+            trash_sql_file,
+            count_query_rows
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

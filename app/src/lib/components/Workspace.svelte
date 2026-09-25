@@ -14,7 +14,8 @@
   import { connectionProfiles } from "$lib/stores/connectionProfiles";
   import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
   import { extractFromContext } from "$lib/sqlSchema";
-  import { executeQuery } from "$lib/queryExecution";
+  import { countQueryRows, executeQuery, type PageRequest } from "$lib/queryExecution";
+  import { defaultPageSize } from "$lib/stores/resultPaging";
   import type { CatalogColumn, CatalogTable, ColumnCatalogInfo, ExecuteQueryResponse } from "$lib/types";
   import {
     activateQueryConsole,
@@ -29,6 +30,8 @@
     queryConsoles,
     renameQueryConsole,
     requireQueryConfirmation,
+    setQueryCounting,
+    setQueryTotalRows,
     takeQueryConfirmation,
     updateQueryConsoleSql,
   } from "$lib/stores/queryConsoles";
@@ -42,7 +45,16 @@
   const execution = $derived(
     activeConsole
       ? executionForConsole($queryConsoles, activeConsole.id)
-      : { isExecuting: false, result: null, resultSql: null, resultAt: null, pendingConfirmation: null },
+      : {
+          isExecuting: false,
+          result: null,
+          resultSql: null,
+          resultAt: null,
+          page: null,
+          totalRows: null,
+          counting: false,
+          pendingConfirmation: null,
+        },
   );
   const activeProfile = $derived($connectionProfiles.find((profile) => profile.id === profileId));
   // Tabla principal (primer FROM) de la consulta que produjo el resultado
@@ -350,6 +362,18 @@
       return;
     }
 
+    const nextPageKeys = shortcutKeys("next-result-page");
+    if (nextPageKeys && eventMatchesShortcut(event, nextPageKeys)) {
+      if (stepPage(1)) event.preventDefault();
+      return;
+    }
+
+    const previousPageKeys = shortcutKeys("previous-result-page");
+    if (previousPageKeys && eventMatchesShortcut(event, previousPageKeys)) {
+      if (stepPage(-1)) event.preventDefault();
+      return;
+    }
+
     const openKeys = shortcutKeys("open-sql-file");
     if (openKeys && eventMatchesShortcut(event, openKeys)) {
       event.preventDefault();
@@ -364,12 +388,60 @@
     }
   }
 
-  function applyExecuteQueryResponse(consoleId: string, sql: string, response: ExecuteQueryResponse) {
+  function applyExecuteQueryResponse(
+    consoleId: string,
+    sql: string,
+    response: ExecuteQueryResponse,
+    paging = false,
+  ) {
     if (response.type === "confirmationRequired") {
       requireQueryConfirmation(consoleId, { sql, statement: response.statement });
       return;
     }
-    finishQueryExecution(consoleId, sql, response.result);
+    finishQueryExecution(consoleId, sql, response.result, response.page ?? null, paging);
+  }
+
+  // Una ejecucion nueva arranca en la primera pagina, con el tamaño que la
+  // consola venia usando (o el predeterminado).
+  function firstPage(consoleId: string): PageRequest {
+    const current = executionForConsole($queryConsoles, consoleId).page;
+    return { offset: 0, pageSize: current?.pageSize ?? $defaultPageSize };
+  }
+
+  // Otra pagina de la consulta que produjo el resultado vigente (resultSql,
+  // no el texto actual del editor, que puede haber cambiado).
+  async function navigatePage(consoleId: string, offset: number, pageSize: number) {
+    const sql = executionForConsole($queryConsoles, consoleId).resultSql;
+    if (!sql || !beginQueryExecution(consoleId)) return;
+    const response = await executeQuery(sql, null, { offset, pageSize });
+    applyExecuteQueryResponse(consoleId, sql, response, true);
+  }
+
+  async function countTotalRows(consoleId: string): Promise<number | null> {
+    const sql = executionForConsole($queryConsoles, consoleId).resultSql;
+    if (!sql) return null;
+    setQueryCounting(consoleId, true);
+    try {
+      const total = await countQueryRows(sql);
+      setQueryTotalRows(consoleId, sql, total);
+      return total;
+    } catch (error) {
+      setQueryCounting(consoleId, false);
+      notifyError(error);
+      return null;
+    }
+  }
+
+  // Ctrl+Alt+Abajo / Ctrl+Alt+Arriba.
+  function stepPage(direction: 1 | -1): boolean {
+    if (!activeConsole || execution.isExecuting) return false;
+    const { page, result } = execution;
+    if (!page?.pageable || result?.type !== "resultSet") return false;
+    if (direction === 1 && !result.truncated) return false;
+    if (direction === -1 && page.offset === 0) return false;
+    const offset = Math.max(0, page.offset + direction * page.pageSize);
+    void navigatePage(activeConsole.id, offset, page.pageSize);
+    return true;
   }
 
   // Solicita una ejecucion nueva (Ctrl+Enter o el boton "Ejecutar"). No hace
@@ -379,7 +451,7 @@
   // invocacion ni confirma nada por si solo.
   async function requestExecution(consoleId: string, sql: string) {
     if (!beginQueryExecution(consoleId)) return;
-    const response = await executeQuery(sql, null);
+    const response = await executeQuery(sql, null, firstPage(consoleId));
     applyExecuteQueryResponse(consoleId, sql, response);
   }
 
@@ -390,7 +462,7 @@
   async function confirmPendingExecution(consoleId: string) {
     const pending = takeQueryConfirmation(consoleId);
     if (!pending || !beginQueryExecution(consoleId)) return;
-    const response = await executeQuery(pending.sql, pending.statement);
+    const response = await executeQuery(pending.sql, pending.statement, firstPage(consoleId));
     applyExecuteQueryResponse(consoleId, pending.sql, response);
   }
 
@@ -568,6 +640,13 @@
         resultAt={execution.resultAt}
         sourceLabel={resultSourceLabel}
         columnCatalogInfo={resultColumnCatalogInfo}
+        page={execution.page}
+        totalRows={execution.totalRows}
+        counting={execution.counting}
+        nextPageShortcut={shortcutKeys("next-result-page")}
+        previousPageShortcut={shortcutKeys("previous-result-page")}
+        onnavigate={(offset, pageSize) => activeConsole && void navigatePage(activeConsole.id, offset, pageSize)}
+        oncount={() => (activeConsole ? countTotalRows(activeConsole.id) : Promise.resolve(null))}
       />
     </div>
   </section>

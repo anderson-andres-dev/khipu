@@ -198,3 +198,39 @@ describe("queryConsoles: archivos .sql", () => {
     expect(state.consoles.filter((item) => item.filePath === "/home/u/a.sql")).toHaveLength(1);
   });
 });
+
+describe("queryConsoles: paginacion", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const resultSet = (rows: number, truncated: boolean) => ({
+    type: "resultSet" as const,
+    columns: [{ name: "id", type: "INT" }],
+    rows: Array.from({ length: rows }, (_, index) => [String(index)]),
+    rowCount: rows,
+    executionTimeMs: 1,
+    truncated,
+  });
+
+  it("la ultima pagina deja el total conocido", async () => {
+    const mod = await freshQueryConsoles();
+    const id = mod.createQueryConsole("profile-a");
+    mod.finishQueryExecution(id, "SELECT * FROM t", resultSet(3, false), { offset: 500, pageSize: 500, pageable: true }, true);
+    expect(mod.executionForConsole(get(mod.queryConsoles), id).totalRows).toBe(503);
+  });
+
+  it("cambiar de pagina conserva el total contado; una ejecucion nueva lo olvida", async () => {
+    const mod = await freshQueryConsoles();
+    const id = mod.createQueryConsole("profile-a");
+    const page = { offset: 0, pageSize: 500, pageable: true };
+    mod.finishQueryExecution(id, "SELECT * FROM t", resultSet(500, true), page);
+    mod.setQueryTotalRows(id, "SELECT * FROM t", 8148);
+
+    mod.finishQueryExecution(id, "SELECT * FROM t", resultSet(500, true), { ...page, offset: 500 }, true);
+    expect(mod.executionForConsole(get(mod.queryConsoles), id).totalRows).toBe(8148);
+
+    mod.finishQueryExecution(id, "SELECT * FROM t", resultSet(500, true), page);
+    expect(mod.executionForConsole(get(mod.queryConsoles), id).totalRows).toBeNull();
+  });
+});

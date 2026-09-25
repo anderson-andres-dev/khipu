@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Table, TableProperties } from "@lucide/svelte";
-  import type { ColumnCatalogInfo, QueryExecutionResult } from "$lib/types";
+  import type { ColumnCatalogInfo, QueryExecutionResult, ResultPage } from "$lib/types";
   import DataGrid from "$lib/components/results/DataGrid.svelte";
+  import ResultPager from "$lib/components/results/ResultPager.svelte";
 
   let {
     isExecuting,
@@ -10,6 +11,13 @@
     resultAt = null,
     sourceLabel = null,
     columnCatalogInfo = null,
+    page = null,
+    totalRows = null,
+    counting = false,
+    nextPageShortcut = "",
+    previousPageShortcut = "",
+    onnavigate = () => {},
+    oncount = async () => null,
   }: {
     isExecuting: boolean;
     result: QueryExecutionResult | null;
@@ -17,7 +25,16 @@
     resultAt?: number | null;
     sourceLabel?: string | null;
     columnCatalogInfo?: Map<string, ColumnCatalogInfo> | null;
+    page?: ResultPage | null;
+    totalRows?: number | null;
+    counting?: boolean;
+    nextPageShortcut?: string;
+    previousPageShortcut?: string;
+    onnavigate?: (offset: number, pageSize: number) => void;
+    oncount?: () => Promise<number | null>;
   } = $props();
+
+  const numberFormat = new Intl.NumberFormat("es");
 
   // Marca de tiempo al estilo del log de DataGrip: 2026-09-24 19:15:48.801,
   // en hora local.
@@ -50,7 +67,9 @@
       </div>
     </div>
   {/if}
-  {#if isExecuting}
+  <!-- Con un resultado en pantalla (cambio de pagina, re-ejecucion), el grid
+       se queda y encima aparece el loader: no parpadea a vacio. -->
+  {#if isExecuting && result?.type !== "resultSet"}
     <div class="centered">
       <div class="spinner" role="status" aria-label="Ejecutando consulta"></div>
     </div>
@@ -75,24 +94,50 @@
       <p>Output: consulta ejecutada correctamente.</p>
       <p class="meta">{result.affectedRows} filas afectadas · {result.executionTimeMs} ms</p>
     </div>
-  {:else if result.rows.length === 0}
-    <div class="empty">
-      <p class="placeholder">No se devolvieron filas.</p>
-      <div class="status-bar">
-        0 rows · {result.columns.length} columns · {result.executionTimeMs} ms
-      </div>
-    </div>
   {:else}
     <div class="grid-region">
       <div class="grid-scroll">
-        <DataGrid columns={result.columns} rows={result.rows} {columnCatalogInfo} />
+        {#if result.rows.length === 0}
+          <p class="placeholder">No se devolvieron filas.</p>
+        {:else}
+          <DataGrid
+            columns={result.columns}
+            rows={result.rows}
+            rowOffset={page?.offset ?? 0}
+            {columnCatalogInfo}
+          />
+        {/if}
+        {#if isExecuting}
+          <div class="busy-overlay">
+            <div class="spinner" role="status" aria-label="Cargando página"></div>
+          </div>
+        {/if}
       </div>
+      <!-- Barra fija al pie: estadisticas a la izquierda y la paginacion
+           centrada en el panel (grid de tres columnas: el centro no se
+           corre aunque cambie el ancho del texto de los costados). -->
       <div class="status-bar">
-        {result.rowCount} rows · {result.columns.length} columns · {result.executionTimeMs} ms
-        {#if result.truncated}
-          <span class="truncated" title="Se alcanzó el límite de filas; hay más resultados sin mostrar.">
-            · Limited
-          </span>
+        <span class="stats">
+          {numberFormat.format(result.rows.length)} filas · {result.columns.length} columnas · {result.executionTimeMs} ms
+          {#if result.truncated && !page?.pageable}
+            <span class="truncated" title="Esta sentencia no se puede paginar: se muestran solo las primeras filas.">
+              · Limitado
+            </span>
+          {/if}
+        </span>
+        {#if page}
+          <ResultPager
+            {page}
+            rowCount={result.rows.length}
+            hasMore={result.truncated}
+            {totalRows}
+            {counting}
+            busy={isExecuting}
+            nextShortcut={nextPageShortcut}
+            previousShortcut={previousPageShortcut}
+            {onnavigate}
+            {oncount}
+          />
         {/if}
       </div>
     </div>
@@ -248,7 +293,6 @@
     color: var(--text-secondary);
   }
 
-  .empty,
   .grid-region {
     display: flex;
     min-height: 0;
@@ -263,18 +307,49 @@
   }
 
   .grid-scroll {
+    position: relative;
     min-height: 0;
     flex: 1;
     overflow: hidden;
   }
 
+  .busy-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--surface-content) 55%, transparent);
+    animation: overlay-in 120ms ease;
+  }
+
+  @keyframes overlay-in {
+    from {
+      opacity: 0;
+    }
+  }
+
   .status-bar {
+    display: grid;
     flex-shrink: 0;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 2.5rem;
     padding: var(--space-1) var(--space-3);
+    box-sizing: border-box;
     border-top: 1px solid var(--border);
     background: var(--surface);
     color: var(--text-secondary);
     font-size: 0.75rem;
+  }
+
+  .stats {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .truncated {

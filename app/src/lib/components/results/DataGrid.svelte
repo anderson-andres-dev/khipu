@@ -1,15 +1,19 @@
 <script lang="ts">
   import { Columns3, Key } from "@lucide/svelte";
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import type { ColumnCatalogInfo, QueryColumn, QueryRow } from "$lib/types";
 
   let {
     columns,
     rows,
+    rowOffset = 0,
     columnCatalogInfo = null,
   }: {
     columns: QueryColumn[];
     rows: QueryRow[];
+    // Posicion de la primera fila dentro del resultado completo (pagina):
+    // la columna # muestra la numeracion global (501, 502... en la pagina 2).
+    rowOffset?: number;
     columnCatalogInfo?: Map<string, ColumnCatalogInfo> | null;
   } = $props();
 
@@ -247,7 +251,7 @@
   // Ancho de la columna # en funcion de cuantos digitos tiene el numero de
   // fila mas grande. En `ch` con tabular-nums, cada digito mide 1ch: no
   // hace falta medir nada en el DOM. 2 * --space-2 de padding + 4px de aire.
-  const gutterWidth = $derived(`calc(${String(Math.max(rows.length, 1)).length}ch + 2 * var(--space-2) + 4px)`);
+  const gutterWidth = $derived(`calc(${String(Math.max(rowOffset + rows.length, 1)).length}ch + 2 * var(--space-2) + 4px)`);
 
   // Mientras una columna mida al menos el ancho de su contenido, ninguna
   // celda desborda y no hace falta recortarlas. Solo las que el usuario
@@ -585,6 +589,13 @@
     // debajo de un resultado nuevo con menos filas.
     selection = null;
     isDragSelecting = false;
+    // Pagina nueva: se arranca desde la primera fila; el scroll horizontal
+    // se conserva (suelen ser las mismas columnas).
+    // untrack: leer viewportEl no debe volver a disparar este efecto (que
+    // re-renderiza el cuerpo) cuando el bind:this se resuelve.
+    untrack(() => {
+      if (viewportEl) viewportEl.scrollTop = 0;
+    });
 
     // Los anchos ya vienen calculados (naturalWidths); solo falta medir
     // header/filas/scrollbars una vez que el DOM nuevo esta puesto.
@@ -755,7 +766,7 @@
           {#each rows as _, rowIndex (rowIndex)}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="row-number" onclick={() => selectRow(rowIndex)}>{rowIndex + 1}</div>
+            <div class="row-number" onclick={() => selectRow(rowIndex)}>{rowOffset + rowIndex + 1}</div>
           {/each}
         </div>
 
