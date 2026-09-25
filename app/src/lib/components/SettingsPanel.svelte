@@ -201,6 +201,16 @@
                   style:border-color={preview.shell.border}
                   aria-hidden="true"
                 >
+                  <!-- Una ventana en miniatura: pestañas, árbol y editor con su
+                       margen de números, cada parte con el color del tema. -->
+                  <span class="preview-tabs" style:border-color={preview.shell.border}>
+                    <span class="preview-tab active" style:background={editor.background} style:box-shadow={`inset 0 1.5px 0 ${preview.shell.accent}`}>
+                      <i style:background={preview.shell.textPrimary}></i>
+                    </span>
+                    <span class="preview-tab">
+                      <i style:background={preview.shell.textSecondary}></i>
+                    </span>
+                  </span>
                   <span
                     class="preview-sidebar"
                     style:background={preview.shell.surfaceElevated}
@@ -209,30 +219,32 @@
                     <i style:background={preview.shell.accent}></i>
                     <i style:background={preview.shell.textSecondary}></i>
                     <i style:background={preview.shell.textSecondary}></i>
+                    <i style:background={preview.shell.textSecondary}></i>
                   </span>
-                  <span class="preview-code" style:background={editor.background} style:color={editor.foreground}>
-                    <span style:color={editor.comment}>-- top 50</span>
-                    <span><b style:color={editor.keyword}>SELECT</b> id, <b style:color={editor.builtin ?? editor.foreground}>count</b>(*)</span>
-                    <span><b style:color={editor.keyword}>FROM</b> orders</span>
-                    <span><b style:color={editor.keyword}>WHERE</b> paid <b style:color={editor.operator ?? editor.foreground}>=</b> <b style:color={editor.constant}>true</b></span>
-                    <span><b style:color={editor.keyword}>LIMIT</b> <b style:color={editor.number}>50</b>;</span>
-                  </span>
-                  {#if !palettes[family.id].light}
-                    <span
-                      class="palette-badge"
-                      style:background={preview.shell.surfaceElevated}
-                      style:color={preview.shell.textSecondary}
-                      style:border-color={preview.shell.border}
-                    >
-                      <Moon size={9} aria-hidden="true" />
-                      {$t("settings.appearance.darkOnly")}
+                  <span class="preview-editor" style:background={editor.background}>
+                    <span class="preview-gutter" style:color={editor.lineNumber}>
+                      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
                     </span>
-                  {/if}
+                    <span class="preview-code" style:color={editor.foreground}>
+                      <span style:color={editor.comment}>-- top 50</span>
+                      <span><b style:color={editor.keyword}>SELECT</b> id, <b style:color={editor.builtin ?? editor.foreground}>count</b>(*)</span>
+                      <span><b style:color={editor.keyword}>FROM</b> orders</span>
+                      <span><b style:color={editor.keyword}>WHERE</b> paid <b style:color={editor.operator ?? editor.foreground}>=</b> <b style:color={editor.constant}>true</b></span>
+                      <span><b style:color={editor.keyword}>LIMIT</b> <b style:color={editor.number}>50</b>;</span>
+                    </span>
+                  </span>
                 </span>
-                <span class="palette-name">{family.label}</span>
-                {#if !palettes[family.id].light}
-                  <span class="visually-hidden">{$t("settings.appearance.darkOnly")}</span>
-                {/if}
+                <span class="palette-text">
+                  <span class="palette-name">{family.label}</span>
+                  <span class="palette-modes">
+                    {#if palettes[family.id].light}
+                      {$t("settings.appearance.bothModes")}
+                    {:else}
+                      <Moon size={10} aria-hidden="true" />
+                      {$t("settings.appearance.darkOnly")}
+                    {/if}
+                  </span>
+                </span>
                 <span class="selection" aria-hidden="true"></span>
               </button>
             {/each}
@@ -417,8 +429,8 @@
 
 <style>
   dialog {
-    width: min(56rem, calc(100vw - 4rem));
-    height: min(36rem, calc(100vh - 4rem));
+    width: min(62rem, calc(100vw - 4rem));
+    height: min(39rem, calc(100vh - 4rem));
     max-width: none;
     max-height: none;
     padding: 0;
@@ -494,7 +506,7 @@
   }
 
   .settings-content {
-    width: min(100%, 46rem);
+    width: min(100%, 50rem);
     margin: 0 auto;
   }
 
@@ -791,72 +803,127 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-2) var(--space-3);
+    gap: var(--space-3) var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-3) var(--space-2);
     text-align: left;
+    transition:
+      border-color var(--duration-fast),
+      background-color var(--duration-fast),
+      box-shadow var(--duration-fast),
+      transform var(--duration-fast);
   }
 
-  .palette-option > .palette-name {
-    padding-left: var(--space-1);
+  .palette-option:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-elevated);
   }
 
+  .palette-option.selected {
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* Rectangular como una ventana: 16:9, con pestañas arriba, árbol a la
+     izquierda y el editor ocupando el resto. */
   .theme-preview {
-    position: relative;
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: 18% 1fr;
-    height: 6rem;
+    grid-template-columns: 17% 1fr;
+    grid-template-rows: 0.95rem 1fr;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border: 1px solid;
     border-radius: calc(var(--radius-sm) - 2px);
-    transition: transform var(--duration-fast);
   }
 
-  .palette-option:hover .theme-preview {
-    transform: translateY(-1px);
+  .preview-tabs {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: stretch;
+    gap: 1px;
+    padding-left: 17%;
+    border-bottom: 1px solid;
+  }
+
+  .preview-tab {
+    display: flex;
+    align-items: center;
+    width: 26%;
+    padding: 0 0.3rem;
+  }
+
+  .preview-tab i {
+    display: block;
+    width: 70%;
+    height: 0.2rem;
+    border-radius: 999px;
+    opacity: 0.45;
+  }
+
+  .preview-tab.active i {
+    opacity: 0.8;
   }
 
   .preview-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.55rem 0.35rem;
+    gap: 0.3rem;
+    padding: 0.45rem 0.3rem;
     border-right: 1px solid;
   }
 
   .preview-sidebar i {
     display: block;
-    height: 0.25rem;
+    height: 0.2rem;
     border-radius: 999px;
-    opacity: 0.55;
+    opacity: 0.5;
   }
 
   .preview-sidebar i:first-child {
-    width: 70%;
+    width: 75%;
     opacity: 1;
   }
 
   .preview-sidebar i:nth-child(2) {
-    width: 85%;
+    width: 90%;
+    margin-left: 12%;
   }
 
   .preview-sidebar i:nth-child(3) {
-    width: 55%;
+    width: 60%;
+    margin-left: 12%;
   }
 
-  /* Una consulta de verdad con los colores del tema: dice más que franjas. */
+  .preview-sidebar i:nth-child(4) {
+    width: 75%;
+    margin-left: 12%;
+  }
+
+  .preview-editor {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .preview-gutter,
   .preview-code {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    gap: 0.05rem;
-    min-width: 0;
-    padding: 0 0.45rem 0.5rem;
     font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
     font-size: 0.5625rem;
-    line-height: 1.35;
+    line-height: 1.4;
     white-space: nowrap;
-    overflow: hidden;
+  }
+
+  .preview-gutter {
+    flex-shrink: 0;
+    width: 1.1rem;
+    padding-right: 0.3rem;
+    text-align: right;
+  }
+
+  .preview-code {
+    min-width: 0;
   }
 
   .preview-code b {
@@ -867,34 +934,28 @@
     font-style: italic;
   }
 
-  /* Sobre la vista previa, en el hueco encima del código y con los colores
-     del propio tema: así no le quita ancho al nombre. */
-  .palette-badge {
-    position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    padding: 0.05rem 0.35rem;
-    border: 1px solid;
-    border-radius: 999px;
-    font-size: 0.5625rem;
-    white-space: nowrap;
+  .palette-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+    padding-left: var(--space-1);
   }
 
   .palette-name {
-    white-space: nowrap;
     overflow: hidden;
+    font-size: 0.8125rem;
+    font-weight: 600;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+  .palette-modes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.6875rem;
     white-space: nowrap;
   }
 
@@ -907,14 +968,9 @@
     font-size: 0.75rem;
   }
 
-  .palette-name {
-    font-size: 0.8125rem;
-    font-weight: 600;
-  }
-
   .selection {
-    width: 0.625rem;
-    height: 0.625rem;
+    width: 0.75rem;
+    height: 0.75rem;
     border: 1px solid var(--control-border);
     border-radius: 50%;
   }
