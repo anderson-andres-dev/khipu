@@ -180,7 +180,7 @@
   }
 
   .chip.delete::before {
-    background: #e5484d;
+    background: var(--danger-solid);
   }
 
   .chip.update::before {
@@ -258,7 +258,7 @@
     gap: 2px;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    background: color-mix(in srgb, #e5484d 12%, transparent);
+    background: color-mix(in srgb, var(--danger-solid) 12%, transparent);
     color: var(--text-primary);
     font-size: 0.8125rem;
     line-height: 1.45;

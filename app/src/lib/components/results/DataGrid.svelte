@@ -2196,7 +2196,7 @@
      botones destructivos, --delete-red) y el texto atenuado y tachado en
      rojo; el acento a la izquierda la marca de un vistazo al scrollear. */
   .data-grid {
-    --delete-red: #e5484d;
+    --delete-red: var(--danger-solid);
   }
 
   .grid-body-table :global(tr.row-deleted) {

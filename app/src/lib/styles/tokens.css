@@ -40,6 +40,8 @@
   --palette-accent: #3871E1;
   --palette-accent-hover: #5485E5;
   --palette-danger: #F57E84;
+  --palette-danger-solid: #E5484D;
+  --palette-danger-solid-hover: #EC5D5E;
   --palette-success: #4CAF50;
   --palette-warning: #E8B339;
   --palette-key-primary: #E8B339;
@@ -65,6 +67,8 @@
   --accent: var(--palette-accent);
   --accent-hover: var(--palette-accent-hover);
   --danger: var(--palette-danger);
+  --danger-solid: var(--palette-danger-solid);
+  --danger-solid-hover: var(--palette-danger-solid-hover);
   --success: var(--palette-success);
   --warning: var(--palette-warning);
   --key-primary: var(--palette-key-primary);
@@ -129,6 +133,8 @@
     --palette-accent: #3574F0;
     --palette-accent-hover: #2B63D6;
     --palette-danger: #DB3B4B;
+    --palette-danger-solid: #E5484D;
+    --palette-danger-solid-hover: #EC5D5E;
     --palette-success: #208A3C;
     --palette-warning: #C27D04;
     --palette-key-primary: #B98A10;

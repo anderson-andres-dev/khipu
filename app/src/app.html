@@ -9,7 +9,7 @@
       // Bootstrap de tema sin flash: corre antes de que cargue el bundle de
       // SvelteKit, así que NO puede importar `theme.ts`/`palettes.ts` (son
       // módulos ES que todavía no están disponibles en este punto del
-      // documento). Por eso los 4 bloques de paleta (shell únicamente, es lo
+      // documento). Por eso los bloques de paleta (shell únicamente, es lo
       // único que este bootstrap necesita) están copiados aquí en forma de
       // literales — es la única duplicación deliberada de este spec,
       // exactamente para poder pintar las variables --palette-* antes del
@@ -33,6 +33,8 @@
                 accent: '#3871E1',
                 accentHover: '#5485E5',
                 danger: '#F57E84',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
                 success: '#4CAF50',
                 warning: '#E8B339',
                 keyPrimary: '#E8B339',
@@ -58,6 +60,8 @@
                 accent: '#3574F0',
                 accentHover: '#2B63D6',
                 danger: '#DB3B4B',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
                 success: '#208A3C',
                 warning: '#C27D04',
                 keyPrimary: '#B98A10',
@@ -85,6 +89,8 @@
                 accent: '#297AA0',
                 accentHover: '#478DAD',
                 danger: '#F48771',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
                 success: '#4CAF50',
                 warning: '#E8B339',
                 keyPrimary: '#E8B339',
@@ -110,6 +116,8 @@
                 accent: '#005FB8',
                 accentHover: '#0258A8',
                 danger: '#C4314B',
+                dangerSolid: '#E5484D',
+                dangerSolidHover: '#EC5D5E',
                 success: '#388A34',
                 warning: '#BF8803',
                 keyPrimary: '#BF8803',
@@ -120,6 +128,205 @@
                 scrollbarThumb: '#CCCCCC',
                 scrollbarThumbHover: '#AFAFAF',
                 topbarBackground: 'rgba(248,248,248,0.8)'
+              }
+            },
+            onedark: {
+              dark: {
+                surface: '#21252B',
+                surfaceElevated: '#2C313A',
+                surfaceHover: '#2C313A',
+                surfaceContent: '#282C34',
+                border: '#181A1F',
+                gridLine: '#333842',
+                controlBorder: '#4B5263',
+                textPrimary: '#ABB2BF',
+                textSecondary: '#979EAB',
+                textOnAccent: '#FFFFFF',
+                accent: '#4D78CC',
+                accentHover: '#6089D6',
+                danger: '#E06C75',
+                dangerSolid: '#BE5046',
+                dangerSolidHover: '#CC5E54',
+                success: '#98C379',
+                warning: '#E5C07B',
+                keyPrimary: '#E5C07B',
+                controlDisabled: '#4B5263',
+                focusRing: '#528BFF',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(78,86,102,0.6)',
+                scrollbarThumbHover: '#5A6375',
+                topbarBackground: 'rgba(33,37,43,0.72)'
+              }
+            },
+            dracula: {
+              dark: {
+                surface: '#21222C',
+                surfaceElevated: '#343746',
+                surfaceHover: '#343746',
+                surfaceContent: '#282A36',
+                border: '#191A21',
+                gridLine: '#343746',
+                controlBorder: '#6272A4',
+                textPrimary: '#F8F8F2',
+                textSecondary: '#A7ABBE',
+                textOnAccent: '#282A36',
+                accent: '#BD93F9',
+                accentHover: '#CAA8FA',
+                danger: '#FF5555',
+                dangerSolid: '#E04848',
+                dangerSolidHover: '#F05A5A',
+                success: '#50FA7B',
+                warning: '#F1FA8C',
+                keyPrimary: '#F1FA8C',
+                controlDisabled: '#44475A',
+                focusRing: '#BD93F9',
+                shadow: '0 8px 30px rgba(0,0,0,0.55)',
+                scrim: 'rgba(0,0,0,0.55)',
+                scrollbarThumb: 'rgba(98,114,164,0.45)',
+                scrollbarThumbHover: '#6272A4',
+                topbarBackground: 'rgba(33,34,44,0.72)'
+              }
+            },
+            nord: {
+              dark: {
+                surface: '#2E3440',
+                surfaceElevated: '#3B4252',
+                surfaceHover: '#3B4252',
+                surfaceContent: '#2E3440',
+                border: '#3B4252',
+                gridLine: '#3B4252',
+                controlBorder: '#4C566A',
+                textPrimary: '#D8DEE9',
+                textSecondary: '#AAB2C0',
+                textOnAccent: '#2E3440',
+                accent: '#88C0D0',
+                accentHover: '#9FCFDC',
+                danger: '#D98089',
+                dangerSolid: '#BF616A',
+                dangerSolidHover: '#C9737B',
+                success: '#A3BE8C',
+                warning: '#EBCB8B',
+                keyPrimary: '#EBCB8B',
+                controlDisabled: '#4C566A',
+                focusRing: '#88C0D0',
+                shadow: '0 8px 30px rgba(0,0,0,0.4)',
+                scrim: 'rgba(20,24,31,0.55)',
+                scrollbarThumb: 'rgba(76,86,106,0.75)',
+                scrollbarThumbHover: '#616E88',
+                topbarBackground: 'rgba(46,52,64,0.72)'
+              }
+            },
+            gruvbox: {
+              dark: {
+                surface: '#282828',
+                surfaceElevated: '#32302F',
+                surfaceHover: '#3C3836',
+                surfaceContent: '#282828',
+                border: '#3C3836',
+                gridLine: '#3C3836',
+                controlBorder: '#665C54',
+                textPrimary: '#EBDBB2',
+                textSecondary: '#A89984',
+                textOnAccent: '#282828',
+                accent: '#FE8019',
+                accentHover: '#FF9A45',
+                danger: '#FB4934',
+                dangerSolid: '#CC241D',
+                dangerSolidHover: '#DD3A2C',
+                success: '#B8BB26',
+                warning: '#FABD2F',
+                keyPrimary: '#FABD2F',
+                controlDisabled: '#504945',
+                focusRing: '#FE8019',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(102,92,84,0.7)',
+                scrollbarThumbHover: '#7C6F64',
+                topbarBackground: 'rgba(40,40,40,0.72)'
+              },
+              light: {
+                surface: '#F2E5BC',
+                surfaceElevated: '#F9F5D7',
+                surfaceHover: '#EBDBB2',
+                surfaceContent: '#FBF1C7',
+                border: '#D5C4A1',
+                gridLine: '#EBDBB2',
+                controlBorder: '#BDAE93',
+                textPrimary: '#3C3836',
+                textSecondary: '#665C54',
+                textOnAccent: '#FBF1C7',
+                accent: '#AF3A03',
+                accentHover: '#9A3302',
+                danger: '#9D0006',
+                dangerSolid: '#9D0006',
+                dangerSolidHover: '#B3190F',
+                success: '#79740E',
+                warning: '#B57614',
+                keyPrimary: '#B57614',
+                controlDisabled: '#BDAE93',
+                focusRing: '#AF3A03',
+                shadow: '0 8px 28px rgba(60,56,54,0.14)',
+                scrim: 'rgba(40,40,40,0.28)',
+                scrollbarThumb: '#D5C4A1',
+                scrollbarThumbHover: '#BDAE93',
+                topbarBackground: 'rgba(242,229,188,0.8)'
+              }
+            },
+            solarized: {
+              dark: {
+                surface: '#00212B',
+                surfaceElevated: '#073642',
+                surfaceHover: '#073642',
+                surfaceContent: '#002B36',
+                border: '#073642',
+                gridLine: '#073642',
+                controlBorder: '#586E75',
+                textPrimary: '#93A1A1',
+                textSecondary: '#839496',
+                textOnAccent: '#FDF6E3',
+                accent: '#268BD2',
+                accentHover: '#3A98DA',
+                danger: '#EC5E5B',
+                dangerSolid: '#DC322F',
+                dangerSolidHover: '#E4504C',
+                success: '#859900',
+                warning: '#B58900',
+                keyPrimary: '#B58900',
+                controlDisabled: '#586E75',
+                focusRing: '#268BD2',
+                shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,16,21,0.6)',
+                scrollbarThumb: 'rgba(88,110,117,0.6)',
+                scrollbarThumbHover: '#657B83',
+                topbarBackground: 'rgba(0,33,43,0.72)'
+              },
+              light: {
+                surface: '#EEE8D5',
+                surfaceElevated: '#FDF6E3',
+                surfaceHover: '#E4DDC8',
+                surfaceContent: '#FDF6E3',
+                border: '#DDD6C1',
+                gridLine: '#EEE8D5',
+                controlBorder: '#C9C1A8',
+                textPrimary: '#073642',
+                textSecondary: '#52676E',
+                textOnAccent: '#FDF6E3',
+                accent: '#268BD2',
+                accentHover: '#1F7AB9',
+                danger: '#DC322F',
+                dangerSolid: '#DC322F',
+                dangerSolidHover: '#C92A27',
+                success: '#738A00',
+                warning: '#A07800',
+                keyPrimary: '#B58900',
+                controlDisabled: '#93A1A1',
+                focusRing: '#268BD2',
+                shadow: '0 8px 28px rgba(0,43,54,0.12)',
+                scrim: 'rgba(0,43,54,0.25)',
+                scrollbarThumb: '#D6CFBA',
+                scrollbarThumbHover: '#BCB39B',
+                topbarBackground: 'rgba(238,232,213,0.8)'
               }
             }
           };
@@ -140,6 +347,8 @@
             accent: '--palette-accent',
             accentHover: '--palette-accent-hover',
             danger: '--palette-danger',
+            dangerSolid: '--palette-danger-solid',
+            dangerSolidHover: '--palette-danger-solid-hover',
             success: '--palette-success',
             warning: '--palette-warning',
             keyPrimary: '--palette-key-primary',
@@ -159,7 +368,7 @@
             var raw = localStorage.getItem('khipu:theme');
             if (raw) {
               var parsed = JSON.parse(raw);
-              var familyOk = parsed && (parsed.family === 'datagrip' || parsed.family === 'vscode');
+              var familyOk = parsed && Object.prototype.hasOwnProperty.call(SHELL_PALETTES, parsed.family);
               var schemeOk =
                 parsed &&
                 (parsed.scheme === 'system' || parsed.scheme === 'dark' || parsed.scheme === 'light');
@@ -179,6 +388,9 @@
                 : 'light';
           }
 
+          // One Dark, Dracula y Nord no tienen variante clara: se quedan en
+          // oscuro, igual que resolveScheme() en palettes.ts.
+          if (!SHELL_PALETTES[choice.family][resolvedScheme]) resolvedScheme = 'dark';
           var palette = SHELL_PALETTES[choice.family][resolvedScheme];
           var root = document.documentElement;
           for (var field in CSS_VAR_NAMES) {

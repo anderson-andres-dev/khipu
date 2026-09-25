@@ -404,7 +404,7 @@
     margin: 0;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
-    background: color-mix(in srgb, #e5484d 12%, transparent);
+    background: color-mix(in srgb, var(--danger-solid) 12%, transparent);
     color: var(--danger);
     font-size: 0.8125rem;
     line-height: 1.45;

@@ -156,12 +156,12 @@
   }
 
   .danger-action {
-    background: #e5484d;
+    background: var(--danger-solid);
     color: #fff;
   }
 
   .danger-action:hover {
-    background: #ec5d5e;
+    background: var(--danger-solid-hover);
   }
 
   .actions button:focus-visible {

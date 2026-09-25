@@ -1,6 +1,6 @@
-import type { Extension } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { RangeSetBuilder, type Extension } from '@codemirror/state';
+import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from '@codemirror/view';
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import type { EditorPalette, ColorScheme } from './palettes';
 
@@ -10,19 +10,21 @@ import type { EditorPalette, ColorScheme } from './palettes';
  *
  * Note: `palette.function` is intentionally NOT consumed here —
  * `@codemirror/lang-sql`'s grammar does not emit a distinguishable
- * "function name" tag (identifiers/builtins fall into generic tags); it is
- * reserved for a future function-highlighting extension (see spec).
+ * "function name" tag for user functions. Built-in functions (COUNT, NOW…)
+ * come as `standard(name)` and use `palette.builtin` when the theme sets it.
  * `palette.error` is only used by the execution status marker (see
  * sqlExecutionMarker.ts), not for syntax highlighting — there is no linter.
  */
-// Solo en los temas claros: CodeMirror trae defaults pensados para un
-// editor generico (banda azul en el margen de la linea activa, borde del
-// margen, contorno punteado al enfocar, coincidencias en lima, panel de
-// busqueda gris con botones con degradado, tooltips grises) que sobre la UI
-// clara de Khipu se ven improvisados. Se resuelven con los tokens del shell
-// (variables CSS) para que sigan al tema. Los temas oscuros no reciben nada
-// de esto a proposito: ya se ven como se quiere.
-const LIGHT_OVERRIDES: Parameters<typeof EditorView.theme>[0] = {
+// En los temas claros y en los que piden `tokenChrome`: CodeMirror trae
+// defaults pensados para un editor generico (banda azul en el margen de la
+// linea activa, borde del margen, contorno punteado al enfocar, coincidencias
+// en lima, panel de busqueda gris con botones con degradado, tooltips grises)
+// que sobre la UI de Khipu se ven improvisados. Se resuelven con los tokens del shell
+// (variables CSS) para que sigan al tema. Los oscuros de DataGrip y VS Code
+// no reciben nada de esto a proposito: ya se ven como se quiere. One Dark,
+// Dracula, Nord, Gruvbox y Solarized si, porque los grises por defecto
+// desentonan con sus fondos de color.
+const TOKEN_CHROME: Parameters<typeof EditorView.theme>[0] = {
 	'.cm-gutters': {
 		borderRight: 'none'
 	},
@@ -103,6 +105,57 @@ const LIGHT_OVERRIDES: Parameters<typeof EditorView.theme>[0] = {
 	}
 };
 
+// Funciones integradas que el dialecto MySQL de lang-sql marca como palabra
+// clave (COUNT, SUM, CAST…): sin esto, `palette.builtin` casi no se veía.
+// Solo cuentan como función si les sigue un paréntesis, así `IN (` o
+// `VALUES (` no se confunden.
+const BUILTIN_FUNCTIONS = new Set(
+	(
+		'count sum avg min max cast convert coalesce ifnull nullif isnull concat concat_ws substring substr ' +
+		'length char_length lower upper trim ltrim rtrim replace round floor ceil ceiling abs mod power sqrt ' +
+		'now current_date current_time current_timestamp date time year month day hour minute second ' +
+		'date_format date_add date_sub datediff extract to_char to_date to_timestamp group_concat string_agg ' +
+		'array_agg json_extract json_object json_array json_agg jsonb_agg row_number rank dense_rank lag lead ' +
+		'first_value last_value greatest least if left right position'
+	).split(' ')
+);
+
+const builtinCallMark = Decoration.mark({ class: 'cm-sqlBuiltinCall' });
+
+function findBuiltinCalls(view: EditorView): DecorationSet {
+	const builder = new RangeSetBuilder<Decoration>();
+	const tree = syntaxTree(view.state);
+	for (const { from, to } of view.visibleRanges) {
+		tree.iterate({
+			from,
+			to,
+			enter(node) {
+				if (node.name !== 'Keyword' && node.name !== 'Builtin') return;
+				const word = view.state.doc.sliceString(node.from, node.to).toLowerCase();
+				if (!BUILTIN_FUNCTIONS.has(word)) return;
+				const next = view.state.doc.sliceString(node.to, Math.min(node.to + 8, view.state.doc.length));
+				if (/^\s*\(/.test(next)) builder.add(node.from, node.to, builtinCallMark);
+			}
+		});
+	}
+	return builder.finish();
+}
+
+const builtinCallHighlight = ViewPlugin.fromClass(
+	class {
+		decorations: DecorationSet;
+		constructor(view: EditorView) {
+			this.decorations = findBuiltinCalls(view);
+		}
+		update(update: ViewUpdate) {
+			if (update.docChanged || update.viewportChanged || syntaxTree(update.startState) !== syntaxTree(update.state)) {
+				this.decorations = findBuiltinCalls(update.view);
+			}
+		}
+	},
+	{ decorations: (plugin) => plugin.decorations }
+);
+
 export function buildCmTheme(palette: EditorPalette, scheme: ColorScheme): Extension {
 	const themeExtension = EditorView.theme(
 		{
@@ -179,14 +232,20 @@ export function buildCmTheme(palette: EditorPalette, scheme: ColorScheme): Exten
 
 	const highlightStyle = HighlightStyle.define([
 		{ tag: tags.keyword, color: palette.keyword },
-		{ tag: tags.typeName, color: palette.keyword },
+		{ tag: tags.typeName, color: palette.type ?? palette.keyword },
 		{ tag: tags.string, color: palette.string },
 		{ tag: tags.number, color: palette.number },
 		{ tag: [tags.lineComment, tags.blockComment], color: palette.comment, fontStyle: 'italic' },
-		{ tag: [tags.bool, tags.null], color: palette.constant }
+		{ tag: [tags.bool, tags.null], color: palette.constant },
+		...(palette.builtin ? [{ tag: tags.standard(tags.name), color: palette.builtin }] : []),
+		...(palette.operator ? [{ tag: tags.operator, color: palette.operator }] : [])
 	]);
 
-	const lightOverrides = scheme === 'light' ? [EditorView.theme(LIGHT_OVERRIDES)] : [];
+	const tokenChrome = scheme === 'light' || palette.tokenChrome ? [EditorView.theme(TOKEN_CHROME)] : [];
 
-	return [themeExtension, ...lightOverrides, syntaxHighlighting(highlightStyle)];
+	const builtinCalls = palette.builtin
+		? [builtinCallHighlight, EditorView.theme({ '.cm-sqlBuiltinCall, .cm-sqlBuiltinCall *': { color: palette.builtin } })]
+		: [];
+
+	return [themeExtension, ...tokenChrome, syntaxHighlighting(highlightStyle), ...builtinCalls];
 }

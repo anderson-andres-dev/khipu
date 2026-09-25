@@ -1,9 +1,9 @@
 <script lang="ts">
   import { ArrowLeft, Code2, Keyboard, Languages, Monitor, Moon, Palette, Pencil, RotateCcw, Sun } from "@lucide/svelte";
   import { LOCALE_NAMES, LOCALES, locale, localePreference, t, type LocalePreference, type MessageKey } from "$lib/i18n";
-  import { palettes, type ThemeFamily } from "$lib/theming/palettes";
+  import { THEME_FAMILIES, palettes, themeVariant, type ThemeFamily } from "$lib/theming/palettes";
   import {
-    effectiveScheme,
+    requestedScheme,
     themeChoice,
     type SchemePreference,
   } from "$lib/theming/theme";
@@ -72,10 +72,13 @@
     icon: typeof Monitor;
   }[];
 
-  const familyOptions: { value: ThemeFamily; label: string }[] = [
-    { value: "datagrip", label: "DataGrip" },
-    { value: "vscode", label: "VS Code" },
-  ];
+  // Con un tema solo oscuro y el modo en Claro, se avisa por qué la app no
+  // se aclara.
+  const darkOnlyNotice = $derived(
+    $requestedScheme === "light" && !palettes[$themeChoice.family].light
+      ? (THEME_FAMILIES.find((family) => family.id === $themeChoice.family)?.label ?? "")
+      : null,
+  );
 
   function setScheme(scheme: SchemePreference) {
     themeChoice.update((choice) => ({ ...choice, scheme }));
@@ -169,19 +172,28 @@
               </button>
             {/each}
           </div>
+          {#if darkOnlyNotice}
+            <p class="scheme-notice">
+              <Moon size={13} aria-hidden="true" />
+              {$t("settings.appearance.darkOnlyNotice", { theme: darkOnlyNotice })}
+            </p>
+          {/if}
         </fieldset>
 
         <fieldset>
           <legend>{$t("settings.appearance.palette")}</legend>
           <div class="palette-grid">
-            {#each familyOptions as option (option.value)}
-              {@const preview = palettes[option.value][$effectiveScheme]}
+            {#each THEME_FAMILIES as family (family.id)}
+              <!-- Cada tarjeta se pinta en el modo que se pide, así se ve cómo
+                   quedaría el tema antes de elegirlo. -->
+              {@const preview = themeVariant(family.id, $requestedScheme)}
+              {@const editor = preview.editor}
               <button
-                class:selected={$themeChoice.family === option.value}
+                class:selected={$themeChoice.family === family.id}
                 class="palette-option"
                 type="button"
-                aria-pressed={$themeChoice.family === option.value}
-                onclick={() => setFamily(option.value)}
+                aria-pressed={$themeChoice.family === family.id}
+                onclick={() => setFamily(family.id)}
               >
                 <span
                   class="theme-preview"
@@ -193,14 +205,34 @@
                     class="preview-sidebar"
                     style:background={preview.shell.surfaceElevated}
                     style:border-color={preview.shell.border}
-                  ></span>
-                  <span class="preview-lines">
-                    <i style:background={preview.editor.keyword}></i>
-                    <i style:background={preview.editor.string}></i>
+                  >
+                    <i style:background={preview.shell.accent}></i>
+                    <i style:background={preview.shell.textSecondary}></i>
                     <i style:background={preview.shell.textSecondary}></i>
                   </span>
+                  <span class="preview-code" style:background={editor.background} style:color={editor.foreground}>
+                    <span style:color={editor.comment}>-- top 50</span>
+                    <span><b style:color={editor.keyword}>SELECT</b> id, <b style:color={editor.builtin ?? editor.foreground}>count</b>(*)</span>
+                    <span><b style:color={editor.keyword}>FROM</b> orders</span>
+                    <span><b style:color={editor.keyword}>WHERE</b> paid <b style:color={editor.operator ?? editor.foreground}>=</b> <b style:color={editor.constant}>true</b></span>
+                    <span><b style:color={editor.keyword}>LIMIT</b> <b style:color={editor.number}>50</b>;</span>
+                  </span>
+                  {#if !palettes[family.id].light}
+                    <span
+                      class="palette-badge"
+                      style:background={preview.shell.surfaceElevated}
+                      style:color={preview.shell.textSecondary}
+                      style:border-color={preview.shell.border}
+                    >
+                      <Moon size={9} aria-hidden="true" />
+                      {$t("settings.appearance.darkOnly")}
+                    </span>
+                  {/if}
                 </span>
-                <span class="palette-name">{option.label}</span>
+                <span class="palette-name">{family.label}</span>
+                {#if !palettes[family.id].light}
+                  <span class="visually-hidden">{$t("settings.appearance.darkOnly")}</span>
+                {/if}
                 <span class="selection" aria-hidden="true"></span>
               </button>
             {/each}
@@ -386,7 +418,7 @@
 <style>
   dialog {
     width: min(56rem, calc(100vw - 4rem));
-    height: min(34rem, calc(100vh - 4rem));
+    height: min(36rem, calc(100vh - 4rem));
     max-width: none;
     max-height: none;
     padding: 0;
@@ -751,7 +783,7 @@
 
   .palette-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-3);
   }
 
@@ -759,45 +791,120 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-2) var(--space-3);
     text-align: left;
   }
 
+  .palette-option > .palette-name {
+    padding-left: var(--space-1);
+  }
+
   .theme-preview {
+    position: relative;
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: 28% 1fr;
-    height: 4.5rem;
+    grid-template-columns: 18% 1fr;
+    height: 6rem;
     overflow: hidden;
     border: 1px solid;
     border-radius: calc(var(--radius-sm) - 2px);
+    transition: transform var(--duration-fast);
+  }
+
+  .palette-option:hover .theme-preview {
+    transform: translateY(-1px);
   }
 
   .preview-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.55rem 0.35rem;
     border-right: 1px solid;
   }
 
-  .preview-lines {
+  .preview-sidebar i {
+    display: block;
+    height: 0.25rem;
+    border-radius: 999px;
+    opacity: 0.55;
+  }
+
+  .preview-sidebar i:first-child {
+    width: 70%;
+    opacity: 1;
+  }
+
+  .preview-sidebar i:nth-child(2) {
+    width: 85%;
+  }
+
+  .preview-sidebar i:nth-child(3) {
+    width: 55%;
+  }
+
+  /* Una consulta de verdad con los colores del tema: dice más que franjas. */
+  .preview-code {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    padding: var(--space-3);
+    justify-content: flex-end;
+    gap: 0.05rem;
+    min-width: 0;
+    padding: 0 0.45rem 0.5rem;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-size: 0.5625rem;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
-  .preview-lines i {
-    display: block;
-    width: 70%;
-    height: 0.3rem;
+  .preview-code b {
+    font-weight: 500;
+  }
+
+  .preview-code > span:first-child {
+    font-style: italic;
+  }
+
+  /* Sobre la vista previa, en el hueco encima del código y con los colores
+     del propio tema: así no le quita ancho al nombre. */
+  .palette-badge {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid;
     border-radius: 999px;
+    font-size: 0.5625rem;
+    white-space: nowrap;
   }
 
-  .preview-lines i:nth-child(2) {
-    width: 48%;
+  .palette-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .preview-lines i:nth-child(3) {
-    width: 82%;
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .scheme-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
   }
 
   .palette-name {
@@ -859,9 +966,12 @@
       padding: var(--space-5) var(--space-4);
     }
 
-    .scheme-grid,
-    .palette-grid {
+    .scheme-grid {
       grid-template-columns: 1fr;
+    }
+
+    .palette-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .setting-row {

@@ -679,6 +679,14 @@
     min-width: 0;
   }
 
+  /* El nombre de la conexión cede espacio (con elipsis) al contador de
+     schemas; si no, con un host largo se monta encima de él. */
+  .connection-row .label {
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
   .schema-picker {
     position: static;
     flex-shrink: 0;

@@ -1,7 +1,9 @@
 import { writable, derived, type Readable, type Writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import {
-	palettes,
+	THEME_FAMILIES,
+	resolveScheme,
+	themeVariant,
 	type ShellPalette,
 	type EditorPalette,
 	type ThemeFamily,
@@ -35,6 +37,8 @@ const SHELL_PALETTE_CSS_VARS: Record<keyof ShellPalette, string> = {
 	accent: '--palette-accent',
 	accentHover: '--palette-accent-hover',
 	danger: '--palette-danger',
+	dangerSolid: '--palette-danger-solid',
+	dangerSolidHover: '--palette-danger-solid-hover',
 	success: '--palette-success',
 	warning: '--palette-warning',
 	keyPrimary: '--palette-key-primary',
@@ -71,7 +75,7 @@ export const systemPrefersDark: Readable<boolean> = {
 // --- themeChoice --------------------------------------------------------
 
 function isThemeFamily(value: unknown): value is ThemeFamily {
-	return value === 'datagrip' || value === 'vscode';
+	return THEME_FAMILIES.some((family) => family.id === value);
 }
 
 function isSchemePreference(value: unknown): value is SchemePreference {
@@ -105,9 +109,9 @@ export const themeChoice: Writable<ThemeChoice> = writable(loadStoredThemeChoice
 
 // --- derivados ------------------------------------------------------------
 
-// Única fuente de la que se derivan tanto shellPalette como editorPalette,
-// para que ambos cambien juntos ante un cambio de esquema del SO.
-export const effectiveScheme: Readable<ColorScheme> = derived(
+// Esquema que pide el usuario (o el SO en modo Sistema), antes de ver si el
+// tema elegido lo tiene.
+export const requestedScheme: Readable<ColorScheme> = derived(
 	[themeChoice, systemPrefersDark],
 	([$themeChoice, $systemPrefersDark]) =>
 		$themeChoice.scheme !== 'system'
@@ -117,14 +121,22 @@ export const effectiveScheme: Readable<ColorScheme> = derived(
 				: 'light'
 );
 
+// Esquema que se pinta: el pedido, salvo en los temas que solo son oscuros.
+// Única fuente de la que se derivan tanto shellPalette como editorPalette,
+// para que ambos cambien juntos ante un cambio de esquema del SO.
+export const effectiveScheme: Readable<ColorScheme> = derived(
+	[themeChoice, requestedScheme],
+	([$themeChoice, $requestedScheme]) => resolveScheme($themeChoice.family, $requestedScheme)
+);
+
 export const shellPalette: Readable<ShellPalette> = derived(
 	[themeChoice, effectiveScheme],
-	([$themeChoice, $effectiveScheme]) => palettes[$themeChoice.family][$effectiveScheme].shell
+	([$themeChoice, $effectiveScheme]) => themeVariant($themeChoice.family, $effectiveScheme).shell
 );
 
 export const editorPalette: Readable<EditorPalette> = derived(
 	[themeChoice, effectiveScheme],
-	([$themeChoice, $effectiveScheme]) => palettes[$themeChoice.family][$effectiveScheme].editor
+	([$themeChoice, $effectiveScheme]) => themeVariant($themeChoice.family, $effectiveScheme).editor
 );
 
 // --- efecto secundario ------------------------------------------------
