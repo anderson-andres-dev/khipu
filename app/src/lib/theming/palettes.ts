@@ -121,23 +121,24 @@ export function themeVariant(family: ThemeFamily, scheme: ColorScheme): ThemeVar
 // antes del primer paint) y en tokens.css (fallback); palettes.test.ts
 // falla si quedan desincronizados.
 export const palettes: Record<ThemeFamily, ThemeVariants> = {
-	// Rowly: el tema propio de Rowly DB, de alto contraste. Superficies en la
-	// familia teal de la marca, más profundas que las de Solarized, y acento
-	// turquesa/menta. En el editor cada categoría tiene su matiz: cláusulas en
+	// Rowly: el tema propio de Rowly DB, de alto contraste. En oscuro, fondos
+	// gris pizarra (6-8 % de saturación, con un matiz cian casi imperceptible
+	// para que armonicen con el acento, como los grises de DataGrip); en claro,
+	// la familia teal de la marca. Acento turquesa/menta. En el editor cada categoría tiene su matiz: cláusulas en
 	// menta, operadores en palabra en violeta, funciones en cielo, tipos en
 	// oro, textos en lima, números en coral y constantes en rosa.
 	rowly: {
 		dark: {
 			shell: {
-				surface: '#0A1D22',
-				surfaceElevated: '#11292F',
-				surfaceHover: '#10262C',
-				surfaceContent: '#061519',
-				border: '#173239',
-				gridLine: '#102A30',
-				controlBorder: '#2B535B',
-				textPrimary: '#E3EEF0',
-				textSecondary: '#93AAB0',
+				surface: '#1B1E1F',
+				surfaceElevated: '#272B2C',
+				surfaceHover: '#232829',
+				surfaceContent: '#161819',
+				border: '#313739',
+				gridLine: '#2B3031',
+				controlBorder: '#515A5D',
+				textPrimary: '#DDE3E4',
+				textSecondary: '#98A2A5',
 				textOnAccent: '#04191D',
 				accent: '#2EB8AA',
 				accentHover: '#49C5B6',
@@ -147,29 +148,29 @@ export const palettes: Record<ThemeFamily, ThemeVariants> = {
 				success: '#5CCB8A',
 				warning: '#E9B45A',
 				keyPrimary: '#E9B45A',
-				controlDisabled: '#264349',
+				controlDisabled: '#3A4143',
 				focusRing: '#49C5B6',
-				shadow: '0 10px 32px rgba(2,12,15,0.55)',
-				scrim: 'rgba(3,14,17,0.6)',
-				scrollbarThumb: 'rgba(73,197,182,0.22)',
-				scrollbarThumbHover: 'rgba(73,197,182,0.4)',
-				topbarBackground: 'rgba(10,29,34,0.78)'
+				shadow: '0 10px 32px rgba(0,0,0,0.5)',
+				scrim: 'rgba(0,0,0,0.55)',
+				scrollbarThumb: 'rgba(150,160,163,0.35)',
+				scrollbarThumbHover: 'rgba(150,160,163,0.6)',
+				topbarBackground: 'rgba(27,30,31,0.78)'
 			},
 			editor: {
-				background: '#061519',
-				foreground: '#E3EEF0',
+				background: '#161819',
+				foreground: '#DDE3E4',
 				caret: '#34D1BF',
-				selection: '#134047',
-				lineNumber: '#3E5C63',
-				activeLineNumber: '#A9C2C7',
-				comment: '#5E7F86',
+				selection: '#1E3F42',
+				lineNumber: '#535C5F',
+				activeLineNumber: '#B4BDC0',
+				comment: '#6F7C80',
 				keyword: '#34D1BF',
 				string: '#B8DD7F',
 				number: '#FF8F7A',
 				function: '#6CC2FF',
 				constant: '#FF8AC8',
 				error: '#F28B82',
-				activeStatement: '#1B5A60',
+				activeStatement: '#2E5B5C',
 				success: '#34D1BF',
 				type: '#F5C66E',
 				builtin: '#6CC2FF',

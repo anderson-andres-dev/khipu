@@ -27,15 +27,15 @@
   color-scheme: light dark;
 
   /* Paleta cruda (Rowly oscuro) — fuente real, ver comentario arriba */
-  --palette-surface: #0A1D22;
-  --palette-surface-elevated: #11292F;
-  --palette-surface-hover: #10262C;
-  --palette-surface-content: #061519;
-  --palette-border: #173239;
-  --palette-grid-line: #102A30;
-  --palette-control-border: #2B535B;
-  --palette-text-primary: #E3EEF0;
-  --palette-text-secondary: #93AAB0;
+  --palette-surface: #1B1E1F;
+  --palette-surface-elevated: #272B2C;
+  --palette-surface-hover: #232829;
+  --palette-surface-content: #161819;
+  --palette-border: #313739;
+  --palette-grid-line: #2B3031;
+  --palette-control-border: #515A5D;
+  --palette-text-primary: #DDE3E4;
+  --palette-text-secondary: #98A2A5;
   --palette-text-on-accent: #04191D;
   --palette-accent: #2EB8AA;
   --palette-accent-hover: #49C5B6;
@@ -45,13 +45,13 @@
   --palette-success: #5CCB8A;
   --palette-warning: #E9B45A;
   --palette-key-primary: #E9B45A;
-  --palette-control-disabled: #264349;
+  --palette-control-disabled: #3A4143;
   --palette-focus-ring: #49C5B6;
-  --palette-shadow: 0 10px 32px rgba(2,12,15,0.55);
-  --palette-scrim: rgba(3,14,17,0.6);
-  --palette-scrollbar-thumb: rgba(73,197,182,0.22);
-  --palette-scrollbar-thumb-hover: rgba(73,197,182,0.4);
-  --palette-topbar-background: rgba(10,29,34,0.78);
+  --palette-shadow: 0 10px 32px rgba(0,0,0,0.5);
+  --palette-scrim: rgba(0,0,0,0.55);
+  --palette-scrollbar-thumb: rgba(150,160,163,0.35);
+  --palette-scrollbar-thumb-hover: rgba(150,160,163,0.6);
+  --palette-topbar-background: rgba(27,30,31,0.78);
 
   /* Color semántico — alias estable sobre --palette-* */
   --surface: var(--palette-surface);
