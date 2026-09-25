@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseProfile } from "$lib/stores/connectionProfiles";
+import { get } from "svelte/store";
+import {
+  connectionProfiles,
+  parseProfile,
+  removeConnectionProfile,
+} from "$lib/stores/connectionProfiles";
 
 const saved = {
   id: "p1",
@@ -40,5 +45,16 @@ describe("parseProfile", () => {
       group: undefined,
       color: undefined,
     });
+  });
+});
+
+describe("removeConnectionProfile", () => {
+  it("quita solo el perfil indicado", () => {
+    const other = { ...parseProfile(saved)!, id: "p2", name: "reportes" };
+    connectionProfiles.set([parseProfile(saved)!, other]);
+
+    removeConnectionProfile("p1");
+
+    expect(get(connectionProfiles)).toEqual([other]);
   });
 });

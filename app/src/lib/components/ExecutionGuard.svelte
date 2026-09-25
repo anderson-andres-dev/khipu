@@ -1,5 +1,6 @@
 <script lang="ts">
   import { TriangleAlert } from "@lucide/svelte";
+  import { t } from "$lib/i18n";
   import type { DestructiveStatement } from "$lib/types";
 
   let { statement, oncancel, onconfirm }: {
@@ -8,23 +9,14 @@
     onconfirm: () => void;
   } = $props();
 
-  const MESSAGES: Record<DestructiveStatement, string> = {
-    deleteWithoutWhere: "DELETE sin WHERE · puede afectar todas las filas",
-    updateWithoutWhere: "UPDATE sin WHERE · puede afectar todas las filas",
-    truncate: "TRUNCATE · elimina todas las filas de la tabla",
-    dropTable: "DROP TABLE · elimina la tabla y sus datos",
-    dropSchema: "DROP SCHEMA · elimina el esquema",
-    dropDatabase: "DROP DATABASE · elimina la base de datos",
-    dropColumn: "DROP COLUMN · elimina la columna y sus datos",
-  };
 </script>
 
 <div class="execution-guard" role="alert">
   <TriangleAlert size={14} aria-hidden="true" />
-  <span class="message">{MESSAGES[statement]}</span>
+  <span class="message">{$t(`workspace.guard.${statement}`)}</span>
   <div class="actions">
-    <button type="button" class="secondary-action" onclick={oncancel}>Cancelar</button>
-    <button type="button" class="danger-action" onclick={onconfirm}>Ejecutar de todos modos</button>
+    <button type="button" class="secondary-action" onclick={oncancel}>{$t("common.cancel")}</button>
+    <button type="button" class="danger-action" onclick={onconfirm}>{$t("workspace.guard.runAnyway")}</button>
   </div>
 </div>
 

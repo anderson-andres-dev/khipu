@@ -2,6 +2,7 @@
   import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3, Key } from "@lucide/svelte";
   import { tick, untrack } from "svelte";
   import type { ColumnCatalogInfo, QueryColumn, QueryRow, SortKey } from "$lib/types";
+  import { t } from "$lib/i18n";
   import { detectJsonColumns, escapeHtml, highlightJson } from "$lib/jsonHighlight";
   import type { FindMatch } from "$lib/gridFind";
   import {
@@ -458,7 +459,7 @@
     const text = serializeSelection(copyColumns, values, {
       format: copyFormat,
       headers: copyHeaders,
-      tableName: copyTableName || "tabla",
+      tableName: copyTableName || $t("grid.defaultTableName"),
     });
     rememberCopy(text, values);
     if (await writeClipboardText(text)) for (const range of ranges) addEffect(range, "copy");
@@ -812,11 +813,11 @@
   }
 
   function editableColumn(row: number, col: number): string | null {
-    if (!editInfo) return editBlockedReason ?? "Este resultado no se puede editar.";
+    if (!editInfo) return editBlockedReason ?? $t("grid.blocked.result");
     const column = editInfo.columns[col];
-    if (!column) return `La columna ${columns[col]?.name ?? ""} es de solo lectura: no sale directamente de la tabla.`;
-    if (column.generated) return `La columna ${column.name} la genera el servidor.`;
-    if (row < rows.length && edits.deleted.has(row)) return "La fila está marcada para eliminarse.";
+    if (!column) return $t("grid.blocked.computedColumn", { column: columns[col]?.name ?? "" });
+    if (column.generated) return $t("grid.blocked.generatedColumn", { column: column.name });
+    if (row < rows.length && edits.deleted.has(row)) return $t("grid.blocked.deletedRow");
     return null;
   }
 
@@ -979,7 +980,16 @@
     return { className: "", html: escapeHtml(value) };
   }
 
+  // Las celdas con cadena vacia llevan un aria-label (no tienen texto que
+  // leer). Se escapa una vez por tanda, no por celda; al cambiar el idioma se
+  // actualizan las ya insertadas sin regenerar el cuerpo (ver el efecto de
+  // abajo).
+  function emptyCellHtml(): string {
+    return `<td tabindex="0" aria-label="${escapeHtml($t("grid.emptyString"))}"></td>`;
+  }
+
   function rowsHtml(from: number, to: number): string {
+    const emptyCell = emptyCellHtml();
     const parts: string[] = [];
     for (let rowIndex = from; rowIndex < to; rowIndex++) {
       parts.push(rowIndex % 2 === 1 ? '<tr class="zebra-odd">' : "<tr>");
@@ -987,7 +997,7 @@
       for (let columnIndex = 0; columnIndex < row.length; columnIndex++) {
         const value = row[columnIndex];
         if (value === "") {
-          parts.push('<td tabindex="0" aria-label="cadena vacía"></td>');
+          parts.push(emptyCell);
           continue;
         }
         const { className, html } = cellParts(value, columnIndex);
@@ -997,6 +1007,16 @@
     }
     return parts.join("");
   }
+
+  $effect(() => {
+    const label = $t("grid.emptyString");
+    untrack(() => {
+      if (!bodyEl) return;
+      for (const td of bodyEl.querySelectorAll<HTMLTableCellElement>("td[aria-label]")) {
+        td.setAttribute("aria-label", label);
+      }
+    });
+  });
 
   // --- Cambios pendientes sobre el DOM -------------------------------------
   // Las celdas editadas y las filas eliminadas se marcan tocando SOLO esos
@@ -1025,6 +1045,10 @@
     const parts = value.kind === "null" ? cellParts(null, col) : cellParts(value.kind === "text" ? value.value : "", col);
     td.className = [parts.className, modified ? "cell-modified" : ""].filter(Boolean).join(" ");
     td.innerHTML = parts.html;
+    // La etiqueta de cadena vacía sigue al valor: una celda vacía editada con
+    // texto no debe seguir anunciándose como vacía, ni al revés.
+    if (value.kind === "text" && value.value === "") td.setAttribute("aria-label", $t("grid.emptyString"));
+    else td.removeAttribute("aria-label");
   }
 
   function applyEditsToDom() {
@@ -1470,7 +1494,7 @@
 <div
   class="data-grid"
   role="grid"
-  aria-label="Resultado de la consulta"
+  aria-label={$t("grid.label")}
   tabindex="-1"
   bind:this={gridEl}
   onselectstart={preventNativeSelection}
@@ -1508,7 +1532,7 @@
         bind:this={cornerEl}
         role="button"
         tabindex="-1"
-        aria-label="Seleccionar todo"
+        aria-label={$t("grid.selectAll")}
         onclick={toggleSelectAll}
       ></div>
 
@@ -1555,11 +1579,11 @@
                         class="sort-button"
                         class:active={active !== null}
                         aria-label={active
-                          ? `Ordenado ${active.descending ? "descendente" : "ascendente"}; clic para cambiar`
-                          : `Ordenar por ${column.name}`}
+                          ? $t(active.descending ? "grid.sort.descendingLabel" : "grid.sort.ascendingLabel")
+                          : $t("grid.sort.by", { column: column.name })}
                         title={active
-                          ? `${active.descending ? "Descendente" : "Ascendente"} · Shift+clic: agregar criterio`
-                          : "Ordenar · Shift+clic: agregar criterio"}
+                          ? $t(active.descending ? "grid.sort.descendingTitle" : "grid.sort.ascendingTitle")
+                          : $t("grid.sort.title")}
                         onclick={(event) => {
                           event.stopPropagation();
                           onsort(columnIndex, event.shiftKey);
@@ -1662,7 +1686,7 @@
               style={`top:${editorRect.top}px; left:${editorRect.left}px; width:${Math.max(editorRect.width, 120)}px; height:${editorRect.height}px;`}
             >
               <input
-                aria-label="Editar valor"
+                aria-label={$t("grid.edit.label")}
                 spellcheck="false"
                 bind:this={editInput}
                 bind:value={editValue}
@@ -1672,7 +1696,7 @@
               <button
                 type="button"
                 class="null-chip"
-                title="Dejar en NULL"
+                title={$t("grid.edit.setNull")}
                 onpointerdown={(event) => event.preventDefault()}
                 onclick={setEditingNull}>NULL</button
               >
@@ -2172,7 +2196,7 @@
      botones destructivos, --delete-red) y el texto atenuado y tachado en
      rojo; el acento a la izquierda la marca de un vistazo al scrollear. */
   .data-grid {
-    --delete-red: #e5484d;
+    --delete-red: var(--danger-solid);
   }
 
   .grid-body-table :global(tr.row-deleted) {

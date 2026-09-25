@@ -1,5 +1,8 @@
 # Arquitectura
 
+Rowly DB es la aplicación; Khipu es el nombre interno de su motor. Por eso los
+crates se llaman `khipu-*`.
+
 ## Principio
 
 El core (parsing, catálogo, autocompletado) no sabe que existe Tauri, Svelte

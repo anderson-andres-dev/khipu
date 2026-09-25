@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { Check, ChevronDown, FolderMinus, Plus } from "@lucide/svelte";
+  import { t } from "$lib/i18n";
 
   // Pastilla para elegir el grupo de una conexion: sin grupo muestra
   // "+ Añadir grupo"; con grupo, su nombre. Al abrirla se escribe en la
@@ -94,8 +95,8 @@
       <input
         bind:this={input}
         bind:value={query}
-        placeholder={value ? value : "Añadir grupo"}
-        aria-label="Buscar o crear grupo"
+        placeholder={value ? value : $t("connections.group.add")}
+        aria-label={$t("connections.group.search")}
         aria-autocomplete="list"
         aria-controls="group-picker-menu"
         aria-activedescendant={options[active] ? `group-option-${active}` : undefined}
@@ -106,7 +107,7 @@
     </div>
 
     {#if options.length > 0}
-      <div id="group-picker-menu" class="menu" role="listbox" aria-label="Grupos">
+      <div id="group-picker-menu" class="menu" role="listbox" aria-label={$t("connections.group.list")}>
         {#each options as option, index (option.kind + option.group)}
           <button
             id={`group-option-${index}`}
@@ -122,10 +123,10 @@
           >
             {#if option.kind === "create"}
               <Plus size={13} aria-hidden="true" />
-              <span>Crear «{option.group}»</span>
+              <span>{$t("connections.group.create", { name: option.group })}</span>
             {:else if option.kind === "remove"}
               <FolderMinus size={13} aria-hidden="true" />
-              <span>Quitar del grupo</span>
+              <span>{$t("connections.group.remove")}</span>
             {:else}
               <span class="check">
                 {#if option.group === value}<Check size={13} aria-hidden="true" />{/if}
@@ -137,14 +138,14 @@
       </div>
     {/if}
   {:else if value}
-    <button type="button" class="pill selected" {disabled} title="Cambiar grupo" onclick={openPicker}>
+    <button type="button" class="pill selected" {disabled} title={$t("connections.group.change")} onclick={openPicker}>
       <span class="pill-label">{value}</span>
       <ChevronDown size={13} aria-hidden="true" />
     </button>
   {:else}
     <button type="button" class="pill add" {disabled} onclick={openPicker}>
       <Plus size={13} aria-hidden="true" />
-      <span>Añadir grupo</span>
+      <span>{$t("connections.group.add")}</span>
     </button>
   {/if}
 </div>

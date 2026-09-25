@@ -1,7 +1,12 @@
-# Contribuir a Khipu
+# Contribuir a Rowly DB
 
 Gracias por el interés. El proyecto recién arranca, así que hay bastante
 espacio para decisiones de diseño — abrir un issue antes de un PR grande.
+
+**Rowly DB** es el nombre del producto; **Khipu** es el nombre interno del
+motor. En el código vas a ver `khipu-*` (crates, identificadores, claves de
+configuración): es a propósito y no hay que renombrarlo. Los textos que ve el
+usuario dicen Rowly DB.
 
 ## Antes de empezar
 
@@ -94,6 +99,30 @@ Opcionales, para los tests de TLS (`<MOTOR>` es `MYSQL` o `POSTGRES`):
    ```
 10. El tag dispara `release.yml` (build multiplataforma); esperar a que
     termine en verde.
+
+### Qué publica una release
+
+- Instaladores para Debian/Ubuntu (`.deb`), Fedora (`.rpm`), cualquier Linux
+  (AppImage), Arch (`.pkg.tar.zst`), Windows y macOS, todos firmados.
+- `latest.json`, que usa Ajustes > Actualizaciones para instalar esa versión.
+- `rowly-db-bin.PKGBUILD`, con las sumas ya calculadas, para publicar en AUR
+  (copiarlo como `PKGBUILD` en el repo de AUR, `makepkg --printsrcinfo >
+  .SRCINFO`, commit y push).
+
+La versión de `app/src-tauri/tauri.conf.json` tiene que coincidir con el tag
+(`v0.2.0` ↔ `0.2.0`); el workflow falla si no. Un tag con guion
+(`v0.3.0-rc.1`) publica una versión preliminar.
+
+**Las releases no se borran.** La app deja volver a cualquier versión
+publicada; borrar una la saca de esa lista.
+
+### Firma de las actualizaciones
+
+El workflow firma con la clave privada de los secrets
+`TAURI_SIGNING_PRIVATE_KEY` y `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; la
+clave pública está en `tauri.conf.json`. Si esa clave privada se pierde, las
+copias instaladas no aceptan actualizaciones firmadas con otra: guardarla
+con respaldo. Compilar el repo no la necesita.
 
 ## Estilo
 

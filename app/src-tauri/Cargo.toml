@@ -1,7 +1,7 @@
 [package]
 name = "khipu-desktop"
 version.workspace = true
-description = "Khipu desktop shell (Tauri)"
+description = "Rowly DB desktop shell (Tauri), built on the Khipu engine"
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -33,3 +33,9 @@ keyring = "4.2.0"
 tauri-plugin-dialog = "2"
 trash = "5"
 tauri-plugin-clipboard-manager = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-opener = "2"
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+semver = "1"
+url = "2"

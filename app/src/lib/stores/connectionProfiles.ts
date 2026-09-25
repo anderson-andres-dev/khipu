@@ -128,3 +128,7 @@ export function saveConnectionProfile(profile: Omit<ConnectionProfile, "id"> & {
 
   return saved;
 }
+
+export function removeConnectionProfile(id: string): void {
+  connectionProfiles.update((profiles) => profiles.filter((candidate) => candidate.id !== id));
+}

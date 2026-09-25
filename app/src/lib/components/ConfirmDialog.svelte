@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { TriangleAlert } from "@lucide/svelte";
+  import { t } from "$lib/i18n";
 
   // Confirmacion destructiva centrada (icono, titulo, mensaje y dos botones
   // del mismo tamaño), con la misma pinta que el modal de cerrar consola.
@@ -65,7 +66,7 @@
   <h2>{title}</h2>
   <p>{message}</p>
   <div class="actions">
-    <button type="button" class="secondary-action" onclick={cancel}>Cancelar</button>
+    <button type="button" class="secondary-action" onclick={cancel}>{$t("common.cancel")}</button>
     <button type="button" class="danger-action" onclick={confirm}>{confirmLabel}</button>
   </div>
 </dialog>
@@ -155,12 +156,12 @@
   }
 
   .danger-action {
-    background: #e5484d;
+    background: var(--danger-solid);
     color: #fff;
   }
 
   .danger-action:hover {
-    background: #ec5d5e;
+    background: var(--danger-solid-hover);
   }
 
   .actions button:focus-visible {

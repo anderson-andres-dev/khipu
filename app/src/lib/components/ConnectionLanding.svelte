@@ -1,13 +1,14 @@
 <script lang="ts">
   import DriverLogo from "$lib/components/DriverLogo.svelte";
   import { browser } from "$app/environment";
-  import { LayoutGrid, List, LoaderCircle, Pencil, Plus } from "@lucide/svelte";
+  import { LayoutGrid, List, LoaderCircle, Pencil, Plus, Trash2 } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { getDriver } from "$lib/connections";
   import ConnectionAvatar from "$lib/components/ConnectionAvatar.svelte";
+  import RowlyMark from "$lib/components/RowlyMark.svelte";
   import { NEUTRAL_IDENTITY_COLOR } from "$lib/connectionColors";
+  import { t } from "$lib/i18n";
   import type { ConnectionProfile } from "$lib/stores/connectionProfiles";
-  import databaseIcon from "devicon/icons/sqldeveloper/sqldeveloper-plain.svg?url";
 
   let {
     profiles,
@@ -15,12 +16,16 @@
     onnewconnection,
     onconnect,
     onedit,
+    ondelete,
+    error = null,
   }: {
     profiles: ConnectionProfile[];
     connectingId?: string | null;
     onnewconnection: () => void;
     onconnect: (profile: ConnectionProfile) => void;
     onedit: (profile: ConnectionProfile) => void;
+    ondelete: (profile: ConnectionProfile) => void;
+    error?: string | null;
   } = $props();
 
   type View = "cards" | "list";
@@ -73,12 +78,12 @@
   }
 </script>
 
-{#snippet editButton(profile: ConnectionProfile)}
+{#snippet cornerActions(profile: ConnectionProfile)}
   <button
-    class="edit-button"
+    class="corner-button"
     type="button"
-    aria-label={`Editar ${profile.name}`}
-    title="Editar conexión"
+    aria-label={$t("connections.landing.editLabel", { name: profile.name })}
+    title={$t("connections.landing.editTitle")}
     disabled={busy}
     onclick={(event) => {
       event.stopPropagation();
@@ -87,30 +92,46 @@
   >
     <Pencil size={13} aria-hidden="true" />
   </button>
+  <button
+    class="corner-button danger"
+    type="button"
+    aria-label={$t("connections.landing.deleteLabel", { name: profile.name })}
+    title={$t("connections.landing.deleteTitle")}
+    disabled={busy}
+    onclick={(event) => {
+      event.stopPropagation();
+      ondelete(profile);
+    }}
+  >
+    <Trash2 size={13} aria-hidden="true" />
+  </button>
 {/snippet}
 
 <section class="landing" aria-labelledby="connection-state-title">
   {#if profiles.length === 0}
     <div class="empty">
-      <span class="database-icon" style:--icon={`url("${databaseIcon}")`} aria-hidden="true"></span>
-      <h1 id="connection-state-title">Sin conexiones guardadas</h1>
-      <p>Conecta una base de datos para comenzar.</p>
-      <Button type="button" variant="primary" onclick={onnewconnection}>Nueva conexión</Button>
+      <span class="brand-mark"><RowlyMark /></span>
+      <h1 id="connection-state-title">{$t("connections.landing.emptyTitle")}</h1>
+      <p>{$t("connections.landing.emptyText")}</p>
+      <Button type="button" variant="primary" onclick={onnewconnection}>{$t("connections.newConnection")}</Button>
     </div>
   {:else}
     <div class="saved">
       <header class="landing-header">
-        <div>
-          <h1 id="connection-state-title">Conexiones</h1>
-          <p>Selecciona una conexión para abrirla.</p>
+        <div class="landing-title">
+          <RowlyMark />
+          <div>
+            <h1 id="connection-state-title">{$t("connections.landing.title")}</h1>
+            <p>{$t("connections.landing.subtitle")}</p>
+          </div>
         </div>
         <div class="toolbar">
-          <div class="view-toggle" role="group" aria-label="Vista de conexiones">
+          <div class="view-toggle" role="group" aria-label={$t("connections.landing.view")}>
             <button
               type="button"
               aria-pressed={view === "cards"}
-              aria-label="Vista de tarjetas"
-              title="Tarjetas"
+              aria-label={$t("connections.landing.viewCards")}
+              title={$t("connections.landing.cards")}
               onclick={() => setView("cards")}
             >
               <LayoutGrid size={15} aria-hidden="true" />
@@ -118,21 +139,24 @@
             <button
               type="button"
               aria-pressed={view === "list"}
-              aria-label="Vista de lista"
-              title="Lista"
+              aria-label={$t("connections.landing.viewList")}
+              title={$t("connections.landing.list")}
               onclick={() => setView("list")}
             >
               <List size={15} aria-hidden="true" />
             </button>
           </div>
           <Button type="button" variant="primary" onclick={onnewconnection}>
-            <span class="new-label"><Plus size={15} aria-hidden="true" /> Nueva</span>
+            <span class="new-label"><Plus size={15} aria-hidden="true" /> {$t("connections.landing.new")}</span>
           </Button>
         </div>
       </header>
+      {#if error}
+        <p class="landing-error" role="alert">{error}</p>
+      {/if}
 
       {#each sections as section (section.title ?? "")}
-        <section class="group" aria-label={section.title ?? "Conexiones sin grupo"}>
+        <section class="group" aria-label={section.title ?? $t("connections.landing.ungrouped")}>
           {#if section.title}
             <h2 class="group-title">
               {section.title}
@@ -148,7 +172,7 @@
                   <button
                     class="card-main"
                     type="button"
-                    aria-label={`Conectar a ${profile.name}, ${driver.name}`}
+                    aria-label={$t("connections.landing.connectTo", { name: profile.name, driver: driver.name })}
                     aria-busy={connectingId === profile.id}
                     disabled={busy}
                     onclick={() => onconnect(profile)}
@@ -162,9 +186,9 @@
                   </button>
                   <div class="card-corner">
                     {#if connectingId === profile.id}
-                      <LoaderCircle size={15} class="spin" aria-label="Conectando" />
+                      <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
-                      {@render editButton(profile)}
+                      {@render cornerActions(profile)}
                     {/if}
                   </div>
                 </div>
@@ -183,7 +207,7 @@
                   <button
                     class="row-main"
                     type="button"
-                    aria-label={`Conectar a ${profile.name}, ${driver.name}`}
+                    aria-label={$t("connections.landing.connectTo", { name: profile.name, driver: driver.name })}
                     aria-busy={connectingId === profile.id}
                     disabled={busy}
                     onclick={() => onconnect(profile)}
@@ -199,9 +223,9 @@
                   </button>
                   <div class="row-corner">
                     {#if connectingId === profile.id}
-                      <LoaderCircle size={15} class="spin" aria-label="Conectando" />
+                      <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
-                      {@render editButton(profile)}
+                      {@render cornerActions(profile)}
                     {/if}
                   </div>
                 </div>
@@ -234,16 +258,9 @@
     text-align: center;
   }
 
-  /* Silueta pintada con un color del tema, como DriverLogo: un filtro de
-     brillo sobre la imagen la lavaba en los temas claros. */
-  .database-icon {
+  .brand-mark {
     display: block;
-    width: 2.25rem;
-    height: 2.25rem;
     margin-bottom: var(--space-1);
-    background: var(--text-secondary);
-    -webkit-mask: var(--icon) center / contain no-repeat;
-    mask: var(--icon) center / contain no-repeat;
   }
 
   .saved {
@@ -258,6 +275,18 @@
     justify-content: space-between;
     gap: var(--space-4);
     margin-bottom: var(--space-6);
+  }
+
+  .landing-error {
+    margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+    color: var(--danger);
+    font-size: 0.8125rem;
+  }
+
+  .landing-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
   }
 
   h1 {
@@ -372,7 +401,7 @@
     white-space: nowrap;
   }
 
-  .edit-button {
+  .corner-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -389,25 +418,30 @@
       background-color var(--duration-fast);
   }
 
-  .card:hover .edit-button,
-  .card:focus-within .edit-button,
-  .row:hover .edit-button,
-  .row:focus-within .edit-button {
+  .card:hover .corner-button,
+  .card:focus-within .corner-button,
+  .row:hover .corner-button,
+  .row:focus-within .corner-button {
     opacity: 1;
   }
 
-  .edit-button:hover:not(:disabled) {
+  .corner-button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--text-primary) 10%, transparent);
     color: var(--text-primary);
   }
 
-  .edit-button:focus-visible {
+  .corner-button.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger);
+  }
+
+  .corner-button:focus-visible {
     opacity: 1;
     outline: 2px solid var(--focus-ring);
     outline-offset: 1px;
   }
 
-  .edit-button:disabled {
+  .corner-button:disabled {
     cursor: not-allowed;
   }
 
@@ -447,7 +481,7 @@
     align-items: center;
     gap: var(--space-3);
     overflow: hidden;
-    padding: var(--space-3) 2.5rem var(--space-3) var(--space-3);
+    padding: var(--space-3) 3.75rem var(--space-3) var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface-elevated);
@@ -540,6 +574,7 @@
     top: var(--space-2);
     right: var(--space-2);
     display: flex;
+    gap: 2px;
   }
 
   /* --- Lista compacta ---------------------------------------------------- */
@@ -567,7 +602,7 @@
     grid-template-columns: 1.5rem minmax(8rem, 1.4fr) minmax(6rem, 0.8fr) minmax(6rem, 1fr) minmax(8rem, 1.2fr);
     align-items: center;
     gap: var(--space-3);
-    padding: 9px 3rem 9px var(--space-3);
+    padding: 9px 4rem 9px var(--space-3);
     border: 0;
     background: transparent;
     color: var(--text-primary);
@@ -638,6 +673,7 @@
     top: 50%;
     right: var(--space-2);
     display: flex;
+    gap: 2px;
     transform: translateY(-50%);
   }
 

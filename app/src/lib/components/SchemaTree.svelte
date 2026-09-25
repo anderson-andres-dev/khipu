@@ -31,6 +31,7 @@
   } from "@lucide/svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import { buildExplorerTree, expandableKeys, type ExplorerIcon, type ExplorerNode } from "$lib/explorerTree";
+  import { t } from "$lib/i18n";
   import type { DatabaseExplorer } from "$lib/types";
 
   let {
@@ -118,10 +119,10 @@
     if (!explorer) return connectionLabel;
     const tls =
       explorer.tls.encrypted === true
-        ? `TLS: ${explorer.tls.detail ?? "cifrada"}`
+        ? $t("explorer.tls.encrypted", { detail: explorer.tls.detail ?? $t("explorer.tls.encryptedDefault") })
         : explorer.tls.encrypted === false
-          ? "Sin cifrar"
-          : "TLS: desconocido";
+          ? $t("explorer.tls.unencrypted")
+          : $t("explorer.tls.unknown");
     return `${connectionLabel}\n${explorer.serverVersion} · ${tls}`;
   });
   const nodes = $derived(explorer ? buildExplorerTree(explorer, filter) : []);
@@ -186,8 +187,8 @@
     x={openMenuAt.x}
     y={openMenuAt.y}
     items={[
-      { label: "Abrir archivo…", action: onopenfile },
-      { label: "Abrir carpeta…", action: onopenfolder },
+      { label: $t("explorer.open.file"), action: onopenfile },
+      { label: $t("explorer.open.folder"), action: onopenfolder },
     ]}
     onclose={() => (openMenuAt = null)}
   />
@@ -252,20 +253,20 @@
   {/if}
   {#if node.warnings}
     <span class="warning" title={node.warnings.join("\n")}>
-      <TriangleAlert size={12} aria-label="Avisos al cargar el schema" />
+      <TriangleAlert size={12} aria-label={$t("explorer.schema.warnings")} />
     </span>
   {/if}
 {/snippet}
 
 <div class="schema-tree">
   <header class="explorer-header">
-    <span class="explorer-title">Explorador</span>
+    <span class="explorer-title">{$t("explorer.title")}</span>
     <div class="explorer-actions">
       <button
         type="button"
         class="action"
-        title="Abrir archivo o carpeta"
-        aria-label="Abrir archivo o carpeta"
+        title={$t("explorer.open.label")}
+        aria-label={$t("explorer.open.label")}
         aria-haspopup="menu"
         onclick={openMenu}
       >
@@ -274,8 +275,8 @@
       <button
         type="button"
         class="action"
-        title={anyOpen ? "Colapsar todo" : "Expandir todo"}
-        aria-label={anyOpen ? "Colapsar todo" : "Expandir todo"}
+        title={anyOpen ? $t("explorer.collapseAll") : $t("explorer.expandAll")}
+        aria-label={anyOpen ? $t("explorer.collapseAll") : $t("explorer.expandAll")}
         onclick={() => (anyOpen ? collapseAll() : expandAll())}
       >
         {#if anyOpen}
@@ -288,8 +289,8 @@
         type="button"
         class="action"
         class:spinning={refreshing}
-        title="Recargar"
-        aria-label="Recargar objetos de la base de datos"
+        title={$t("explorer.refresh")}
+        aria-label={$t("explorer.refresh.label")}
         disabled={refreshing}
         onclick={onrefresh}
       >
@@ -298,8 +299,8 @@
       <button
         type="button"
         class="action"
-        title={hideShortcut ? `Ocultar (${hideShortcut})` : "Ocultar"}
-        aria-label="Ocultar panel de tablas"
+        title={hideShortcut ? $t("explorer.hide.withShortcut", { shortcut: hideShortcut }) : $t("explorer.hide")}
+        aria-label={$t("explorer.hide.label")}
         onclick={onhide}
       >
         <Minus size={14} aria-hidden="true" />
@@ -309,15 +310,20 @@
 
   <div class="filter">
     <Search size={13} class="filter-icon" aria-hidden="true" />
-    <input type="text" placeholder="Filtrar objetos..." aria-label="Filtrar objetos" bind:value={filter} />
+    <input
+      type="text"
+      placeholder={$t("explorer.filter.placeholder")}
+      aria-label={$t("explorer.filter.label")}
+      bind:value={filter}
+    />
     {#if filter}
-      <button type="button" class="clear-filter" aria-label="Limpiar filtro" onclick={() => (filter = "")}>
+      <button type="button" class="clear-filter" aria-label={$t("explorer.filter.clear")} onclick={() => (filter = "")}>
         <X size={12} aria-hidden="true" />
       </button>
     {/if}
   </div>
 
-  <nav class="tree-scroll" aria-label="Objetos de la base de datos">
+  <nav class="tree-scroll" aria-label={$t("explorer.tree.label")}>
     <ul class="tree" role="tree">
       <li role="treeitem" aria-expanded={isConnectionOpen()} aria-selected="false">
         <div class="connection-row">
@@ -335,10 +341,10 @@
               <span
                 class="warning"
                 title={explorer?.tls.fellBack
-                  ? "Conexión sin cifrar: el servidor ofrece TLS con un cifrado que Khipu no admite. Usa SSL «Requerido» en la conexión para que falle en vez de conectar así."
-                  : "Conexión sin cifrar: el servidor no tiene TLS habilitado."}
+                  ? $t("explorer.unencrypted.fellBack")
+                  : $t("explorer.unencrypted.noTls")}
               >
-                <LockOpen size={12} aria-label="Conexión sin cifrar" />
+                <LockOpen size={12} aria-label={$t("explorer.unencrypted.label")} />
               </span>
             {/if}
           </button>
@@ -350,18 +356,18 @@
                 class="schema-count"
                 aria-haspopup="true"
                 aria-expanded={schemaPickerOpen}
-                title="Elegir schemas visibles"
+                title={$t("explorer.schemas.pick")}
                 onclick={() => (schemaPickerOpen = !schemaPickerOpen)}
               >
                 {#if loadingSchemas}
-                  <LoaderCircle size={11} class="spin" aria-label="Cargando schemas" />
+                  <LoaderCircle size={11} class="spin" aria-label={$t("explorer.schemas.loading")} />
                 {/if}
-                {visibleSchemas.size} de {explorer.availableSchemas.length}
+                {$t("explorer.schemas.count", { visible: visibleSchemas.size, total: explorer.availableSchemas.length })}
                 <ChevronDown size={11} aria-hidden="true" />
               </button>
 
               {#if schemaPickerOpen}
-                <div class="schema-menu" role="menu" aria-label="Schemas visibles">
+                <div class="schema-menu" role="menu" aria-label={$t("explorer.schemas.menu")}>
                   {#each explorer.availableSchemas as schema (schema)}
                     {@const isDefault = schema === explorer.defaultSchema}
                     <button
@@ -370,7 +376,7 @@
                       aria-checked={visibleSchemas.has(schema)}
                       class="schema-option"
                       disabled={isDefault || loadingSchemas}
-                      title={isDefault ? "Schema de la conexión: siempre visible" : undefined}
+                      title={isDefault ? $t("explorer.schemas.defaultTitle") : undefined}
                       onclick={() => toggleSchema(schema)}
                     >
                       <span class="checkbox" class:checked={visibleSchemas.has(schema)}>
@@ -380,7 +386,7 @@
                       </span>
                       <span class="label">{schema}</span>
                       {#if isDefault}
-                        <span class="detail">por defecto</span>
+                        <span class="detail">{$t("explorer.schemas.default")}</span>
                       {/if}
                     </button>
                   {/each}
@@ -395,7 +401,7 @@
             {#each nodes as node (node.key)}
               {@render treeNode(node, 1)}
             {:else}
-              <li class="empty">{filtering ? "Sin coincidencias." : "Sin objetos."}</li>
+              <li class="empty">{filtering ? $t("explorer.tree.noMatches") : $t("explorer.tree.empty")}</li>
             {/each}
           </ul>
         {/if}
@@ -671,6 +677,14 @@
   .connection-row > .row {
     flex: 1;
     min-width: 0;
+  }
+
+  /* El nombre de la conexión cede espacio (con elipsis) al contador de
+     schemas; si no, con un host largo se monta encima de él. */
+  .connection-row .label {
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .schema-picker {

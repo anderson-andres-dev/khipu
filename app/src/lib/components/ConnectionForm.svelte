@@ -8,6 +8,7 @@
   import { getDriver, type ConnectionDriver } from "$lib/connections";
   import { summarizeError, summarizeReport, summaryText, type TestSummary } from "$lib/connectionTest";
   import { writeClipboard } from "$lib/clipboard";
+  import { t, type MessageKey } from "$lib/i18n";
   import {
     connection,
     completeConnection,
@@ -26,7 +27,7 @@
     saveConnectionPassword,
     type PasswordPolicy,
   } from "$lib/credentials";
-  import type { TlsMode } from "$lib/types";
+  import type { TestConnectionReport, TlsMode } from "$lib/types";
 
   let {
     driver,
@@ -64,18 +65,34 @@
   let testing = $state(false);
   let credentialLoading = $state(false);
   let saving = $state(false);
+  // Errores crudos (del backend o del llavero); el texto que los rodea se
+  // traduce al pintarlos, igual que los mensajes de validacion, que se
+  // guardan como clave para que sigan el idioma activo.
   let credentialError = $state<string | null>(null);
   let persistenceError = $state<string | null>(null);
-  let testSummary = $state<TestSummary | null>(null);
+  // Resultado de la ultima prueba: el resumen se arma con `$t` para que
+  // cambie de idioma sin volver a probar.
+  let testResult = $state<
+    | { kind: "report"; report: TestConnectionReport }
+    | { kind: "error"; message: string; endpoint: string }
+    | null
+  >(null);
+  const testSummary = $derived<TestSummary | null>(
+    testResult === null
+      ? null
+      : testResult.kind === "report"
+        ? summarizeReport(testResult.report, $t)
+        : summarizeError(testResult.message, testResult.endpoint, $t),
+  );
   let testPopoverOpen = $state(false);
   let testArea = $state<HTMLElement>();
   let copied = $state<"test" | "url" | null>(null);
   let errors = $state<{
-    name?: string;
-    host?: string;
-    port?: string;
-    username?: string;
-    database?: string;
+    name?: MessageKey;
+    host?: MessageKey;
+    port?: MessageKey;
+    username?: MessageKey;
+    database?: MessageKey;
   }>({});
 
   const busy = $derived($connection.connecting || testing || credentialLoading || saving);
@@ -96,18 +113,18 @@
     const sslParam = tlsMode === "auto" ? "" : `?${sslUrlParameter(tlsMode)}`;
     return `${scheme}://${encodedUser}${host.trim() || "localhost"}:${Number(port) || driverDefinition.defaultPort}${encodedDatabase}${sslParam}`;
   });
-  const passwordPolicyOptions = [
-    { value: "never", label: "Nunca" },
-    { value: "restart", label: "Hasta reiniciar" },
-    { value: "forever", label: "Siempre" },
-  ];
-  const tlsModeOptions: { value: TlsMode; label: string }[] = [
-    { value: "auto", label: "Automático (recomendado)" },
-    { value: "required", label: "Requerido" },
-    { value: "verifyCa", label: "Verificar CA" },
-    { value: "verifyIdentity", label: "Verificar CA y host" },
-    { value: "disabled", label: "Desactivado" },
-  ];
+  const passwordPolicyOptions = $derived([
+    { value: "never", label: $t("connections.form.policy.never") },
+    { value: "restart", label: $t("connections.form.policy.restart") },
+    { value: "forever", label: $t("connections.form.policy.forever") },
+  ]);
+  const tlsModeOptions: { value: TlsMode; label: string }[] = $derived([
+    { value: "auto", label: $t("connections.form.tls.auto") },
+    { value: "required", label: $t("connections.form.tls.required") },
+    { value: "verifyCa", label: $t("connections.form.tls.verifyCa") },
+    { value: "verifyIdentity", label: $t("connections.form.tls.verifyIdentity") },
+    { value: "disabled", label: $t("connections.form.tls.disabled") },
+  ]);
 
   function sslUrlParameter(mode: TlsMode): string {
     if (driverDefinition.backendKind === "mysql") {
@@ -161,7 +178,7 @@
     try {
       storedPassword = await loadConnectionPassword(id, policy);
     } catch (error) {
-      credentialError = `No se pudo leer la contraseña guardada: ${String(error)}`;
+      credentialError = String(error);
     } finally {
       credentialLoading = false;
     }
@@ -170,14 +187,14 @@
   function validatedConfig(): ConnectionConfig | null {
     const nextErrors: typeof errors = {};
 
-    if (!name.trim()) nextErrors.name = "Asigna un nombre a la conexión.";
-    if (!host.trim()) nextErrors.host = "El host es obligatorio.";
-    if (!database.trim()) nextErrors.database = "La base de datos es obligatoria.";
-    if (!username.trim()) nextErrors.username = "El usuario es obligatorio.";
+    if (!name.trim()) nextErrors.name = "connections.form.error.name";
+    if (!host.trim()) nextErrors.host = "connections.form.error.host";
+    if (!database.trim()) nextErrors.database = "connections.form.error.database";
+    if (!username.trim()) nextErrors.username = "connections.form.error.username";
 
     const portValue = Number(port);
     if (!Number.isInteger(portValue) || portValue < 1 || portValue > 65535) {
-      nextErrors.port = "Introduce un puerto entre 1 y 65535.";
+      nextErrors.port = "connections.form.error.port";
     }
 
     errors = nextErrors;
@@ -206,9 +223,9 @@
     testPopoverOpen = false;
 
     try {
-      testSummary = summarizeReport(await testConnection(driverDefinition.backendKind, config));
+      testResult = { kind: "report", report: await testConnection(driverDefinition.backendKind, config) };
     } catch (error) {
-      testSummary = summarizeError(String(error), `${config.host}:${config.port}`);
+      testResult = { kind: "error", message: String(error), endpoint: `${config.host}:${config.port}` };
     } finally {
       testing = false;
       testPopoverOpen = true;
@@ -244,7 +261,7 @@
       });
       completeConnection(tableCount, profileId);
     } catch (error) {
-      persistenceError = `La conexión funciona, pero no se pudo guardar la contraseña de forma segura: ${String(error)}`;
+      persistenceError = String(error);
     } finally {
       saving = false;
     }
@@ -294,11 +311,11 @@
     <DriverLogo {driver} size={28} />
     <div class="dialog-title">
       <h1 id="connection-dialog-title">
-        {profile ? profile.name : "Nueva conexión"}
+        {profile ? profile.name : $t("connections.newConnection")}
       </h1>
       <p>{driverDefinition.name}{group ? ` · ${group}` : ""}</p>
     </div>
-    <button class="close" type="button" aria-label="Cerrar" onclick={requestClose} disabled={busy}>
+    <button class="close" type="button" aria-label={$t("common.close")} onclick={requestClose} disabled={busy}>
       <X size={16} aria-hidden="true" />
     </button>
   </header>
@@ -312,11 +329,11 @@
     <div class="form-body">
       <div class="name-row">
         <Field
-          label="Nombre"
+          label={$t("connections.form.name")}
           id="connection-name"
           name="connection-name"
           bind:value={name}
-          error={errors.name}
+          error={errors.name && $t(errors.name)}
           autocomplete="off"
           orientation="horizontal"
           required
@@ -332,11 +349,11 @@
       <section class="section">
         <div class="endpoint">
           <Field
-            label="Host"
+            label={$t("connections.form.host")}
             id="host"
             name="host"
             bind:value={host}
-            error={errors.host}
+            error={errors.host && $t(errors.host)}
             autocomplete="url"
             orientation="horizontal"
             required
@@ -344,12 +361,12 @@
           />
 
           <Field
-            label="Puerto"
+            label={$t("connections.form.port")}
             id="port"
             name="port"
             type="number"
             bind:value={port}
-            error={errors.port}
+            error={errors.port && $t(errors.port)}
             min={1}
             max={65535}
             orientation="compact"
@@ -359,11 +376,11 @@
         </div>
 
         <Field
-          label="Base de datos"
+          label={$t("connections.form.database")}
           id="database"
           name="database"
           bind:value={database}
-          error={errors.database}
+          error={errors.database && $t(errors.database)}
           autocomplete="off"
           orientation="horizontal"
           required
@@ -373,11 +390,11 @@
 
       <section class="section">
         <Field
-          label="Usuario"
+          label={$t("connections.form.username")}
           id="username"
           name="username"
           bind:value={username}
-          error={errors.username}
+          error={errors.username && $t(errors.username)}
           autocomplete="username"
           orientation="horizontal"
           required
@@ -386,18 +403,22 @@
 
         <div class="password-row">
           <Field
-            label="Contraseña"
+            label={$t("connections.form.password")}
             id="password"
             name="password"
             type="password"
             bind:value={password}
-            placeholder={credentialLoading ? "Cargando…" : hasStoredPassword ? "Guardada · escribe para reemplazarla" : ""}
+            placeholder={credentialLoading
+              ? $t("common.loading")
+              : hasStoredPassword
+                ? $t("connections.form.passwordStored")
+                : ""}
             autocomplete={hasStoredPassword ? "new-password" : "current-password"}
             orientation="horizontal"
             disabled={busy}
           />
           <Field
-            label="Guardar"
+            label={$t("connections.form.passwordPolicy")}
             id="password-policy"
             name="password-policy"
             type="select"
@@ -411,7 +432,7 @@
 
       <section class="section">
         <Field
-          label="SSL"
+          label={$t("connections.form.ssl")}
           id="tls-mode"
           name="tls-mode"
           type="select"
@@ -423,11 +444,11 @@
 
         {#if verifiesCertificate}
           <Field
-            label="Certificado CA"
+            label={$t("connections.form.caCertificate")}
             id="ca-certificate"
             name="ca-certificate"
             bind:value={caCertificatePath}
-            placeholder="Ruta al .pem (opcional: sin él se usan las CA públicas)"
+            placeholder={$t("connections.form.caCertificatePlaceholder")}
             autocomplete="off"
             orientation="horizontal"
             disabled={busy}
@@ -436,14 +457,14 @@
       </section>
 
       <div class="url-row">
-        <span class="row-label">URL</span>
+        <span class="row-label">{$t("connections.form.url")}</span>
         <div class="url-box">
           <code title={connectionUrl}>{connectionUrl}</code>
           <button
             type="button"
             class="icon-action"
-            aria-label="Copiar URL"
-            title={copied === "url" ? "Copiada" : "Copiar URL"}
+            aria-label={$t("connections.form.copyUrl")}
+            title={copied === "url" ? $t("connections.form.urlCopied") : $t("connections.form.copyUrl")}
             onclick={() => copy(connectionUrl, "url")}
           >
             {#if copied === "url"}
@@ -456,16 +477,21 @@
       </div>
 
       {#if credentialError}
-        <div role="alert" class="feedback error"><span>{credentialError}</span></div>
+        <div role="alert" class="feedback error"><span>{$t("connections.form.error.readPassword", { error: credentialError })}</span></div>
       {/if}
 
       {#if persistenceError}
-        <div role="alert" class="feedback error"><span>{persistenceError}</span></div>
+        <div role="alert" class="feedback error"><span>{$t("connections.form.error.savePassword", { error: persistenceError })}</span></div>
       {/if}
 
       {#if attempted && $connection.error}
         <div role="alert" class="feedback error">
-          <strong>No se pudo conectar con {host.trim() || "el servidor"}:{port}.</strong>
+          <strong>
+            {$t("connections.form.error.connect", {
+              host: host.trim() || $t("connections.form.error.theServer"),
+              port,
+            })}
+          </strong>
           <span>{$connection.error}</span>
         </div>
       {/if}
@@ -474,7 +500,7 @@
     <footer>
       <div class="test-area" bind:this={testArea}>
         <button class="test-action" type="button" onclick={handleTest} disabled={busy}>
-          {testing ? "Probando…" : "Probar conexión"}
+          {testing ? $t("connections.form.testing") : $t("connections.form.test")}
         </button>
 
         {#if testSummary && !testing}
@@ -483,7 +509,7 @@
             class={`test-badge ${testSummary.outcome}`}
             aria-expanded={testPopoverOpen}
             aria-controls="test-report"
-            title="Ver detalle de la prueba"
+            title={$t("connections.form.testDetail")}
             onclick={() => (testPopoverOpen = !testPopoverOpen)}
           >
             {#if testSummary.outcome === "success"}
@@ -511,9 +537,9 @@
                 onclick={() => testSummary && copy(summaryText(testSummary), "test")}
               >
                 {#if copied === "test"}
-                  <Check size={13} aria-hidden="true" /> Copiado
+                  <Check size={13} aria-hidden="true" /> {$t("connections.form.copied")}
                 {:else}
-                  <Copy size={13} aria-hidden="true" /> Copiar
+                  <Copy size={13} aria-hidden="true" /> {$t("connections.form.copy")}
                 {/if}
               </button>
             </div>
@@ -529,10 +555,14 @@
 
       <div class="primary-actions">
         <Button type="button" variant="secondary" onclick={requestClose} disabled={busy}>
-          Cancelar
+          {$t("common.cancel")}
         </Button>
         <Button type="submit" variant="primary" loading={$connection.connecting || saving} disabled={busy}>
-          {$connection.connecting ? "Conectando…" : saving ? "Guardando…" : "Guardar y conectar"}
+          {$connection.connecting
+            ? $t("connections.form.connecting")
+            : saving
+              ? $t("connections.form.saving")
+              : $t("connections.form.saveAndConnect")}
         </Button>
       </div>
     </footer>

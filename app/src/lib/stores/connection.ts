@@ -3,8 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { browser } from "$app/environment";
 import type { CatalogTable, DatabaseExplorer, TestConnectionReport, TlsMode } from "$lib/types";
 import { getDriver } from "$lib/connections";
-import { loadConnectionPassword } from "$lib/credentials";
-import type { ConnectionProfile } from "./connectionProfiles";
+import { forgetConnectionPassword, loadConnectionPassword } from "$lib/credentials";
+import { removeConnectionProfile, type ConnectionProfile } from "./connectionProfiles";
+import { forgetProfileConsoles } from "./queryConsoles";
+import { closeSqlFolder } from "./sqlFolders";
 
 export interface ConnectionState {
   // true = el ultimo connect() cargo un catalogo con exito. El backend
@@ -198,4 +200,16 @@ export function reset(): void {
   connection.set(initialState);
   catalogTables.set([]);
   databaseExplorer.set(null);
+}
+
+// Elimina un perfil y todo lo que la app guarda asociado a el. La contraseña
+// va primero: si el keyring falla, el perfil se conserva para no dejar una
+// contraseña huerfana imposible de borrar desde la interfaz. Los archivos
+// .sql de la carpeta vinculada no se tocan, solo se olvida el vinculo.
+export async function deleteConnectionProfile(profileId: string): Promise<void> {
+  await forgetConnectionPassword(profileId);
+  saveVisibleSchemas(profileId, []);
+  closeSqlFolder(profileId);
+  forgetProfileConsoles(profileId);
+  removeConnectionProfile(profileId);
 }

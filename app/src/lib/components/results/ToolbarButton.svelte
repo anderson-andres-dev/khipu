@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Component } from "svelte";
+  import { t } from "$lib/i18n";
 
   // Boton de icono de las barras del resultado, con tooltip propio (etiqueta
   // + atajo) debajo del boton — el mismo estilo que el de la paginacion.
@@ -32,7 +33,10 @@
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   function prettyShortcut(keys: string): string {
-    return keys.replace("ArrowDown", "Abajo").replace("ArrowUp", "Arriba").replace("Insert", "Insertar");
+    return keys
+      .replace("ArrowDown", $t("results.key.down"))
+      .replace("ArrowUp", $t("results.key.up"))
+      .replace("Insert", $t("results.key.insert"));
   }
 
   function show(event: Event) {

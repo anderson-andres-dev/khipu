@@ -1,0 +1,55 @@
+import { defineMessages } from "../define";
+
+// Textos que se repiten en varias áreas (botones de diálogo, estados).
+export default defineMessages({
+  es: {
+    cancel: "Cancelar",
+    close: "Cerrar",
+    save: "Guardar",
+    discard: "Descartar",
+    delete: "Eliminar",
+    apply: "Aplicar",
+    back: "Volver",
+    loading: "Cargando…",
+  },
+  en: {
+    cancel: "Cancel",
+    close: "Close",
+    save: "Save",
+    discard: "Discard",
+    delete: "Delete",
+    apply: "Apply",
+    back: "Back",
+    loading: "Loading…",
+  },
+  "pt-BR": {
+    cancel: "Cancelar",
+    close: "Fechar",
+    save: "Salvar",
+    discard: "Descartar",
+    delete: "Excluir",
+    apply: "Aplicar",
+    back: "Voltar",
+    loading: "Carregando…",
+  },
+  fr: {
+    cancel: "Annuler",
+    close: "Fermer",
+    save: "Enregistrer",
+    discard: "Ignorer",
+    delete: "Supprimer",
+    apply: "Appliquer",
+    back: "Retour",
+    loading: "Chargement…",
+  },
+  de: {
+    cancel: "Abbrechen",
+    close: "Schließen",
+    save: "Speichern",
+    discard: "Verwerfen",
+    delete: "Löschen",
+    apply: "Anwenden",
+    back: "Zurück",
+    loading: "Wird geladen…",
+  },
+});

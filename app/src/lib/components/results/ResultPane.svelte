@@ -44,6 +44,7 @@
     type RowRange,
   } from "$lib/resultEditing";
   import { eventMatchesShortcut, shortcuts } from "$lib/stores/shortcuts";
+  import { numberFormat, t } from "$lib/i18n";
   import { tick, type Snippet } from "svelte";
 
   let {
@@ -166,7 +167,7 @@
 
   function addNewRow() {
     if (!editInfo) {
-      onnotice(editBlockedReason ?? "Este resultado no se puede editar.");
+      onnotice(editBlockedReason ?? $t("results.notEditable"));
       return;
     }
     const next = addRow(edits, editInfo);
@@ -182,12 +183,12 @@
   // todas las filas que toca).
   function deleteSelectedRows() {
     if (!editInfo) {
-      onnotice(editBlockedReason ?? "Este resultado no se puede editar.");
+      onnotice(editBlockedReason ?? $t("results.notEditable"));
       return;
     }
     const ranges = grid?.selectedRanges() ?? [];
     if (ranges.length === 0) {
-      onnotice("Selecciona las filas que quieres eliminar.");
+      onnotice($t("results.selectRowsToDelete"));
       return;
     }
     // Varios rangos (Ctrl+clic en filas salteadas): se marcan todas sus
@@ -245,7 +246,7 @@
   // animacion; lo pegado queda seleccionado y destella.
   async function pasteFromClipboard(anchorRow: number, anchorCol: number, block: PasteBlock, fill: RowRange) {
     if (!editInfo || isExecuting) {
-      onnotice(editBlockedReason ?? "Este resultado no se puede editar.");
+      onnotice(editBlockedReason ?? $t("results.notEditable"));
       return;
     }
     const result = pasteBlock(edits, editInfo, rows, anchorRow, anchorCol, block.rows, fill);
@@ -386,8 +387,6 @@
     }
   }
 
-  const numberFormat = new Intl.NumberFormat("es");
-
 </script>
 
 <svelte:window
@@ -402,7 +401,7 @@
     <div
       class="result-tabs"
       role="tablist"
-      aria-label="Resultados"
+      aria-label={$t("results.tabs")}
       use:reorderable={{ items: ".result-tab.closable", onmove: (from, to) => onreordertabs(from, to) }}
     >
       <button
@@ -414,7 +413,7 @@
         onclick={() => onselecttab("output")}
       >
         <SquareTerminal size={12} aria-hidden="true" />
-        <span>Salida</span>
+        <span>{$t("results.tab.output")}</span>
       </button>
       {#each tabs as tab (tab.key)}
         <div class="result-tab closable" class:active={activeResultTab?.key === tab.key} animate:flip={{ duration: flipDuration(160) }}>
@@ -432,7 +431,7 @@
             {/if}
             <span>{tab.label}</span>
           </button>
-          <button type="button" class="tab-close" aria-label={`Cerrar ${tab.label}`} onclick={() => onclosetab(tab.key)}>
+          <button type="button" class="tab-close" aria-label={$t("results.tab.close", { name: tab.label })} onclick={() => onclosetab(tab.key)}>
             <X size={11} aria-hidden="true" />
           </button>
         </div>
@@ -442,14 +441,14 @@
       <!-- Barra de herramientas del resultado: fila propia debajo de las
            pestañas. Una pestaña fijada es de solo lectura: solo copia y
            exporta. -->
-      <div class="result-toolbar" role="toolbar" aria-label="Acciones del resultado">
+      <div class="result-toolbar" role="toolbar" aria-label={$t("results.toolbar")}>
         <!-- Misma barra para una pestaña fijada: lo que edita queda
              deshabilitado (es solo lectura) y el alfiler pasa a "Desfijar". -->
         <div class="toolbar-group">
           <ToolbarButton
             icon={RotateCw}
             size={15}
-            label="Volver a ejecutar"
+            label={$t("results.rerun")}
             disabled={isExecuting}
             onclick={onreload}
           />
@@ -457,21 +456,21 @@
         <div class="toolbar-group">
           <ToolbarButton
             icon={Plus}
-            label="Agregar fila"
+            label={$t("results.addRow")}
             shortcut={shortcutKeys("add-result-row")}
             disabled={!editable}
             onclick={addNewRow}
           />
           <ToolbarButton
             icon={Minus}
-            label="Eliminar filas"
+            label={$t("results.deleteRows")}
             shortcut={shortcutKeys("delete-result-rows")}
             disabled={!editable || gridSelection === null}
             onclick={deleteSelectedRows}
           />
           <ToolbarButton
             icon={Undo2}
-            label="Deshacer último cambio"
+            label={$t("results.undo")}
             shortcut={shortcutKeys("revert-result-changes")}
             disabled={!canRevert || isExecuting}
             onclick={() => void revertChanges()}
@@ -480,14 +479,14 @@
         <div class="toolbar-group">
           <ToolbarButton
             icon={Eye}
-            label={pending === 1 ? "Ver 1 cambio pendiente" : `Ver ${pending} cambios pendientes`}
+            label={pending === 1 ? $t("results.pending.one") : $t("results.pending.other", { count: pending })}
             badge={pending}
             disabled={pending === 0 || isExecuting}
             onclick={onpreview}
           />
           <ToolbarButton
             icon={ArrowUpFromLine}
-            label="Aplicar cambios"
+            label={$t("results.applyChanges")}
             shortcut={shortcutKeys("submit-result-changes")}
             tone="submit"
             disabled={pending === 0 || isExecuting}
@@ -496,17 +495,17 @@
         </div>
         <div class="toolbar-group">
           {#if activeResultTab?.pinned}
-            <ToolbarButton icon={PinOff} size={15} label="Desfijar pestaña" onclick={onunpin} />
+            <ToolbarButton icon={PinOff} size={15} label={$t("results.unpin")} onclick={onunpin} />
           {:else if activeResultTab && activeResultTab.key.includes("#pin")}
             <!-- Desfijada pero todavia abierta: se puede volver a fijar. -->
-            <ToolbarButton icon={Pin} size={15} label="Fijar pestaña" onclick={onrepin} />
+            <ToolbarButton icon={Pin} size={15} label={$t("results.pin")} onclick={onrepin} />
           {:else}
-            <ToolbarButton icon={Pin} size={15} label="Fijar pestaña" disabled={isExecuting} onclick={onpin} />
+            <ToolbarButton icon={Pin} size={15} label={$t("results.pin")} disabled={isExecuting} onclick={onpin} />
           {/if}
           <ToolbarButton
             icon={Search}
             size={15}
-            label="Buscar en la página"
+            label={$t("results.find.label")}
             shortcut="Ctrl+F"
             onclick={openFind}
           />
@@ -520,7 +519,7 @@
           class:open={formatMenuOpen}
           aria-haspopup="menu"
           aria-expanded={formatMenuOpen}
-          title="Formato al copiar varias celdas (Ctrl+C)"
+          title={$t("results.copyFormat.title")}
           bind:this={formatButton}
           onclick={toggleFormatMenu}
         >
@@ -529,7 +528,7 @@
         </button>
           <ToolbarButton
             icon={FileOutput}
-            label="Exportar datos"
+            label={$t("results.export.title")}
             disabled={isExecuting}
             onclick={onexport}
           />
@@ -555,11 +554,11 @@
         <div
           class="format-menu"
           role="menu"
-          aria-label="Formato al copiar"
+          aria-label={$t("results.copyFormat.menu")}
           bind:this={formatMenu}
           style={`right:${formatMenuPosition.right}px; top:${formatMenuPosition.top}px;`}
         >
-          <div class="menu-heading">Copiar como</div>
+          <div class="menu-heading">{$t("results.copyFormat.heading")}</div>
           {#each COPY_FORMATS as item (item.id)}
             <button
               type="button"
@@ -584,7 +583,7 @@
             onclick={() => copySettings.update((current) => ({ ...current, headers: !current.headers }))}
           >
             <span class="check">{#if $copySettings.headers}<Check size={13} aria-hidden="true" />{/if}</span>
-            <span>Incluir encabezados</span>
+            <span>{$t("results.includeHeaders")}</span>
             <span class="hint">TSV · CSV</span>
           </button>
         </div>
@@ -593,12 +592,12 @@
   {/if}
   {#if (isExecuting || consoleRunning) && !hasResultTab && outputLog.length === 0}
     <div class="centered">
-      <div class="spinner" role="status" aria-label="Ejecutando consulta"></div>
+      <div class="spinner" role="status" aria-label={$t("results.executingQuery")}></div>
     </div>
   {:else if result === null && outputLog.length === 0}
     <div class="centered empty-state">
       <TableProperties size={28} strokeWidth={1.25} aria-hidden="true" />
-      <span>Sin resultados</span>
+      <span>{$t("results.noResults")}</span>
     </div>
   {:else if !showingResult || result?.type !== "resultSet"}
     {#if filters}{@render filters()}{/if}
@@ -613,7 +612,7 @@
              resultados no desarma el grid y el siguiente no vuelve a medir
              ni a mover las columnas. -->
         {#if result.rows.length === 0 && edits.inserted.length === 0}
-          <p class="empty-rows">Sin filas</p>
+          <p class="empty-rows">{$t("results.noRows")}</p>
         {/if}
         {#if result}
           <DataGrid
@@ -643,7 +642,7 @@
         {/if}
         {#if isExecuting}
           <div class="busy-overlay">
-            <div class="spinner" role="status" aria-label="Cargando página"></div>
+            <div class="spinner" role="status" aria-label={$t("results.loadingPage")}></div>
           </div>
         {/if}
       </div>
@@ -652,10 +651,15 @@
            corre aunque cambie el ancho del texto de los costados). -->
       <div class="status-bar">
         <span class="stats">
-          {numberFormat.format(result.rows.length)} filas · {result.columns.length} columnas · {result.executionTimeMs} ms
+          {$t(result.rows.length === 1 ? "results.stats.rowsOne" : "results.stats.rowsOther", {
+            count: $numberFormat.format(result.rows.length),
+          })} ·
+          {$t(result.columns.length === 1 ? "results.stats.columnsOne" : "results.stats.columnsOther", {
+            count: result.columns.length,
+          })} · {result.executionTimeMs} ms
           {#if result.truncated && !page?.pageable}
-            <span class="truncated" title="Esta sentencia no se puede paginar: se muestran solo las primeras filas.">
-              · Limitado
+            <span class="truncated" title={$t("results.stats.truncatedTitle")}>
+              · {$t("results.stats.truncated")}
             </span>
           {/if}
         </span>

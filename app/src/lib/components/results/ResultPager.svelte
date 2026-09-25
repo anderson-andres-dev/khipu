@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import { Check, ChevronDown, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, LoaderCircle } from "@lucide/svelte";
   import type { ResultPage } from "$lib/types";
+  import { numberFormat, t } from "$lib/i18n";
   import { MAX_PAGE_SIZE, PAGE_SIZE_OPTIONS, clampPageSize, defaultPageSize } from "$lib/stores/resultPaging";
 
   let {
@@ -32,8 +33,7 @@
     oncount: () => Promise<number | null>;
   } = $props();
 
-  const numberFormat = new Intl.NumberFormat("es");
-  const format = (value: number) => numberFormat.format(value);
+  const format = (value: number) => $numberFormat.format(value);
 
   const start = $derived(rowCount === 0 ? 0 : page.offset + 1);
   const end = $derived(page.offset + rowCount);
@@ -142,7 +142,7 @@
   let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 
   function prettyShortcut(keys: string): string {
-    return keys.replace("ArrowDown", "Abajo").replace("ArrowUp", "Arriba");
+    return keys.replace("ArrowDown", $t("results.key.down")).replace("ArrowUp", $t("results.key.up"));
   }
 
   function showTooltip(event: Event, label: string, shortcut = "") {
@@ -191,9 +191,9 @@
   </button>
 {/snippet}
 
-<div class="pager" role="group" aria-label="Paginación del resultado">
-  {@render navButton("Primera página", "", canGoBack, goFirst, ChevronFirst)}
-  {@render navButton("Página anterior", previousShortcut, canGoBack, goPrevious, ChevronLeft)}
+<div class="pager" role="group" aria-label={$t("results.pager.label")}>
+  {@render navButton($t("results.pager.first"), "", canGoBack, goFirst, ChevronFirst)}
+  {@render navButton($t("results.pager.previous"), previousShortcut, canGoBack, goPrevious, ChevronLeft)}
 
   <button
     type="button"
@@ -204,14 +204,14 @@
     disabled={busy}
     bind:this={sizeButton}
     onclick={() => void toggleMenu()}
-    onpointerenter={(event) => showTooltip(event, "Cambiar tamaño de página")}
+    onpointerenter={(event) => showTooltip(event, $t("results.pager.changeSize"))}
     onpointerleave={hideTooltip}
   >
     <span class="range">{format(start)}-{format(end)}</span>
     <ChevronDown size={13} aria-hidden="true" />
   </button>
 
-  <span class="of">de</span>
+  <span class="of">{$t("results.pager.of")}</span>
 
   {#if totalRows !== null}
     <span class="total">{format(totalRows)}</span>
@@ -224,21 +224,21 @@
         hideTooltip();
         void oncount();
       }}
-      onpointerenter={(event) => showTooltip(event, "Clic para contar el total (ejecuta SELECT COUNT(*) FROM …)")}
+      onpointerenter={(event) => showTooltip(event, $t("results.pager.countHint"))}
       onpointerleave={hideTooltip}
     >
       {#if counting}
-        <LoaderCircle size={13} class="spin" aria-label="Contando filas" />
+        <LoaderCircle size={13} class="spin" aria-label={$t("results.pager.counting")} />
       {:else}
         {format(end)}+
       {/if}
     </button>
   {:else}
-    <span class="total" title="Esta sentencia no se puede paginar">{format(end)}+</span>
+    <span class="total" title={$t("results.pager.notPageable")}>{format(end)}+</span>
   {/if}
 
-  {@render navButton("Página siguiente", nextShortcut, canGoForward, goNext, ChevronRight)}
-  {@render navButton("Última página", "", canGoForward, () => void goLast(), ChevronLast)}
+  {@render navButton($t("results.pager.next"), nextShortcut, canGoForward, goNext, ChevronRight)}
+  {@render navButton($t("results.pager.last"), "", canGoForward, () => void goLast(), ChevronLast)}
 </div>
 
 {#if menuOpen}
@@ -247,12 +247,12 @@
     class="size-menu"
     role="menu"
     tabindex="-1"
-    aria-label="Tamaño de página"
+    aria-label={$t("results.pager.pageSize")}
     bind:this={menuEl}
     style={`left:${menuPosition.left}px; bottom:${menuPosition.bottom}px;`}
     onkeydown={onMenuKeydown}
   >
-    <div class="menu-heading">Tamaño de página</div>
+    <div class="menu-heading">{$t("results.pager.pageSize")}</div>
     {#each PAGE_SIZE_OPTIONS as size (size)}
       <button
         type="button"
@@ -264,7 +264,7 @@
       >
         <span class="check">{#if page.pageSize === size}<Check size={13} aria-hidden="true" />{/if}</span>
         <span>{format(size)}</span>
-        {#if size === $defaultPageSize}<span class="hint">Predeterminado</span>{/if}
+        {#if size === $defaultPageSize}<span class="hint">{$t("results.pager.default")}</span>{/if}
       </button>
     {/each}
     <button
@@ -276,8 +276,8 @@
       onclick={() => changePageSize(MAX_PAGE_SIZE)}
     >
       <span class="check">{#if isAll}<Check size={13} aria-hidden="true" />{/if}</span>
-      <span>Todas</span>
-      <span class="hint">hasta {format(MAX_PAGE_SIZE)}</span>
+      <span>{$t("results.pager.all")}</span>
+      <span class="hint">{$t("results.pager.upTo", { count: format(MAX_PAGE_SIZE) })}</span>
     </button>
     {#if customOpen}
       <form
@@ -291,12 +291,12 @@
           type="number"
           min="1"
           max={MAX_PAGE_SIZE}
-          aria-label="Tamaño de página personalizado"
+          aria-label={$t("results.pager.customSize")}
           bind:this={customInput}
           bind:value={customValue}
           onkeydown={(event) => event.stopPropagation()}
         />
-        <button type="submit" class="apply">Aplicar</button>
+        <button type="submit" class="apply">{$t("common.apply")}</button>
       </form>
     {:else}
       <button type="button" role="menuitem" class="menu-item" onclick={() => void openCustom()}>
@@ -305,7 +305,7 @@
             <Check size={13} aria-hidden="true" />
           {/if}
         </span>
-        <span>Personalizado…</span>
+        <span>{$t("results.pager.custom")}</span>
       </button>
     {/if}
     <div class="menu-separator" role="separator"></div>
@@ -317,7 +317,7 @@
       onclick={setAsDefault}
     >
       <span class="check"></span>
-      <span>Establecer como predeterminado</span>
+      <span>{$t("results.pager.setDefault")}</span>
     </button>
   </div>
 {/if}

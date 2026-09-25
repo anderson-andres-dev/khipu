@@ -4,6 +4,7 @@ mod drivers;
 mod export;
 mod result_editing;
 mod sql_files;
+mod updates;
 
 use khipu_driver_core::{
     ConnectionConfig, DbConnector, QueryExecutionOptions, QueryExecutionResult, SchemaObjects,
@@ -658,6 +659,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
         .manage(AppState::default())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
@@ -692,7 +695,11 @@ pub fn run() {
             result_edit_info,
             preview_result_changes,
             apply_result_changes,
-            export_query_to_file
+            export_query_to_file,
+            updates::update_context,
+            updates::list_releases,
+            updates::install_release,
+            updates::restart_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,6 @@
 import { RangeSet, StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, GutterMarker, WidgetType, gutter, type DecorationSet } from "@codemirror/view";
+import { translate, type MessageKey } from "$lib/i18n";
 import type { QueryExecutionResult } from "$lib/types";
 
 // Estado de la ultima sentencia ejecutada desde el editor, al estilo
@@ -48,32 +49,38 @@ export function formatExecutionTime(ms: number): string {
   return `${(ms / 1000).toFixed(ms < 10_000 ? 2 : 1)} s`;
 }
 
+// El texto se traduce al armar el marcador y forma parte de eq(): con
+// cualquier actualizacion de la vista despues de cambiar el idioma, el
+// gutter ve un marcador distinto y lo vuelve a pintar.
 class StatusGutterMarker extends GutterMarker {
+  readonly label: string;
+
   constructor(
     readonly status: ExecutionMarkerStatus,
     readonly message: string | undefined,
   ) {
     super();
+    this.label = translate(STATUS_LABEL[status]);
   }
 
   eq(other: StatusGutterMarker) {
-    return other.status === this.status && other.message === this.message;
+    return other.status === this.status && other.message === this.message && other.label === this.label;
   }
 
   toDOM() {
     const element = document.createElement("span");
     element.className = `cm-executionStatus cm-executionStatus-${this.status}`;
-    element.setAttribute("aria-label", STATUS_LABEL[this.status]);
-    element.title = this.message ?? STATUS_LABEL[this.status];
+    element.setAttribute("aria-label", this.label);
+    element.title = this.message ?? this.label;
     return element;
   }
 }
 
-const STATUS_LABEL: Record<ExecutionMarkerStatus, string> = {
-  pending: "Esperando confirmacion",
-  running: "Ejecutando",
-  success: "Ejecutada correctamente",
-  error: "Error al ejecutar",
+const STATUS_LABEL: Record<ExecutionMarkerStatus, MessageKey> = {
+  pending: "editor.marker.pending",
+  running: "editor.marker.running",
+  success: "editor.marker.success",
+  error: "editor.marker.error",
 };
 
 class ExecutionTimeWidget extends WidgetType {

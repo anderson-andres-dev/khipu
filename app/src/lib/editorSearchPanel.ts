@@ -20,6 +20,8 @@ import {
   type Panel,
   type ViewUpdate,
 } from "@codemirror/view";
+import { get } from "svelte/store";
+import { locale, numberFormat, translate } from "$lib/i18n";
 
 // Buscar y reemplazar del editor SQL, en lugar del panel por defecto de
 // CodeMirror, al estilo DataGrip:
@@ -36,7 +38,8 @@ import {
 //     con expresion regular.
 //
 // Es DOM plano (lo crea CodeMirror, fuera de Svelte); sus estilos estan en
-// styles/editorSearch.css.
+// styles/editorSearch.css. Los textos se vuelven a poner al cambiar el idioma
+// (applyTexts, suscrito a `locale` mientras el panel esta montado).
 
 const MAX_COUNTED = 1000;
 const MAX_FIELD_LINES = 6;
@@ -255,8 +258,6 @@ function element<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-const numberFormat = new Intl.NumberFormat("es");
-
 function createSearchPanel(view: EditorView): Panel {
   let query = getSearchQuery(view.state);
   const replaceOptions: ReplaceOptions = { preserveCase: false };
@@ -267,94 +268,93 @@ function createSearchPanel(view: EditorView): Panel {
   const findRow = element("div", "kh-search-row");
   const expand = element("button", "kh-search-icon-button kh-search-expand", {
     type: "button",
-    title: "Reemplazar",
-    "aria-label": "Mostrar reemplazar",
     "aria-expanded": "false",
   });
   expand.innerHTML = icon("chevron");
 
-  function textField(placeholder: string, label: string, main: boolean) {
+  function textField(main: boolean) {
     const field = element("div", "kh-search-field");
     const lens = element("span", "kh-search-lens");
     lens.innerHTML = icon(main ? "search" : "replace");
     const area = element("textarea", "kh-search-input", {
       rows: "1",
-      placeholder,
-      "aria-label": label,
       spellcheck: "false",
       autocomplete: "off",
       ...(main ? { "main-field": "true" } : {}),
     });
-    const newline = element("button", "kh-search-toggle kh-search-newline-button", {
-      type: "button",
-      title: "Insertar salto de línea (Ctrl+Shift+Intro)",
-      "aria-label": "Insertar salto de línea",
-    });
+    const newline = element("button", "kh-search-toggle kh-search-newline-button", { type: "button" });
     newline.innerHTML = icon("newline", 13);
     field.append(lens, area, newline);
     return { field, area, newline };
   }
 
-  const find = textField("Buscar", "Buscar en el editor", true);
+  const find = textField(true);
   find.area.value = query.search;
 
-  const toggle = (label: string, title: string, mono = false) => {
+  const toggle = (label: string, mono = false) => {
     const button = element("button", `kh-search-toggle${mono ? " mono" : ""}`, {
       type: "button",
-      title,
       "aria-pressed": "false",
     });
     button.textContent = label;
     return button;
   };
-  const caseButton = toggle("Cc", "Distinguir mayúsculas");
-  const wordButton = toggle("W", "Palabra completa");
-  const regexButton = toggle(".*", "Expresión regular", true);
+  const caseButton = toggle("Cc");
+  const wordButton = toggle("W");
+  const regexButton = toggle(".*", true);
   find.field.append(caseButton, wordButton, regexButton);
 
   const status = element("span", "kh-search-status", { "aria-live": "polite" });
-  const previous = element("button", "kh-search-icon-button", {
-    type: "button",
-    title: "Anterior (Shift+Intro)",
-    "aria-label": "Coincidencia anterior",
-  });
+  const previous = element("button", "kh-search-icon-button", { type: "button" });
   previous.innerHTML = icon("up");
-  const next = element("button", "kh-search-icon-button", {
-    type: "button",
-    title: "Siguiente (Intro)",
-    "aria-label": "Coincidencia siguiente",
-  });
+  const next = element("button", "kh-search-icon-button", { type: "button" });
   next.innerHTML = icon("down");
-  const close = element("button", "kh-search-icon-button kh-search-close", {
-    type: "button",
-    title: "Cerrar (Esc)",
-    "aria-label": "Cerrar búsqueda",
-  });
+  const close = element("button", "kh-search-icon-button kh-search-close", { type: "button" });
   close.innerHTML = icon("close");
   findRow.append(expand, find.field, status, previous, next, close);
 
   // --- Fila de reemplazar
   const replaceRow = element("div", "kh-search-row kh-search-replace");
   replaceRow.hidden = true;
-  const replace = textField("Reemplazar por", "Reemplazar por", false);
+  const replace = textField(false);
   replace.area.value = query.replace;
-  const caseKeep = toggle("Aa", "Preservar mayúsculas");
+  const caseKeep = toggle("Aa");
   replace.field.append(caseKeep);
-  const replaceOne = element("button", "kh-search-text-button", { type: "button", title: "Reemplazar (Intro)" });
-  replaceOne.textContent = "Reemplazar";
-  const replaceEvery = element("button", "kh-search-text-button", {
-    type: "button",
-    title: "Reemplazar todo (Ctrl+Intro)",
-  });
-  replaceEvery.textContent = "Reemplazar todo";
-  const exclude = element("button", "kh-search-text-button", {
-    type: "button",
-    title: "Excluir la actual del reemplazo",
-  });
-  exclude.textContent = "Excluir";
+  const replaceOne = element("button", "kh-search-text-button", { type: "button" });
+  const replaceEvery = element("button", "kh-search-text-button", { type: "button" });
+  const exclude = element("button", "kh-search-text-button", { type: "button" });
   replaceRow.append(element("span", "kh-search-spacer"), replace.field, replaceOne, replaceEvery, exclude);
 
   dom.append(findRow, replaceRow);
+
+  function label(node: HTMLElement, title: string, ariaLabel?: string) {
+    node.title = title;
+    if (ariaLabel) node.setAttribute("aria-label", ariaLabel);
+  }
+
+  function applyTexts() {
+    label(expand, translate("editor.search.replace"), translate("editor.search.showReplace"));
+    find.area.placeholder = translate("editor.search.find");
+    find.area.setAttribute("aria-label", translate("editor.search.findLabel"));
+    replace.area.placeholder = translate("editor.search.replaceWith");
+    replace.area.setAttribute("aria-label", translate("editor.search.replaceWith"));
+    for (const field of [find, replace]) {
+      label(field.newline, translate("editor.search.insertNewlineTitle"), translate("editor.search.insertNewline"));
+    }
+    label(caseButton, translate("editor.search.caseSensitive"));
+    label(wordButton, translate("editor.search.wholeWord"));
+    label(regexButton, translate("editor.search.regexp"));
+    label(caseKeep, translate("editor.search.preserveCase"));
+    label(previous, translate("editor.search.previous"), translate("editor.search.previousLabel"));
+    label(next, translate("editor.search.next"), translate("editor.search.nextLabel"));
+    label(close, translate("editor.search.close"), translate("editor.search.closeLabel"));
+    label(replaceOne, translate("editor.search.replaceTitle"));
+    replaceOne.textContent = translate("editor.search.replace");
+    label(replaceEvery, translate("editor.search.replaceAllTitle"));
+    replaceEvery.textContent = translate("editor.search.replaceAll");
+    label(exclude, translate("editor.search.excludeTitle"));
+    exclude.textContent = translate("editor.search.exclude");
+  }
 
   // --- Estado
 
@@ -404,7 +404,7 @@ function createSearchPanel(view: EditorView): Panel {
       return;
     }
     if (!query.valid) {
-      status.textContent = "Expresión inválida";
+      status.textContent = translate("editor.search.invalid");
       status.classList.add("error");
       return;
     }
@@ -418,12 +418,13 @@ function createSearchPanel(view: EditorView): Panel {
       count++;
       if (count >= MAX_COUNTED) break;
     }
-    const total = `${numberFormat.format(count)}${count >= MAX_COUNTED ? "+" : ""}`;
+    const format = get(numberFormat);
+    const total = `${format.format(count)}${count >= MAX_COUNTED ? "+" : ""}`;
     for (const button of [replaceOne, replaceEvery, exclude, previous, next]) button.disabled = count === 0;
     exclude.disabled = current < 0;
-    if (count === 0) status.textContent = "Sin resultados";
-    else if (current >= 0) status.textContent = `${numberFormat.format(current + 1)}/${total}`;
-    else status.textContent = `${total} ${count === 1 ? "resultado" : "resultados"}`;
+    if (count === 0) status.textContent = translate("editor.search.noResults");
+    else if (current >= 0) status.textContent = `${format.format(current + 1)}/${total}`;
+    else status.textContent = translate(count === 1 ? "editor.search.resultsOne" : "editor.search.resultsOther", { count: total });
   }
 
   function setExpanded(expanded: boolean) {
@@ -516,14 +517,24 @@ function createSearchPanel(view: EditorView): Panel {
   autosize(find.area);
   autosize(replace.area);
   setExpanded(false);
+  applyTexts();
+
+  let unsubscribeLocale: (() => void) | undefined;
 
   return {
     dom,
     top: true,
     mount() {
+      // subscribe llama enseguida: pone los textos del idioma vigente.
+      unsubscribeLocale = locale.subscribe(() => {
+        applyTexts();
+        refreshStatus();
+      });
       find.area.focus();
       find.area.select();
-      refreshStatus();
+    },
+    destroy() {
+      unsubscribeLocale?.();
     },
     update(update: ViewUpdate) {
       for (const transaction of update.transactions) {

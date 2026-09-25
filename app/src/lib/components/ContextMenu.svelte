@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
+  import { t } from "$lib/i18n";
 
   let {
     x,
@@ -81,7 +82,7 @@
   class="context-menu"
   role="menu"
   tabindex="-1"
-  aria-label="Menú contextual"
+  aria-label={$t("shell.contextMenu")}
   bind:this={menu}
   style:left={`${left}px`}
   style:top={`${top}px`}
