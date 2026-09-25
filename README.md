@@ -2,8 +2,10 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/rowly-logo-dark.svg">
-  <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="280">
+  <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="400">
 </picture>
+
+<br>
 
 <p>
   <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=505050&amp;color=e8bd25"></a>
@@ -31,12 +33,12 @@ Schema explorer · SQL autocomplete · Editable results · System keyring · Con
 Download your package from [Releases](https://github.com/anderson-andres-dev/rowly-db/releases).
 Run the command in the download folder. Linux packages target **x86_64**.
 
-| Distribution | Download | Install |
-| :--- | :--- | :--- |
-| Debian, Ubuntu, Linux Mint, Pop!_OS | `.deb` | `sudo apt install ./Rowly*.deb` |
-| Fedora and RPM distributions | `.rpm` | `sudo dnf install ./Rowly*.rpm` |
-| Arch Linux, Manjaro, EndeavourOS | `.pkg.tar.zst` | `sudo pacman -U ./rowly-db_*.pkg.tar.zst` |
-| Other Linux distributions with glibc | `.AppImage` | `chmod +x ./Rowly*.AppImage` then `./Rowly*.AppImage` |
+| Linux | Install |
+| :--- | :--- |
+| Debian based `.deb` | `sudo apt install ./Rowly*.deb` |
+| Fedora based `.rpm` | `sudo dnf install ./Rowly*.rpm` |
+| Arch based `.pkg.tar.zst` | `sudo pacman -U ./rowly-db_*.pkg.tar.zst` |
+| AppImage | `chmod +x ./Rowly*.AppImage`<br>`./Rowly*.AppImage` |
 
 For **Windows**, run the `.msi` or `.exe`. For **macOS**, open the `.dmg` for
 your processor and drag Rowly DB to Applications.
