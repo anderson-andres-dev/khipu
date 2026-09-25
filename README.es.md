@@ -14,10 +14,9 @@ Un cliente de escritorio liviano para consultar, explorar y entender bases de da
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
-  <img alt="Rowly DB con una consulta SQL, el explorador de la base de datos y el grid de resultados" src="docs/assets/screenshot-light.png">
-</picture>
+<p align="center">
+  <img alt="Rowly DB en sus variantes clara y oscura: editor SQL, explorador de la base de datos, archivos SQL y grid de resultados" src="docs/assets/rowly-db.webp">
+</p>
 
 ## Por qué Rowly DB
 

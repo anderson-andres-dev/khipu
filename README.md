@@ -14,10 +14,9 @@ A lightweight desktop client for querying, exploring and understanding databases
 
 </div>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
-  <img alt="Rowly DB with a SQL query, the database explorer and the results grid" src="docs/assets/screenshot-light.png">
-</picture>
+<p align="center">
+  <img alt="Rowly DB in its light and dark variants: SQL editor, database explorer, SQL files and results grid" src="docs/assets/rowly-db.webp">
+</p>
 
 ## Why Rowly DB
 
