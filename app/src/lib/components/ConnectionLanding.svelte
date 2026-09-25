@@ -5,10 +5,10 @@
   import Button from "$lib/components/Button.svelte";
   import { getDriver } from "$lib/connections";
   import ConnectionAvatar from "$lib/components/ConnectionAvatar.svelte";
+  import RowlyMark from "$lib/components/RowlyMark.svelte";
   import { NEUTRAL_IDENTITY_COLOR } from "$lib/connectionColors";
   import { t } from "$lib/i18n";
   import type { ConnectionProfile } from "$lib/stores/connectionProfiles";
-  import databaseIcon from "devicon/icons/sqldeveloper/sqldeveloper-plain.svg?url";
 
   let {
     profiles,
@@ -93,7 +93,7 @@
 <section class="landing" aria-labelledby="connection-state-title">
   {#if profiles.length === 0}
     <div class="empty">
-      <span class="database-icon" style:--icon={`url("${databaseIcon}")`} aria-hidden="true"></span>
+      <span class="brand-mark"><RowlyMark /></span>
       <h1 id="connection-state-title">{$t("connections.landing.emptyTitle")}</h1>
       <p>{$t("connections.landing.emptyText")}</p>
       <Button type="button" variant="primary" onclick={onnewconnection}>{$t("connections.newConnection")}</Button>
@@ -101,9 +101,12 @@
   {:else}
     <div class="saved">
       <header class="landing-header">
-        <div>
-          <h1 id="connection-state-title">{$t("connections.landing.title")}</h1>
-          <p>{$t("connections.landing.subtitle")}</p>
+        <div class="landing-title">
+          <RowlyMark />
+          <div>
+            <h1 id="connection-state-title">{$t("connections.landing.title")}</h1>
+            <p>{$t("connections.landing.subtitle")}</p>
+          </div>
         </div>
         <div class="toolbar">
           <div class="view-toggle" role="group" aria-label={$t("connections.landing.view")}>
@@ -235,16 +238,9 @@
     text-align: center;
   }
 
-  /* Silueta pintada con un color del tema, como DriverLogo: un filtro de
-     brillo sobre la imagen la lavaba en los temas claros. */
-  .database-icon {
+  .brand-mark {
     display: block;
-    width: 2.25rem;
-    height: 2.25rem;
     margin-bottom: var(--space-1);
-    background: var(--text-secondary);
-    -webkit-mask: var(--icon) center / contain no-repeat;
-    mask: var(--icon) center / contain no-repeat;
   }
 
   .saved {
@@ -259,6 +255,12 @@
     justify-content: space-between;
     gap: var(--space-4);
     margin-bottom: var(--space-6);
+  }
+
+  .landing-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
   }
 
   h1 {

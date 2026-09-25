@@ -1,6 +1,9 @@
 <div align="center">
 
-# Rowly DB
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/rowly-logo-dark.svg">
+  <img alt="Rowly DB" src="docs/assets/brand/rowly-logo.svg" width="300">
+</picture>
 
 **Free & Open Source SQL Client**
 
