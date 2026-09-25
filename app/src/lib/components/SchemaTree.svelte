@@ -11,6 +11,7 @@
     Database,
     Eye,
     Folder,
+    FolderOpen,
     Grid2x2,
     Key,
     Layers,
@@ -28,6 +29,7 @@
     X,
     Zap,
   } from "@lucide/svelte";
+  import ContextMenu from "$lib/components/ContextMenu.svelte";
   import { buildExplorerTree, expandableKeys, type ExplorerIcon, type ExplorerNode } from "$lib/explorerTree";
   import type { DatabaseExplorer } from "$lib/types";
 
@@ -39,6 +41,8 @@
     hideShortcut = "",
     onrefresh,
     onhide,
+    onopenfile,
+    onopenfolder,
     onschemaschange,
   }: {
     explorer: DatabaseExplorer | null;
@@ -49,11 +53,25 @@
     hideShortcut?: string;
     onrefresh: () => void;
     onhide: () => void;
+    // Abre un .sql del disco en una pestaña.
+    onopenfile: () => void;
+    // Abre una carpeta de scripts en el panel de archivos.
+    onopenfolder: () => void;
     // Schemas extra a mostrar (el por defecto se incluye siempre).
     onschemaschange: (schemas: string[]) => void;
   } = $props();
 
   type IconComponent = typeof Table;
+
+  // Menu del boton de carpeta, anclado debajo del boton.
+  let openMenuAt = $state<{ x: number; y: number } | null>(null);
+
+  function openMenu(event: MouseEvent) {
+    event.stopPropagation();
+    window.dispatchEvent(new Event("khipu:context-menu"));
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    openMenuAt = { x: rect.left, y: rect.bottom + 4 };
+  }
 
   const ICONS: Record<ExplorerIcon, IconComponent> = {
     schema: Grid2x2,
@@ -160,6 +178,18 @@
 
 <svelte:window onpointerdown={closeSchemaPickerOnOutsideClick} />
 
+{#if openMenuAt}
+  <ContextMenu
+    x={openMenuAt.x}
+    y={openMenuAt.y}
+    items={[
+      { label: "Abrir archivo…", action: onopenfile },
+      { label: "Abrir carpeta…", action: onopenfolder },
+    ]}
+    onclose={() => (openMenuAt = null)}
+  />
+{/if}
+
 {#snippet chevron(open: boolean)}
   <ChevronRight size={14} class={open ? "chevron open" : "chevron"} aria-hidden="true" />
 {/snippet}
@@ -220,6 +250,16 @@
   <header class="explorer-header">
     <span class="explorer-title">Explorador</span>
     <div class="explorer-actions">
+      <button
+        type="button"
+        class="action"
+        title="Abrir archivo o carpeta"
+        aria-label="Abrir archivo o carpeta"
+        aria-haspopup="menu"
+        onclick={openMenu}
+      >
+        <FolderOpen size={14} aria-hidden="true" />
+      </button>
       <button
         type="button"
         class="action"

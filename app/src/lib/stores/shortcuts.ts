@@ -38,6 +38,24 @@ export const shortcutDefinitions: ShortcutDefinition[] = [
     defaultKeys: "Shift+F6",
   },
   {
+    id: "save-query-console",
+    label: "Guardar",
+    description: "Guarda el archivo activo; en una consola, pide donde guardarla como .sql.",
+    defaultKeys: "Ctrl+S",
+  },
+  {
+    id: "save-query-console-as",
+    label: "Guardar como",
+    description: "Guarda la pestaña activa como un archivo .sql nuevo.",
+    defaultKeys: "Ctrl+Shift+S",
+  },
+  {
+    id: "open-sql-file",
+    label: "Abrir archivo SQL",
+    description: "Abre un archivo .sql del disco en una pestaña nueva.",
+    defaultKeys: "Ctrl+O",
+  },
+  {
     id: "close-query-console",
     label: "Cerrar consola",
     description: "Pide confirmacion antes de cerrar la consola SQL activa.",

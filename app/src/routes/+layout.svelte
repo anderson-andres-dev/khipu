@@ -34,6 +34,10 @@
   } from "@lucide/svelte";
   import SettingsPanel from "$lib/components/SettingsPanel.svelte";
   import SchemaTree from "$lib/components/SchemaTree.svelte";
+  import FileTree from "$lib/components/FileTree.svelte";
+  import { openSqlFileWithDialog, pickSqlFolder } from "$lib/sqlFiles";
+  import { MIN_FILE_PANEL_HEIGHT, setFilePanelHeight, setSqlFolder, sqlFolders } from "$lib/stores/sqlFolders";
+  import { notifyError } from "$lib/stores/notifications";
   import ConnectionSwitcher from "$lib/components/ConnectionSwitcher.svelte";
 
   let cleanupThemeEffects: (() => void) | undefined;
@@ -53,6 +57,64 @@
     activeProfile ? `${activeProfile.database || activeProfile.name}@${activeProfile.host}` : "",
   );
   let { children }: { children: Snippet } = $props();
+
+  // --- Panel de archivos (parte inferior del sidebar) -------------------
+  const profileId = $derived($connection.profileId ?? "default");
+  const sqlFolder = $derived($sqlFolders.folderByProfile[profileId] ?? null);
+  let sidebarContent = $state<HTMLElement>();
+  // Alto en vivo mientras se arrastra el divisor; null fuera del arrastre.
+  let dragFilePanelHeight = $state<number | null>(null);
+  // El arbol de la base conserva siempre al menos este alto.
+  const MIN_SCHEMA_PANE_HEIGHT = 120;
+
+  function clampFilePanelHeight(height: number): number {
+    const available = (sidebarContent?.clientHeight ?? 0) - MIN_SCHEMA_PANE_HEIGHT;
+    return Math.max(MIN_FILE_PANEL_HEIGHT, Math.min(height, Math.max(MIN_FILE_PANEL_HEIGHT, available)));
+  }
+
+  function startFilePanelResize(event: PointerEvent) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const handle = event.currentTarget as HTMLElement;
+    handle.setPointerCapture(event.pointerId);
+    const startY = event.clientY;
+    const startHeight = clampFilePanelHeight($sqlFolders.panelHeight);
+    dragFilePanelHeight = startHeight;
+
+    function onMove(moveEvent: PointerEvent) {
+      dragFilePanelHeight = clampFilePanelHeight(startHeight - (moveEvent.clientY - startY));
+    }
+
+    function onUp() {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+      if (dragFilePanelHeight !== null) setFilePanelHeight(dragFilePanelHeight);
+      dragFilePanelHeight = null;
+    }
+
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  }
+
+  function onFilePanelHandleKeydown(event: KeyboardEvent) {
+    const step = event.shiftKey ? 40 : 10;
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      const delta = event.key === "ArrowUp" ? step : -step;
+      setFilePanelHeight(clampFilePanelHeight($sqlFolders.panelHeight + delta));
+    }
+  }
+
+  async function handleOpenFolder() {
+    try {
+      const picked = await pickSqlFolder();
+      if (picked) setSqlFolder(profileId, picked);
+    } catch (error) {
+      notifyError(error);
+    }
+  }
   const appWindow = getCurrentWindow();
 
   // "Recargar tablas" es, en la practica, volver a conectar al mismo
@@ -236,7 +298,13 @@
       <!-- El contenido no baja de MIN_SIDEBAR_WIDTH: al cerrar (o arrastrar
            por debajo del minimo) se recorta en vez de reacomodarse, asi el
            arbol se desliza fuera sin saltos de layout. -->
-      <div class="sidebar-content" style:width={`${Math.max(liveSidebarWidth, MIN_SIDEBAR_WIDTH)}px`}>
+      <div
+        class="sidebar-content"
+        class:resizing-files={dragFilePanelHeight !== null}
+        bind:this={sidebarContent}
+        style:width={`${Math.max(liveSidebarWidth, MIN_SIDEBAR_WIDTH)}px`}
+      >
+        <div class="schema-pane">
         <SchemaTree
           explorer={$databaseExplorer}
           {connectionLabel}
@@ -245,8 +313,36 @@
           hideShortcut={toggleSidebarKeys}
           onrefresh={handleRefreshTables}
           onhide={() => (sidebarCollapsed = true)}
+          onopenfile={() => void openSqlFileWithDialog(profileId).catch(notifyError)}
+          onopenfolder={() => void handleOpenFolder()}
           onschemaschange={(schemas) => void setVisibleSchemas(schemas).catch(() => {})}
         />
+        </div>
+        {#if sqlFolder}
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div
+            class="files-resize-handle"
+            class:disabled={$sqlFolders.collapsed}
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Redimensionar panel de archivos"
+            tabindex={$sqlFolders.collapsed ? -1 : 0}
+            onpointerdown={startFilePanelResize}
+            onkeydown={onFilePanelHandleKeydown}
+          ></div>
+          <!-- Plegado, queda solo la cabecera. El alto siempre es explicito
+               (nunca auto) para que la transicion pueda interpolarlo. -->
+          <div
+            class="files-pane"
+            class:collapsed={$sqlFolders.collapsed}
+            style:height={$sqlFolders.collapsed
+              ? undefined
+              : `${dragFilePanelHeight ?? clampFilePanelHeight($sqlFolders.panelHeight)}px`}
+          >
+            <FileTree {profileId} folder={sqlFolder} />
+          </div>
+        {/if}
       </div>
       {#if !sidebarCollapsed}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -496,7 +592,79 @@
   }
 
   .sidebar-content {
+    display: flex;
     height: 100%;
+    flex-direction: column;
+  }
+
+  .schema-pane {
+    min-height: 0;
+    flex: 1;
+  }
+
+  /* Misma curva y duracion que el sidebar al ocultarse (.sidebar). */
+  .files-pane {
+    --files-duration: calc(var(--duration-fast) * 1.6);
+    flex-shrink: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding-top: var(--space-1);
+    box-sizing: border-box;
+    transition: height var(--files-duration) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .files-pane.collapsed {
+    /* padding-top + alto de la cabecera de FileTree (.files-header). */
+    height: calc(var(--space-1) + 2rem);
+  }
+
+  .sidebar-content.resizing-files .files-pane {
+    transition: none;
+  }
+
+  .files-resize-handle.disabled {
+    pointer-events: none;
+  }
+
+  /* Divisor entre el arbol de la base y el de archivos: sin linea en
+     reposo (la separacion la da el espacio); la linea de acento aparece
+     al pasar el mouse o arrastrar, como en el borde del sidebar. */
+  .files-resize-handle {
+    position: relative;
+    flex-shrink: 0;
+    height: 6px;
+    margin: var(--space-1) 0 -3px;
+    cursor: row-resize;
+    touch-action: none;
+  }
+
+  .files-resize-handle::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 2px;
+    height: 2px;
+    background: transparent;
+    transition: background-color var(--duration-fast) ease;
+  }
+
+  .files-resize-handle:hover::after,
+  .sidebar-content.resizing-files .files-resize-handle::after {
+    background: var(--accent);
+  }
+
+  .files-resize-handle:focus-visible {
+    outline: none;
+  }
+
+  .files-resize-handle:focus-visible::after {
+    background: var(--focus-ring);
+  }
+
+  .sidebar-content.resizing-files {
+    cursor: row-resize;
+    user-select: none;
   }
 
   /* Zona de agarre sobre el borde derecho: mas ancha que la linea visible

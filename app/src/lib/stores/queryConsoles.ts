@@ -9,6 +9,15 @@ export interface QueryConsole {
   profileId: string;
   title: string;
   sql: string;
+  // Ruta absoluta del .sql en disco si la pestaña es un archivo; null para
+  // una consola. Consolas y archivos usan el mismo editor y se ejecutan
+  // igual contra la conexion activa.
+  filePath: string | null;
+  // Contenido del archivo tal como esta en disco (ultimo abierto/guardado).
+  // El texto en edicion (sql) se persiste igual en cada tecla para no
+  // perder nada al recargar; la pestaña marca cambios mientras difieren.
+  // En una consola no se usa.
+  savedSql: string;
 }
 
 export interface PendingQueryConfirmation {
@@ -28,6 +37,9 @@ export interface QueryExecutionState {
   // vigente del editor, que puede haber cambiado desde entonces. Sirve para
   // rotular a que consulta pertenece el resultado (p.ej. de que tabla es).
   resultSql: string | null;
+  // Momento (epoch ms) en que termino la ejecucion que produjo `result`:
+  // el panel de resultados lo muestra como marca de tiempo del log.
+  resultAt: number | null;
   pendingConfirmation: PendingQueryConfirmation | null;
 }
 
@@ -35,6 +47,7 @@ const EMPTY_EXECUTION_STATE: QueryExecutionState = {
   isExecuting: false,
   result: null,
   resultSql: null,
+  resultAt: null,
   pendingConfirmation: null,
 };
 
@@ -52,6 +65,10 @@ const EMPTY_STATE: QueryConsoleState = {
   executionByConsole: {},
 };
 
+function consoleTitle(ordinal: number): string {
+  return `consola_${ordinal}`;
+}
+
 function parseConsole(value: unknown): QueryConsole | null {
   if (!value || typeof value !== "object") return null;
   const candidate = value as Partial<QueryConsole>;
@@ -61,11 +78,16 @@ function parseConsole(value: unknown): QueryConsole | null {
     typeof candidate.title !== "string" ||
     typeof candidate.sql !== "string"
   ) return null;
+  // Consolas de antes del nombre "consola_N" pasan al formato nuevo; las
+  // renombradas a mano se respetan.
+  const legacyOrdinal = /^Consola (\d+)$/.exec(candidate.title)?.[1];
   return {
     id: candidate.id,
     profileId: candidate.profileId,
-    title: candidate.title,
+    title: legacyOrdinal ? consoleTitle(Number(legacyOrdinal)) : candidate.title,
     sql: candidate.sql,
+    filePath: typeof candidate.filePath === "string" ? candidate.filePath : null,
+    savedSql: typeof candidate.savedSql === "string" ? candidate.savedSql : candidate.sql,
   };
 }
 
@@ -114,8 +136,10 @@ function appendConsole(state: QueryConsoleState, profileId: string): { state: Qu
   const item: QueryConsole = {
     id: createId(),
     profileId,
-    title: `Consola ${state.nextOrdinal}`,
+    title: consoleTitle(state.nextOrdinal),
     sql: "",
+    filePath: null,
+    savedSql: "",
   };
   return {
     id: item.id,
@@ -183,7 +207,7 @@ export function beginQueryExecution(consoleId: string): boolean {
 
 export function finishQueryExecution(consoleId: string, sql: string, result: QueryExecutionResult): void {
   queryConsoles.update((state) =>
-    withExecution(state, consoleId, { isExecuting: false, result, resultSql: sql, pendingConfirmation: null }),
+    withExecution(state, consoleId, { isExecuting: false, result, resultSql: sql, resultAt: Date.now(), pendingConfirmation: null }),
   );
 }
 
@@ -255,6 +279,77 @@ export function updateQueryConsoleSql(id: string, sql: string): void {
       ? withExecution(next, id, { pendingConfirmation: null })
       : next;
   });
+}
+
+// Un archivo tiene cambios sin guardar si su texto difiere de lo que hay en
+// disco. Una consola, en cuanto tiene texto: todavia no esta en ningun
+// archivo (su contenido solo sobrevive dentro de la app mientras siga
+// abierta).
+export function isQueryConsoleDirty(item: QueryConsole): boolean {
+  return item.filePath !== null ? item.sql !== item.savedSql : item.sql.trim() !== "";
+}
+
+export function fileNameFromPath(path: string): string {
+  return path.split(/[\\/]/).pop() || path;
+}
+
+// Registra que la pestaña se guardo en `filePath` con el contenido `sql`
+// (el que efectivamente se escribio, que puede ser anterior al texto actual
+// si el usuario siguio tecleando mientras se guardaba). Una consola pasa a
+// ser un archivo y toma el nombre de este.
+export function markQueryConsoleSaved(id: string, filePath: string, sql: string): void {
+  queryConsoles.update((state) => ({
+    ...state,
+    consoles: state.consoles.map((item) =>
+      item.id === id ? { ...item, filePath, savedSql: sql, title: fileNameFromPath(filePath) } : item,
+    ),
+  }));
+}
+
+// El archivo cambio de ruta (renombrado desde la pestaña o desde el arbol
+// de archivos): toda pestaña que lo tuviera abierto sigue apuntandolo.
+export function retargetQueryConsoleFile(oldPath: string, newPath: string): void {
+  queryConsoles.update((state) => ({
+    ...state,
+    consoles: state.consoles.map((item) =>
+      item.filePath === oldPath ? { ...item, filePath: newPath, title: fileNameFromPath(newPath) } : item,
+    ),
+  }));
+}
+
+// El archivo ya no existe (se mando a la papelera): sus pestañas abiertas
+// vuelven a ser consolas con el mismo texto, asi no se pierde nada y quedan
+// marcadas como sin guardar.
+export function detachQueryConsoleFile(path: string): void {
+  queryConsoles.update((state) => ({
+    ...state,
+    consoles: state.consoles.map((item) => (item.filePath === path ? { ...item, filePath: null } : item)),
+  }));
+}
+
+// Abre un .sql como pestaña. Si ya estaba abierto en esta conexion, solo lo
+// activa (sin pisar lo que se este editando).
+export function openSqlFileConsole(profileId: string, filePath: string, contents: string): string {
+  const state = get(queryConsoles);
+  const existing = state.consoles.find((item) => item.profileId === profileId && item.filePath === filePath);
+  if (existing) {
+    activateQueryConsole(profileId, existing.id);
+    return existing.id;
+  }
+  const item: QueryConsole = {
+    id: createId(),
+    profileId,
+    title: fileNameFromPath(filePath),
+    sql: contents,
+    filePath,
+    savedSql: contents,
+  };
+  queryConsoles.set({
+    ...state,
+    consoles: [...state.consoles, item],
+    activeByProfile: { ...state.activeByProfile, [profileId]: item.id },
+  });
+  return item.id;
 }
 
 export function renameQueryConsole(id: string, title: string): void {

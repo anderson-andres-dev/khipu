@@ -2,7 +2,7 @@
   import { tick } from "svelte";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
-  import { Plus, X } from "@lucide/svelte";
+  import { FileCode, Plus, SquareTerminal, TriangleAlert, X } from "@lucide/svelte";
   import SqlEditor from "$lib/SqlEditor.svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import ExecutionGuard from "$lib/components/ExecutionGuard.svelte";
@@ -25,12 +25,15 @@
     ensureQueryConsole,
     executionForConsole,
     finishQueryExecution,
+    isQueryConsoleDirty,
     queryConsoles,
     renameQueryConsole,
     requireQueryConfirmation,
     takeQueryConfirmation,
     updateQueryConsoleSql,
   } from "$lib/stores/queryConsoles";
+  import { openSqlFileWithDialog, renameConsoleFile, saveConsole, saveConsoleAs } from "$lib/sqlFiles";
+  import { dismissNotice, notice, notifyError } from "$lib/stores/notifications";
 
   const profileId = $derived($connection.profileId ?? "default");
   const consoles = $derived($queryConsoles.consoles.filter((item) => item.profileId === profileId));
@@ -39,7 +42,7 @@
   const execution = $derived(
     activeConsole
       ? executionForConsole($queryConsoles, activeConsole.id)
-      : { isExecuting: false, result: null, resultSql: null, pendingConfirmation: null },
+      : { isExecuting: false, result: null, resultSql: null, resultAt: null, pendingConfirmation: null },
   );
   const activeProfile = $derived($connectionProfiles.find((profile) => profile.id === profileId));
   // Tabla principal (primer FROM) de la consulta que produjo el resultado
@@ -132,8 +135,20 @@
         action: () => startRename(item.id, item.title),
       },
       {
-        label: "Cerrar consola",
+        label: "Guardar",
+        shortcut: shortcutKeys("save-query-console"),
+        separatorBefore: true,
+        action: () => void runFileAction(() => saveConsole(item)),
+      },
+      {
+        label: "Guardar como…",
+        shortcut: shortcutKeys("save-query-console-as"),
+        action: () => void runFileAction(() => saveConsoleAs(item)),
+      },
+      {
+        label: item.filePath ? "Cerrar archivo" : "Cerrar consola",
         shortcut: shortcutKeys("close-query-console"),
+        separatorBefore: true,
         action: () => requestClose(item.id),
       },
       {
@@ -144,11 +159,86 @@
           createQueryConsole(profileId);
         },
       },
+      {
+        label: "Abrir archivo…",
+        shortcut: shortcutKeys("open-sql-file"),
+        action: () => void runFileAction(() => openSqlFileWithDialog(profileId)),
+      },
     ];
   });
 
+  // Las acciones de archivo (dialogos + disco) son asincronas y pueden
+  // fallar por permisos, disco lleno, etc.: el error se muestra como aviso
+  // en vez de perderse en la consola del navegador.
+  async function runFileAction(action: () => Promise<boolean | void>): Promise<boolean> {
+    try {
+      return (await action()) !== false;
+    } catch (error) {
+      notifyError(error);
+      return false;
+    }
+  }
+
+  function currentConsole(id: string) {
+    return $queryConsoles.consoles.find((item) => item.id === id);
+  }
+
   $effect(() => {
     ensureQueryConsole(profileId);
+  });
+
+  // --- Desborde de la barra de pestañas -----------------------------------
+  // Las pestañas scrollean por debajo del boton "+" (que queda fijo a la
+  // derecha); un desvanecido en cada borde con contenido oculto sugiere que
+  // hay mas pestañas de ese lado.
+  let tabsScroll = $state<HTMLDivElement>();
+  let tabsOverflow = $state({ start: false, end: false });
+
+  function updateTabsOverflow() {
+    const el = tabsScroll;
+    if (!el) return;
+    const start = el.scrollLeft > 1;
+    const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    if (start !== tabsOverflow.start || end !== tabsOverflow.end) tabsOverflow = { start, end };
+  }
+
+  // La rueda vertical del mouse desplaza la barra en horizontal.
+  function onTabsWheel(event: WheelEvent) {
+    const el = tabsScroll;
+    if (!el || el.scrollWidth <= el.clientWidth || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    el.scrollLeft += event.deltaY;
+  }
+
+  $effect(() => {
+    const el = tabsScroll;
+    if (!el) return;
+    const observer = new ResizeObserver(updateTabsOverflow);
+    observer.observe(el);
+    // No pasivo a proposito: preventDefault evita que la rueda scrollee
+    // tambien la pagina.
+    el.addEventListener("wheel", onTabsWheel, { passive: false });
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("wheel", onTabsWheel);
+    };
+  });
+
+  // Al activar o crear una pestaña, la barra se desliza hasta dejarla a la
+  // vista: una pestaña nueva entra por la derecha y empuja a las demas.
+  // Espera a que termine la animacion de entrada (fly, 150ms) para medir el
+  // ancho final.
+  $effect(() => {
+    const id = activeId;
+    consoles.length;
+    const el = tabsScroll;
+    if (!id || !el) return;
+    const timer = setTimeout(() => {
+      const tab = el.querySelector<HTMLElement>(`[data-console-id="${CSS.escape(id)}"]`);
+      tab?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      updateTabsOverflow();
+    }, 160);
+    return () => clearTimeout(timer);
   });
 
   function closeConsole(event: Event, id: string) {
@@ -173,12 +263,25 @@
   }
 
   function finishRename(save: boolean) {
-    if (save && renamingId) renameQueryConsole(renamingId, renameValue);
+    const id = renamingId;
     renamingId = null;
+    if (!save || !id) return;
+    // En un archivo, cambiar el nombre renombra el archivo en disco.
+    if (currentConsole(id)?.filePath) {
+      void runFileAction(() => renameConsoleFile(id, renameValue));
+    } else {
+      renameQueryConsole(id, renameValue);
+    }
   }
 
   async function requestClose(id: string) {
     tabMenu = null;
+    const item = consoles.find((candidate) => candidate.id === id);
+    // Solo se pregunta cuando cerrar perderia algo.
+    if (item && !isQueryConsoleDirty(item)) {
+      closeQueryConsole(profileId, id);
+      return;
+    }
     pendingCloseId = id;
     await tick();
     closeDialog?.showModal();
@@ -189,10 +292,22 @@
     pendingCloseId = null;
   }
 
-  function confirmClose() {
+  function discardAndClose() {
     if (pendingCloseId) closeQueryConsole(profileId, pendingCloseId);
     closeDialog?.close();
     pendingCloseId = null;
+  }
+
+  // Guarda (con el dialogo de "Guardar como" si es una consola) y recien
+  // despues cierra; si el usuario cancela el dialogo o falla el disco, la
+  // pestaña queda abierta.
+  async function saveAndClose() {
+    const id = pendingCloseId;
+    const item = id ? currentConsole(id) : undefined;
+    if (!id || !item) return;
+    closeDialog?.close();
+    pendingCloseId = null;
+    if (await runFileAction(() => saveConsole(item))) closeQueryConsole(profileId, id);
   }
 
   function handleConsoleShortcut(event: KeyboardEvent) {
@@ -212,6 +327,29 @@
     if (renameKeys && activeConsole && eventMatchesShortcut(event, renameKeys)) {
       event.preventDefault();
       void startRename(activeConsole.id, activeConsole.title);
+      return;
+    }
+
+    const saveAsKeys = shortcutKeys("save-query-console-as");
+    if (saveAsKeys && activeConsole && eventMatchesShortcut(event, saveAsKeys)) {
+      event.preventDefault();
+      const item = activeConsole;
+      void runFileAction(() => saveConsoleAs(item));
+      return;
+    }
+
+    const saveKeys = shortcutKeys("save-query-console");
+    if (saveKeys && activeConsole && eventMatchesShortcut(event, saveKeys)) {
+      event.preventDefault();
+      const item = activeConsole;
+      void runFileAction(() => saveConsole(item));
+      return;
+    }
+
+    const openKeys = shortcutKeys("open-sql-file");
+    if (openKeys && eventMatchesShortcut(event, openKeys)) {
+      event.preventDefault();
+      void runFileAction(() => openSqlFileWithDialog(profileId));
       return;
     }
 
@@ -292,11 +430,23 @@
 <svelte:window onkeydown={handleConsoleShortcut} />
 
 <div class="workspace">
-  <div class="console-tabs" role="tablist" aria-label="Consolas SQL">
+  <div class="console-tabs">
+  <div
+    class="tabs-scroll"
+    class:fade-start={tabsOverflow.start}
+    class:fade-end={tabsOverflow.end}
+    role="tablist"
+    aria-label="Consolas SQL"
+    bind:this={tabsScroll}
+    onscroll={updateTabsOverflow}
+  >
     {#each consoles as item (item.id)}
+      {@const dirty = isQueryConsoleDirty(item)}
       <div
         class="console-tab"
+        data-console-id={item.id}
         class:active={item.id === activeId}
+        class:dirty
         role="tab"
         tabindex="0"
         aria-selected={item.id === activeId}
@@ -309,6 +459,11 @@
         in:fly={{ x: -8, duration: 150 }}
         out:fade={{ duration: 120 }}
       >
+        {#if item.filePath}
+          <FileCode size={13} class="console-tab-icon" aria-hidden="true" />
+        {:else}
+          <SquareTerminal size={13} class="console-tab-icon" aria-hidden="true" />
+        {/if}
         {#if renamingId === item.id}
           <input
             class="rename-input"
@@ -324,18 +479,23 @@
             onblur={() => finishRename(true)}
           />
         {:else}
-          <span>{item.title}</span>
+          <span class="console-tab-title" title={item.filePath ?? undefined}>{item.title}</span>
         {/if}
         <button
           type="button"
           class="close-tab"
-          aria-label={`Cerrar ${item.title}`}
+          aria-label={dirty ? `Cerrar ${item.title} (cambios sin guardar)` : `Cerrar ${item.title}`}
+          title={dirty
+            ? `${item.filePath ? "Cambios sin guardar" : "Sin guardar en un archivo"} (${shortcutKeys("save-query-console")} para guardar)`
+            : undefined}
           onclick={(event) => closeConsole(event, item.id)}
         >
-          <X size={12} aria-hidden="true" />
+          <span class="dirty-dot" aria-hidden="true"></span>
+          <X size={12} class="close-icon" aria-hidden="true" />
         </button>
       </div>
     {/each}
+  </div>
     <button
       type="button"
       class="new-console"
@@ -385,6 +545,8 @@
       <ResultPane
         isExecuting={execution.isExecuting}
         result={execution.result}
+        resultSql={execution.resultSql}
+        resultAt={execution.resultAt}
         sourceLabel={resultSourceLabel}
         columnCatalogInfo={resultColumnCatalogInfo}
       />
@@ -410,6 +572,17 @@
   />
 {/if}
 
+{#if $notice}
+  {@const current = $notice}
+  <div class="notice" role="alert" transition:fly={{ y: 8, duration: 160 }}>
+    <TriangleAlert size={14} class="notice-icon" aria-hidden="true" />
+    <span>{current.message}</span>
+    <button type="button" class="notice-close" aria-label="Cerrar aviso" onclick={() => dismissNotice(current.id)}>
+      <X size={12} aria-hidden="true" />
+    </button>
+  </div>
+{/if}
+
 <dialog
   class="close-console-dialog"
   bind:this={closeDialog}
@@ -419,19 +592,21 @@
   }}
   onclose={() => (pendingCloseId = null)}
 >
-  <div class="dialog-heading">
-    <h2>Cerrar {pendingCloseConsole?.title ?? "consola"}</h2>
-    <button type="button" class="dialog-close" aria-label="Cerrar" onclick={cancelClose}>
-      <X size={15} aria-hidden="true" />
-    </button>
+  <div class="dialog-banner">
+    <div class="dialog-icon" aria-hidden="true">
+      <TriangleAlert size={20} strokeWidth={2} />
+    </div>
+    <h2>¿Cerrar {pendingCloseConsole?.title ?? "consola"}?</h2>
   </div>
-  <p>
-    Lo que escribiste en esta consola no está guardado en un archivo SQL. Si la cierras,
-    se eliminarán la consola temporal y todo su contenido.
+  <p class="dialog-message">
+    {pendingCloseConsole?.filePath ? "Tiene cambios sin guardar." : "Esta consola no está guardada en un archivo."}
   </p>
   <div class="dialog-actions">
     <button type="button" class="secondary-action" onclick={cancelClose}>Cancelar</button>
-    <button type="button" class="danger-action" onclick={confirmClose}>Cerrar consola</button>
+    <button type="button" class="secondary-action discard" onclick={discardAndClose}>Descartar</button>
+    <button type="button" class="primary-action" onclick={() => void saveAndClose()}>
+      {pendingCloseConsole?.filePath ? "Guardar" : "Guardar como…"}
+    </button>
   </div>
 </dialog>
 
@@ -450,11 +625,40 @@
     flex-shrink: 0;
     align-items: center;
     gap: var(--space-1);
-    overflow-x: auto;
     padding: var(--space-1) var(--space-2);
     box-sizing: border-box;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
+  }
+
+  /* El scroll es nativo (rueda, trackpad, arrastre) pero sin barra visible:
+     el desvanecido de los bordes ya indica que hay mas pestañas. */
+  .tabs-scroll {
+    --fade: 2rem;
+    display: flex;
+    min-width: 0;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: var(--space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-padding-inline: var(--fade);
+  }
+
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs-scroll.fade-end {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--fade)), transparent);
+  }
+
+  .tabs-scroll.fade-start {
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade));
+  }
+
+  .tabs-scroll.fade-start.fade-end {
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
   }
 
   .console-tab,
@@ -501,16 +705,84 @@
     outline-offset: -2px;
   }
 
+  .console-tab :global(.console-tab-icon) {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+
+  .console-tab.active :global(.console-tab-icon) {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  .console-tab-title {
+    white-space: nowrap;
+  }
+
+  /* Boton de cierre de tamaño fijo: la bolita de "sin guardar" y la X
+     ocupan el mismo lugar, asi la pestaña no cambia de ancho al alternar.
+     Con cambios pendientes se ve la bolita; al pasar el mouse por la
+     pestaña (o enfocar el boton) se cambia por la X, como en los editores
+     de codigo. */
   .close-tab {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px;
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
     color: inherit;
     cursor: pointer;
+  }
+
+  .dirty-dot {
+    position: absolute;
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity 140ms ease,
+      transform 180ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  }
+
+  .close-tab :global(.close-icon) {
+    transition: opacity 120ms ease;
+  }
+
+  .console-tab.dirty .dirty-dot {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .console-tab.dirty .close-tab :global(.close-icon) {
+    opacity: 0;
+  }
+
+  .console-tab.dirty:hover .dirty-dot,
+  .console-tab.dirty .close-tab:focus-visible .dirty-dot {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  .console-tab.dirty:hover .close-tab :global(.close-icon),
+  .console-tab.dirty .close-tab:focus-visible :global(.close-icon) {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dirty-dot,
+    .close-tab :global(.close-icon) {
+      transition: none;
+    }
   }
 
   .rename-input {
@@ -532,6 +804,12 @@
   .new-console {
     width: 1.75rem;
     background: transparent;
+  }
+
+  /* Fijo a la derecha de las pestañas; cuando desbordan, las pestañas
+     pasan por debajo del desvanecido y el boton no se mueve. */
+  .console-tabs > .new-console {
+    flex-shrink: 0;
   }
 
   .workspace-body {
@@ -589,9 +867,13 @@
     overflow: hidden;
   }
 
+  /* Sin padding propio: la franja superior va de borde a borde y el resto
+     del contenido lleva su padding. El color de advertencia sale de
+     --warning, asi cada tema trae su tono. */
   .close-console-dialog {
-    width: min(27rem, calc(100vw - 2rem));
-    padding: var(--space-5);
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 0;
+    overflow: hidden;
     box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -600,47 +882,71 @@
     color: var(--text-primary);
   }
 
-  .dialog-heading {
+  .close-console-dialog[open] {
+    animation: dialog-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.97);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .close-console-dialog[open] {
+      animation: none;
+    }
+  }
+
+  .dialog-banner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--warning) 16%, var(--surface-elevated)),
+      color-mix(in srgb, var(--warning) 7%, var(--surface-elevated))
+    );
+    box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--warning) 22%, var(--border));
+  }
+
+  .dialog-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--warning) 20%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--warning) 8%, transparent);
+    color: var(--warning);
   }
 
   h2 {
+    min-width: 0;
     margin: 0;
     font-size: var(--font-size-heading);
     font-weight: var(--font-weight-heading);
+    letter-spacing: var(--tracking-heading);
+    overflow-wrap: anywhere;
   }
 
-  .dialog-heading + p {
-    margin: var(--space-3) 0 var(--space-5);
+  .dialog-message {
+    margin: 0;
+    padding: var(--space-4) var(--space-5) var(--space-5);
     color: var(--text-secondary);
     font-size: 0.875rem;
     line-height: 1.5;
-  }
-
-  .dialog-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-1);
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-  }
-
-  .dialog-close:hover {
-    background: var(--surface);
-    color: var(--text-primary);
   }
 
   .dialog-actions {
     display: flex;
     justify-content: flex-end;
     gap: var(--space-2);
+    padding: 0 var(--space-5) var(--space-5);
   }
 
   .dialog-actions button {
@@ -651,6 +957,9 @@
     font: inherit;
     font-size: 0.8125rem;
     cursor: pointer;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
   }
 
   .secondary-action {
@@ -658,14 +967,73 @@
     color: var(--text-primary);
   }
 
-  .danger-action {
-    border-color: var(--danger) !important;
-    background: var(--danger);
-    color: var(--text-on-accent);
+  .secondary-action:hover {
+    background: var(--surface-hover);
   }
 
-  .dialog-actions button:focus-visible,
-  .dialog-close:focus-visible {
+  .secondary-action.discard:hover {
+    color: var(--danger);
+  }
+
+  .primary-action {
+    border-color: transparent !important;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-weight: 500;
+  }
+
+  .primary-action:hover {
+    background: var(--accent-hover);
+  }
+
+  .notice {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    max-width: min(26rem, calc(100vw - 2rem));
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+    border-radius: var(--radius-md);
+    background: var(--surface-elevated);
+    box-shadow: var(--shadow-elevated);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .notice :global(.notice-icon) {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--danger);
+  }
+
+  .notice span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .notice-close {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .notice-close:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .dialog-actions button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }

@@ -1,6 +1,7 @@
 mod catalog_adapter;
 mod credentials;
 mod drivers;
+mod sql_files;
 
 use khipu_driver_core::{
     ConnectionConfig, DbConnector, QueryExecutionOptions, QueryExecutionResult, SchemaObjects,
@@ -368,9 +369,40 @@ async fn delete_connection_password(profile_id: String) -> Result<(), String> {
     credentials::delete(profile_id).await
 }
 
+#[tauri::command]
+async fn read_sql_file(path: String) -> Result<String, String> {
+    sql_files::read(path).await
+}
+
+#[tauri::command]
+async fn write_sql_file(path: String, contents: String) -> Result<(), String> {
+    sql_files::write(path, contents).await
+}
+
+#[tauri::command]
+async fn rename_sql_file(path: String, new_name: String) -> Result<String, String> {
+    sql_files::rename(path, new_name).await
+}
+
+#[tauri::command]
+async fn list_sql_dir(path: String) -> Result<Vec<sql_files::SqlDirEntry>, String> {
+    sql_files::list_dir(path).await
+}
+
+#[tauri::command]
+async fn create_sql_file(dir: String, name: String) -> Result<String, String> {
+    sql_files::create(dir, name).await
+}
+
+#[tauri::command]
+async fn trash_sql_file(path: String) -> Result<(), String> {
+    sql_files::trash(path).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
@@ -394,7 +426,13 @@ pub fn run() {
             test_connection,
             save_connection_password,
             load_connection_password,
-            delete_connection_password
+            delete_connection_password,
+            read_sql_file,
+            write_sql_file,
+            rename_sql_file,
+            list_sql_dir,
+            create_sql_file,
+            trash_sql_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -142,3 +142,37 @@ describe("queryConsoles: estado de ejecucion por consola", () => {
     expect(execution.result).toEqual({ type: "command", affectedRows: 2, executionTimeMs: 9 });
   });
 });
+
+describe("queryConsoles: archivos .sql", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("una consola con texto queda sin guardar hasta guardarla como archivo", async () => {
+    const mod = await freshQueryConsoles();
+    const id = mod.createQueryConsole("profile-a");
+    const item = () => get(mod.queryConsoles).consoles.find((candidate) => candidate.id === id)!;
+    expect(mod.isQueryConsoleDirty(item())).toBe(false);
+    mod.updateQueryConsoleSql(id, "SELECT 1");
+    expect(mod.isQueryConsoleDirty(item())).toBe(true);
+
+    mod.markQueryConsoleSaved(id, "/home/u/ventas.sql", "SELECT 1");
+    expect(item().title).toBe("ventas.sql");
+    expect(mod.isQueryConsoleDirty(item())).toBe(false);
+
+    mod.updateQueryConsoleSql(id, "SELECT 2");
+    expect(mod.isQueryConsoleDirty(item())).toBe(true);
+  });
+
+  it("abrir el mismo archivo dos veces reusa la pestaña", async () => {
+    const mod = await freshQueryConsoles();
+    const first = mod.openSqlFileConsole("profile-a", "/home/u/a.sql", "SELECT 1");
+    mod.createQueryConsole("profile-a");
+    const again = mod.openSqlFileConsole("profile-a", "/home/u/a.sql", "SELECT 1");
+
+    const state = get(mod.queryConsoles);
+    expect(again).toBe(first);
+    expect(state.activeByProfile["profile-a"]).toBe(first);
+    expect(state.consoles.filter((item) => item.filePath === "/home/u/a.sql")).toHaveLength(1);
+  });
+});
