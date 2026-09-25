@@ -62,6 +62,10 @@ export interface EditorPalette {
 	type?: string;
 	builtin?: string;
 	operator?: string;
+	// Operadores escritos como palabra (AND, OR, NOT, IS, LIKE, IN…). La
+	// gramática los marca como palabra clave; con este color dejan de verse
+	// igual que SELECT/FROM/WHERE.
+	wordOperator?: string;
 	// Paneles, tooltips y búsqueda de CodeMirror con los tokens del shell. Los
 	// temas claros lo reciben siempre; los oscuros originales no lo necesitan
 	// (ver codemirrorTheme.ts).
@@ -117,22 +121,23 @@ export function themeVariant(family: ThemeFamily, scheme: ColorScheme): ThemeVar
 // antes del primer paint) y en tokens.css (fallback); palettes.test.ts
 // falla si quedan desincronizados.
 export const palettes: Record<ThemeFamily, ThemeVariants> = {
-	// Rowly: el tema propio de Rowly DB. Superficies en la misma familia teal
-	// de la marca (#082126 → #F5FAFA) y acento turquesa/menta; la sintaxis usa
-	// complementarios cálidos (arena, coral) y fríos (cielo, lila) para que el
-	// teal mande sin que todo el código sea del mismo color.
+	// Rowly: el tema propio de Rowly DB, de alto contraste. Superficies en la
+	// familia teal de la marca, más profundas que las de Solarized, y acento
+	// turquesa/menta. En el editor cada categoría tiene su matiz: cláusulas en
+	// menta, operadores en palabra en violeta, funciones en cielo, tipos en
+	// oro, textos en lima, números en coral y constantes en rosa.
 	rowly: {
 		dark: {
 			shell: {
-				surface: '#0C262C',
-				surfaceElevated: '#133239',
-				surfaceHover: '#122F35',
-				surfaceContent: '#091D22',
-				border: '#1A3C43',
-				gridLine: '#143238',
-				controlBorder: '#2E5A62',
-				textPrimary: '#DCEAEC',
-				textSecondary: '#8FA6AC',
+				surface: '#0A1D22',
+				surfaceElevated: '#11292F',
+				surfaceHover: '#10262C',
+				surfaceContent: '#061519',
+				border: '#173239',
+				gridLine: '#102A30',
+				controlBorder: '#2B535B',
+				textPrimary: '#E3EEF0',
+				textSecondary: '#93AAB0',
 				textOnAccent: '#04191D',
 				accent: '#2EB8AA',
 				accentHover: '#49C5B6',
@@ -142,33 +147,34 @@ export const palettes: Record<ThemeFamily, ThemeVariants> = {
 				success: '#5CCB8A',
 				warning: '#E9B45A',
 				keyPrimary: '#E9B45A',
-				controlDisabled: '#2A474D',
+				controlDisabled: '#264349',
 				focusRing: '#49C5B6',
 				shadow: '0 10px 32px rgba(2,12,15,0.55)',
 				scrim: 'rgba(3,14,17,0.6)',
 				scrollbarThumb: 'rgba(73,197,182,0.22)',
 				scrollbarThumbHover: 'rgba(73,197,182,0.4)',
-				topbarBackground: 'rgba(12,38,44,0.78)'
+				topbarBackground: 'rgba(10,29,34,0.78)'
 			},
 			editor: {
-				background: '#091D22',
-				foreground: '#CFDFE2',
-				caret: '#49C5B6',
-				selection: '#16434A',
-				lineNumber: '#46646B',
+				background: '#061519',
+				foreground: '#E3EEF0',
+				caret: '#34D1BF',
+				selection: '#134047',
+				lineNumber: '#3E5C63',
 				activeLineNumber: '#A9C2C7',
-				comment: '#628087',
-				keyword: '#49C5B6',
-				string: '#E6B87A',
-				number: '#F29E7C',
-				function: '#7CC4F2',
-				constant: '#D59BF0',
+				comment: '#5E7F86',
+				keyword: '#34D1BF',
+				string: '#B8DD7F',
+				number: '#FF8F7A',
+				function: '#6CC2FF',
+				constant: '#FF8AC8',
 				error: '#F28B82',
-				activeStatement: '#1F5D63',
-				success: '#49C5B6',
-				type: '#9FB8F7',
-				builtin: '#7CC4F2',
-				operator: '#8FB7BC',
+				activeStatement: '#1B5A60',
+				success: '#34D1BF',
+				type: '#F5C66E',
+				builtin: '#6CC2FF',
+				operator: '#9CC3CA',
+				wordOperator: '#B69CFF',
 				tokenChrome: true
 			}
 		},
@@ -177,7 +183,7 @@ export const palettes: Record<ThemeFamily, ThemeVariants> = {
 				surface: '#EEF4F5',
 				surfaceElevated: '#FFFFFF',
 				surfaceHover: '#E3EDEF',
-				surfaceContent: '#FCFEFE',
+				surfaceContent: '#FFFFFF',
 				border: '#D9E5E7',
 				gridLine: '#E7EFF0',
 				controlBorder: '#B7C9CD',
@@ -201,24 +207,25 @@ export const palettes: Record<ThemeFamily, ThemeVariants> = {
 				topbarBackground: 'rgba(238,244,245,0.82)'
 			},
 			editor: {
-				background: '#FCFEFE',
-				foreground: '#1E3A40',
+				background: '#FFFFFF',
+				foreground: '#15343A',
 				caret: '#0E9594',
 				selection: '#C4E7E3',
-				lineNumber: '#A7B8BC',
+				lineNumber: '#A3B6BA',
 				activeLineNumber: '#0B2D33',
-				comment: '#71868C',
-				keyword: '#0B7F7E',
-				string: '#96570F',
-				number: '#BC4328',
-				function: '#1D6CAD',
-				constant: '#8A3DB3',
+				comment: '#6F858B',
+				keyword: '#007F73',
+				string: '#4B7512',
+				number: '#C0402C',
+				function: '#1767B5',
+				constant: '#B0287A',
 				error: '#C23B45',
 				activeStatement: '#8FD0C8',
 				success: '#0E9594',
-				type: '#4A5CBE',
-				builtin: '#1D6CAD',
-				operator: '#0B7F7E',
+				type: '#8F5E00',
+				builtin: '#1767B5',
+				operator: '#3E6A71',
+				wordOperator: '#6A4FD0',
 				tokenChrome: true
 			}
 		}

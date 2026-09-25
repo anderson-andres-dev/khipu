@@ -27,15 +27,15 @@
   color-scheme: light dark;
 
   /* Paleta cruda (Rowly oscuro) — fuente real, ver comentario arriba */
-  --palette-surface: #0C262C;
-  --palette-surface-elevated: #133239;
-  --palette-surface-hover: #122F35;
-  --palette-surface-content: #091D22;
-  --palette-border: #1A3C43;
-  --palette-grid-line: #143238;
-  --palette-control-border: #2E5A62;
-  --palette-text-primary: #DCEAEC;
-  --palette-text-secondary: #8FA6AC;
+  --palette-surface: #0A1D22;
+  --palette-surface-elevated: #11292F;
+  --palette-surface-hover: #10262C;
+  --palette-surface-content: #061519;
+  --palette-border: #173239;
+  --palette-grid-line: #102A30;
+  --palette-control-border: #2B535B;
+  --palette-text-primary: #E3EEF0;
+  --palette-text-secondary: #93AAB0;
   --palette-text-on-accent: #04191D;
   --palette-accent: #2EB8AA;
   --palette-accent-hover: #49C5B6;
@@ -45,13 +45,13 @@
   --palette-success: #5CCB8A;
   --palette-warning: #E9B45A;
   --palette-key-primary: #E9B45A;
-  --palette-control-disabled: #2A474D;
+  --palette-control-disabled: #264349;
   --palette-focus-ring: #49C5B6;
   --palette-shadow: 0 10px 32px rgba(2,12,15,0.55);
   --palette-scrim: rgba(3,14,17,0.6);
   --palette-scrollbar-thumb: rgba(73,197,182,0.22);
   --palette-scrollbar-thumb-hover: rgba(73,197,182,0.4);
-  --palette-topbar-background: rgba(12,38,44,0.78);
+  --palette-topbar-background: rgba(10,29,34,0.78);
 
   /* Color semántico — alias estable sobre --palette-* */
   --surface: var(--palette-surface);
@@ -123,7 +123,7 @@
     --palette-surface: #EEF4F5;
     --palette-surface-elevated: #FFFFFF;
     --palette-surface-hover: #E3EDEF;
-    --palette-surface-content: #FCFEFE;
+    --palette-surface-content: #FFFFFF;
     --palette-border: #D9E5E7;
     --palette-grid-line: #E7EFF0;
     --palette-control-border: #B7C9CD;

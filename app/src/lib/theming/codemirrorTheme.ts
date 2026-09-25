@@ -120,9 +120,16 @@ const BUILTIN_FUNCTIONS = new Set(
 	).split(' ')
 );
 
-const builtinCallMark = Decoration.mark({ class: 'cm-sqlBuiltinCall' });
+// Operadores escritos como palabra: la gramática los marca como palabra
+// clave igual que SELECT o FROM. Con `palette.wordOperator` se pintan aparte.
+const WORD_OPERATORS = new Set(
+	'and or not is like ilike in between exists any all some xor div regexp rlike similar'.split(' ')
+);
 
-function findBuiltinCalls(view: EditorView): DecorationSet {
+const builtinCallMark = Decoration.mark({ class: 'cm-sqlBuiltinCall' });
+const wordOperatorMark = Decoration.mark({ class: 'cm-sqlWordOperator' });
+
+function findWordClasses(view: EditorView): DecorationSet {
 	const builder = new RangeSetBuilder<Decoration>();
 	const tree = syntaxTree(view.state);
 	for (const { from, to } of view.visibleRanges) {
@@ -132,6 +139,10 @@ function findBuiltinCalls(view: EditorView): DecorationSet {
 			enter(node) {
 				if (node.name !== 'Keyword' && node.name !== 'Builtin') return;
 				const word = view.state.doc.sliceString(node.from, node.to).toLowerCase();
+				if (WORD_OPERATORS.has(word)) {
+					builder.add(node.from, node.to, wordOperatorMark);
+					return;
+				}
 				if (!BUILTIN_FUNCTIONS.has(word)) return;
 				const next = view.state.doc.sliceString(node.to, Math.min(node.to + 8, view.state.doc.length));
 				if (/^\s*\(/.test(next)) builder.add(node.from, node.to, builtinCallMark);
@@ -141,15 +152,15 @@ function findBuiltinCalls(view: EditorView): DecorationSet {
 	return builder.finish();
 }
 
-const builtinCallHighlight = ViewPlugin.fromClass(
+const wordClassHighlight = ViewPlugin.fromClass(
 	class {
 		decorations: DecorationSet;
 		constructor(view: EditorView) {
-			this.decorations = findBuiltinCalls(view);
+			this.decorations = findWordClasses(view);
 		}
 		update(update: ViewUpdate) {
 			if (update.docChanged || update.viewportChanged || syntaxTree(update.startState) !== syntaxTree(update.state)) {
-				this.decorations = findBuiltinCalls(update.view);
+				this.decorations = findWordClasses(update.view);
 			}
 		}
 	},
@@ -243,9 +254,12 @@ export function buildCmTheme(palette: EditorPalette, scheme: ColorScheme): Exten
 
 	const tokenChrome = scheme === 'light' || palette.tokenChrome ? [EditorView.theme(TOKEN_CHROME)] : [];
 
-	const builtinCalls = palette.builtin
-		? [builtinCallHighlight, EditorView.theme({ '.cm-sqlBuiltinCall, .cm-sqlBuiltinCall *': { color: palette.builtin } })]
-		: [];
+	// Sin color propio, la marca no pinta nada y queda el de palabra clave.
+	const wordClassColors: Parameters<typeof EditorView.theme>[0] = {};
+	if (palette.builtin) wordClassColors['.cm-sqlBuiltinCall, .cm-sqlBuiltinCall *'] = { color: palette.builtin };
+	if (palette.wordOperator) wordClassColors['.cm-sqlWordOperator, .cm-sqlWordOperator *'] = { color: palette.wordOperator };
+	const wordClasses =
+		palette.builtin || palette.wordOperator ? [wordClassHighlight, EditorView.theme(wordClassColors)] : [];
 
-	return [themeExtension, ...tokenChrome, syntaxHighlighting(highlightStyle), ...builtinCalls];
+	return [themeExtension, ...tokenChrome, syntaxHighlighting(highlightStyle), ...wordClasses];
 }
