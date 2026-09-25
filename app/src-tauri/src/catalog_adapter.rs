@@ -3,8 +3,8 @@ use khipu_engine::catalog::{CatalogColumn, CatalogForeignKey, CatalogTable, Sche
 
 /// Converts driver introspection results into the engine's own catalog types,
 /// preserving column metadata so completion can use it (primary keys, types,
-/// nullability, foreign keys).
-pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
+/// nullability, foreign keys). Views are included: they're queryable too.
+pub fn tables_to_catalog(tables: impl IntoIterator<Item = TableInfo>) -> SchemaCatalog {
     let tables = tables
         .into_iter()
         .map(|table| CatalogTable {
@@ -18,6 +18,7 @@ pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
                     data_type: column.data_type,
                     nullable: column.nullable,
                     is_primary_key: column.is_primary_key,
+                    comment: column.comment,
                 })
                 .collect(),
             foreign_keys: table
@@ -38,21 +39,21 @@ pub fn tables_to_catalog(tables: Vec<TableInfo>) -> SchemaCatalog {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use khipu_driver_core::{ColumnInfo, ForeignKeyInfo};
+    use khipu_driver_core::{ColumnInfo, ForeignKeyInfo, RelationKind};
 
     #[test]
     fn preserves_column_metadata() {
-        let tables = vec![TableInfo {
-            schema: "public".to_string(),
-            name: "users".to_string(),
-            columns: vec![ColumnInfo {
-                name: "id".to_string(),
-                data_type: "integer".to_string(),
-                nullable: false,
-                is_primary_key: true,
-            }],
-            foreign_keys: vec![],
-        }];
+        let mut table = TableInfo::new("public", "users".to_string(), RelationKind::Table, None);
+        table.columns.push(ColumnInfo {
+            name: "id".to_string(),
+            data_type: "integer".to_string(),
+            nullable: false,
+            is_primary_key: true,
+            comment: Some("Identificador unico".to_string()),
+            default_value: None,
+            generated: false,
+        });
+        let tables = vec![table];
 
         let catalog = tables_to_catalog(tables);
 
@@ -62,20 +63,19 @@ mod tests {
         assert_eq!(column.data_type, "integer");
         assert!(!column.nullable);
         assert!(column.is_primary_key);
+        assert_eq!(column.comment.as_deref(), Some("Identificador unico"));
     }
 
     #[test]
     fn preserves_foreign_keys() {
-        let tables = vec![TableInfo {
-            schema: "public".to_string(),
-            name: "orders".to_string(),
-            columns: vec![],
-            foreign_keys: vec![ForeignKeyInfo {
-                column: "user_id".to_string(),
-                referenced_table: "users".to_string(),
-                referenced_column: "id".to_string(),
-            }],
-        }];
+        let mut table = TableInfo::new("public", "orders".to_string(), RelationKind::Table, None);
+        table.foreign_keys.push(ForeignKeyInfo {
+            name: "fk_orders_user".to_string(),
+            column: "user_id".to_string(),
+            referenced_table: "users".to_string(),
+            referenced_column: "id".to_string(),
+        });
+        let tables = vec![table];
 
         let catalog = tables_to_catalog(tables);
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { connection, connectToProfile, pendingEdit } from "$lib/stores/connection";
   import {
     connectionProfiles,
@@ -10,9 +12,9 @@
   import ConnectionForm from "$lib/components/ConnectionForm.svelte";
   import Workspace from "$lib/components/Workspace.svelte";
 
-  type ConnectionView = "landing" | "drivers";
-
-  let connectionView = $state<ConnectionView>("landing");
+  // "Nueva conexion" abre primero el modal de motores (DriverPicker) y al
+  // elegir uno, el formulario; la pantalla de conexiones queda detras.
+  let choosingDriver = $state(false);
   let selectedDriver = $state<ConnectionDriver | null>(null);
   let activeProfile = $state<ConnectionProfile | null>(null);
   let fallbackError = $state<string | null>(null);
@@ -21,22 +23,18 @@
   function startConnection() {
     selectedDriver = null;
     activeProfile = null;
-    connectionView = "drivers";
+    choosingDriver = true;
   }
 
   function selectDriver(driver: ConnectionDriver) {
+    choosingDriver = false;
     selectedDriver = driver;
     activeProfile = null;
-  }
-
-  function showLanding() {
-    selectedDriver = null;
-    activeProfile = null;
-    connectionView = "landing";
+    fallbackError = null;
   }
 
   function openProfile(profile: ConnectionProfile, error: string | null = null) {
-    connectionView = "landing";
+    choosingDriver = false;
     activeProfile = profile;
     selectedDriver = profile.driver;
     fallbackError = error;
@@ -57,6 +55,26 @@
     fallbackError = null;
   }
 
+  // Al quedar conectado, los modales de esta pagina (motor y formulario)
+  // cumplieron su funcion: se cierran y se limpia su estado. Si no, siguen
+  // "vivos" ocultos detras del Workspace y reaparecen con datos viejos al
+  // volver a la pantalla de conexiones.
+  $effect(() => {
+    if (!$connection.connected) return;
+    choosingDriver = false;
+    closeForm();
+  });
+
+  // Una ventana abierta desde "Abrir en una ventana nueva" del selector del
+  // topbar (connectionWindow.ts) llega con ?connect=<id>: se conecta sola a
+  // ese perfil, con el mismo flujo (y el mismo manejo de errores) que un
+  // clic en su tarjeta.
+  onMount(() => {
+    const id = new URLSearchParams(window.location.search).get("connect");
+    const profile = id ? get(connectionProfiles).find((candidate) => candidate.id === id) : undefined;
+    if (profile) void handleConnect(profile);
+  });
+
   // Puente para cuando el selector de conexiones del topbar (+layout.svelte)
   // falla al cambiar de conexion: abre el modal de edicion con el perfil y
   // el error correspondientes, igual que si hubiera fallado desde esta pagina.
@@ -72,7 +90,7 @@
 <div class="stage">
   {#if $connection.connected}
     <Workspace />
-  {:else if connectionView === "landing"}
+  {:else}
     <ConnectionLanding
       profiles={$connectionProfiles}
       {connectingId}
@@ -80,8 +98,10 @@
       onconnect={handleConnect}
       onedit={openProfile}
     />
-  {:else}
-    <DriverPicker selected={selectedDriver} onselect={selectDriver} oncancel={showLanding} />
+  {/if}
+
+  {#if !$connection.connected && choosingDriver}
+    <DriverPicker onselect={selectDriver} oncancel={() => (choosingDriver = false)} />
   {/if}
 
   {#if !$connection.connected && selectedDriver}

@@ -1,0 +1,252 @@
+/* Barra de busqueda del editor SQL (editorSearchPanel.ts). DOM creado por
+   CodeMirror fuera de Svelte, por eso los estilos son globales; mismo
+   lenguaje visual que la barra de busqueda del grid (FindBar.svelte). */
+
+.cm-editor .cm-panels.cm-panels-top {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.kh-search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px var(--space-2);
+  font-family: var(--font-family);
+  font-size: 0.8125rem;
+  animation: kh-search-in 140ms ease-out;
+}
+
+@keyframes kh-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-search-panel {
+    animation: none;
+  }
+}
+
+/* Arriba: cada fila se alinea por arriba, asi un campo que crece a varias
+   lineas no descentra los botones de al lado. */
+.kh-search-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.kh-search-row > .kh-search-icon-button,
+.kh-search-row > .kh-search-text-button,
+.kh-search-row > .kh-search-status,
+.kh-search-row > .kh-search-spacer {
+  margin-top: 1px;
+}
+
+.kh-search-status {
+  line-height: 1.625rem;
+}
+
+.kh-search-field {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 30rem;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-height: 1.75rem;
+  padding: 2px 3px 2px var(--space-2);
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-content);
+  transition: border-color var(--duration-fast) ease;
+}
+
+.kh-search-field:focus-within {
+  border-color: var(--focus-ring);
+}
+
+.kh-search-lens {
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 1.375rem;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+/* Textarea de una linea que crece hasta 6 (editorSearchPanel.ts ajusta
+   rows); en monoespaciada cuando tiene varias lineas, para que se lea como
+   el SQL que busca. */
+.kh-search-input {
+  min-width: 0;
+  flex: 1;
+  padding: 2px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  line-height: 1.125rem;
+  resize: none;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+.kh-search-input.multiline {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.kh-search-field > .kh-search-toggle {
+  margin-top: 0;
+}
+
+.kh-search-toggle,
+.kh-search-icon-button,
+.kh-search-text-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.kh-search-toggle {
+  min-width: 1.5rem;
+  height: 1.375rem;
+  padding: 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.kh-search-toggle.mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+}
+
+.kh-search-toggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--text-primary);
+}
+
+.kh-search-icon-button {
+  width: 1.625rem;
+  height: 1.625rem;
+  padding: 0;
+}
+
+.kh-search-text-button {
+  height: 1.625rem;
+  padding: 0 var(--space-2);
+  font-size: 0.75rem;
+}
+
+.kh-search-toggle:hover,
+.kh-search-icon-button:hover:not(:disabled),
+.kh-search-text-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.kh-search-text-button {
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.kh-search-icon-button:disabled,
+.kh-search-text-button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.kh-search-newline-button {
+  color: var(--text-secondary);
+}
+
+/* --- En el editor ---------------------------------------------------------
+   Coincidencias claramente visibles (tono calido, como la busqueda del
+   grid) y la actual mas intensa con contorno. Tres clases de
+   especificidad para ganarle al tema base de CodeMirror. */
+.cm-editor .cm-scroller .cm-searchMatch {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--warning) 30%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning) 55%, transparent);
+}
+
+.cm-editor .cm-scroller .cm-searchMatch-selected,
+.cm-editor .cm-scroller .cm-searchMatch.cm-searchMatch-selected {
+  background: color-mix(in srgb, var(--warning) 60%, transparent);
+  box-shadow: 0 0 0 1px var(--warning);
+}
+
+/* El salto de linea que es parte de una coincidencia: un ⏎ brillante al
+   final de la linea, asi se ve que tambien se reemplaza. */
+.cm-editor .kh-search-newline {
+  display: inline-block;
+  margin-left: 1px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--warning) 45%, transparent);
+  box-shadow: 0 0 0 1px var(--warning);
+  color: var(--text-primary);
+  font-size: 0.85em;
+  line-height: 1.2;
+  vertical-align: baseline;
+  pointer-events: none;
+}
+
+/* Excluida del reemplazo: tachada y apagada. */
+.cm-editor .kh-search-excluded {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--text-secondary) 80%, transparent);
+  opacity: 0.55;
+}
+
+.kh-search-expand svg {
+  transition: transform var(--duration-fast) ease;
+}
+
+.kh-search-panel.expanded .kh-search-expand svg {
+  transform: rotate(90deg);
+}
+
+.kh-search-status {
+  min-width: 6.5rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.kh-search-status.error {
+  color: var(--danger);
+}
+
+.kh-search-close {
+  margin-left: auto;
+}
+
+/* Alinea el campo de reemplazar bajo el de buscar (debajo del chevron). */
+.kh-search-spacer {
+  width: 1.625rem;
+  flex-shrink: 0;
+}
+
+.kh-search-toggle:focus-visible,
+.kh-search-icon-button:focus-visible,
+.kh-search-text-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}

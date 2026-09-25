@@ -1,15 +1,15 @@
 import { get, writable } from "svelte/store";
 import { invoke } from "@tauri-apps/api/core";
-import type { CatalogTable } from "$lib/types";
+import { browser } from "$app/environment";
+import type { CatalogTable, DatabaseExplorer, TestConnectionReport, TlsMode } from "$lib/types";
 import { getDriver } from "$lib/connections";
 import { loadConnectionPassword } from "$lib/credentials";
 import type { ConnectionProfile } from "./connectionProfiles";
 
 export interface ConnectionState {
-  // true = el ultimo connect() cargo un catalogo con exito. NO implica que
-  // haya una conexion de base de datos viva: el backend descarta el pool
-  // despues de introspectar (ver drivers.rs). No usar este flag para asumir
-  // que se puede seguir consultando la base sin volver a llamar a connect().
+  // true = el ultimo connect() cargo un catalogo con exito. El backend
+  // mantiene vivo ese pool (ActiveConnection en src-tauri/src/lib.rs) para
+  // execute_query y el explorador hasta el proximo connect().
   connected: boolean;
   connecting: boolean;
   tableCount: number | null;
@@ -33,12 +33,67 @@ export const connection = writable<ConnectionState>(initialState);
 // comando de Tauri aparte para sugerencias, el catalogo ya viaja completo.
 export const catalogTables = writable<CatalogTable[]>([]);
 
+// Todo lo que muestra el arbol del sidebar (SchemaTree.svelte): schemas
+// visibles con sus tablas, vistas, rutinas, etc. null = sin conexion.
+export const databaseExplorer = writable<DatabaseExplorer | null>(null);
+// true mientras set_visible_schemas introspecta schemas recien elegidos.
+export const explorerLoading = writable(false);
+
+// Schemas extra elegidos en el selector, por perfil, para volver a
+// mostrarlos al reconectar. El schema por defecto no se guarda: el backend
+// lo incluye siempre.
+const VISIBLE_SCHEMAS_KEY = "khipu:visible-schemas:v1";
+
+function loadVisibleSchemaSelections(): Record<string, string[]> {
+  if (!browser) return {};
+  try {
+    const parsed = JSON.parse(localStorage.getItem(VISIBLE_SCHEMAS_KEY) ?? "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveVisibleSchemas(profileId: string, schemas: string[]): void {
+  if (!browser) return;
+  try {
+    const selections = loadVisibleSchemaSelections();
+    if (schemas.length === 0) delete selections[profileId];
+    else selections[profileId] = schemas;
+    localStorage.setItem(VISIBLE_SCHEMAS_KEY, JSON.stringify(selections));
+  } catch {
+    // Sin almacenamiento, la seleccion dura lo que dure la sesion.
+  }
+}
+
+// Pide al backend que muestre exactamente `schemas` (mas el por defecto) y
+// refresca el arbol y el autocompletado, que tambien ve los schemas nuevos.
+export async function setVisibleSchemas(schemas: string[]): Promise<void> {
+  const profileId = get(connection).profileId;
+  explorerLoading.set(true);
+  try {
+    const explorer = await invoke<DatabaseExplorer>("set_visible_schemas", { names: schemas });
+    databaseExplorer.set(explorer);
+    catalogTables.set(await invoke<CatalogTable[]>("list_tables"));
+    if (profileId) {
+      saveVisibleSchemas(
+        profileId,
+        explorer.schemas.map((objects) => objects.schema).filter((name) => name !== explorer.defaultSchema),
+      );
+    }
+  } finally {
+    explorerLoading.set(false);
+  }
+}
+
 export interface ConnectionConfig {
   host: string;
   port: number;
   database: string;
   username: string;
   password: string;
+  tlsMode: TlsMode;
+  caCertificatePath?: string;
 }
 
 export async function connect(
@@ -50,6 +105,7 @@ export async function connect(
   try {
     const tableCount = await invoke<number>("connect", { kind, config });
     catalogTables.set(await invoke<CatalogTable[]>("list_tables"));
+    databaseExplorer.set(await invoke<DatabaseExplorer | null>("database_explorer"));
     return tableCount;
   } catch (e) {
     connection.update((state) => ({
@@ -97,12 +153,23 @@ export async function connectToProfile(profile: ConnectionProfile): Promise<Conn
     database: profile.database,
     username: profile.username,
     password,
+    tlsMode: profile.tlsMode,
+    caCertificatePath: profile.caCertificatePath,
   });
   if (tableCount === null) {
     return { ok: false, reason: "connect-failed", error: get(connection).error ?? "" };
   }
 
   completeConnection(tableCount, profile.id);
+
+  // Los schemas extra se cargan despues de marcar la conexion como lista:
+  // el arbol ya muestra el schema por defecto mientras tanto.
+  const savedSchemas = loadVisibleSchemaSelections()[profile.id];
+  if (Array.isArray(savedSchemas) && savedSchemas.length > 0) {
+    void setVisibleSchemas(savedSchemas).catch(() => {
+      // Si fallan (p.ej. se borraron del servidor), queda el por defecto.
+    });
+  }
   return { ok: true };
 }
 
@@ -114,11 +181,13 @@ export const pendingEdit = writable<{ profile: ConnectionProfile; error: string 
   null,
 );
 
+// Version del servidor, schema, latencia y TLS negociado: lo que muestra (y
+// copia) el popover de "Probar conexion".
 export async function testConnection(
   kind: "mysql" | "postgres",
   config: ConnectionConfig,
-): Promise<void> {
-  await invoke("test_connection", { kind, config });
+): Promise<TestConnectionReport> {
+  return await invoke<TestConnectionReport>("test_connection", { kind, config });
 }
 
 // reset() SOLO limpia el estado del lado del frontend. No existe un comando
@@ -128,4 +197,5 @@ export async function testConnection(
 export function reset(): void {
   connection.set(initialState);
   catalogTables.set([]);
+  databaseExplorer.set(null);
 }

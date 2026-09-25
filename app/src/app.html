@@ -14,7 +14,7 @@
       // literales — es la única duplicación deliberada de este spec,
       // exactamente para poder pintar las variables --palette-* antes del
       // primer paint. Si `palettes.ts` cambia estos valores, hay que
-      // actualizar también esta copia.
+      // actualizar también esta copia: palettes.test.ts falla si difieren.
       (function () {
         try {
           var SHELL_PALETTES = {
@@ -22,64 +22,104 @@
               dark: {
                 surface: '#191A1C',
                 surfaceElevated: '#26282C',
+                surfaceHover: '#26282C',
+                surfaceContent: '#191A1C',
                 border: '#33353B',
+                gridLine: '#33353B',
                 controlBorder: '#8B8E94',
                 textPrimary: '#D1D3D9',
                 textSecondary: '#9FA2A8',
                 textOnAccent: '#FFFFFF',
                 accent: '#3871E1',
+                accentHover: '#5485E5',
                 danger: '#F57E84',
+                success: '#4CAF50',
+                warning: '#E8B339',
+                keyPrimary: '#E8B339',
                 controlDisabled: '#4C4F56',
                 focusRing: '#3871E1',
                 shadow: '0 8px 30px rgba(0,0,0,0.45)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(139,142,148,0.65)',
+                scrollbarThumbHover: '#9FA2A8',
                 topbarBackground: 'rgba(25,26,28,0.72)'
               },
               light: {
-                surface: '#E9EAEE',
+                surface: '#F7F8FA',
                 surfaceElevated: '#FFFFFF',
-                border: '#8F959B',
-                controlBorder: '#5F6269',
-                textPrimary: '#000000',
-                textSecondary: '#4C4F56',
+                surfaceHover: '#EBECF0',
+                surfaceContent: '#FFFFFF',
+                border: '#EBECF0',
+                gridLine: '#EBECF0',
+                controlBorder: '#C9CCD6',
+                textPrimary: '#1E1F22',
+                textSecondary: '#6C707E',
                 textOnAccent: '#FFFFFF',
-                accent: '#3871E1',
-                danger: '#C54E58',
-                controlDisabled: '#9FA2A8',
-                focusRing: '#3871E1',
-                shadow: '0 8px 30px rgba(0,0,0,0.12)',
-                topbarBackground: 'rgba(233,234,238,0.72)'
+                accent: '#3574F0',
+                accentHover: '#2B63D6',
+                danger: '#DB3B4B',
+                success: '#208A3C',
+                warning: '#C27D04',
+                keyPrimary: '#B98A10',
+                controlDisabled: '#A8ADBD',
+                focusRing: '#3574F0',
+                shadow: '0 8px 28px rgba(0,0,0,0.10)',
+                scrim: 'rgba(0,0,0,0.28)',
+                scrollbarThumb: '#C9CCD6',
+                scrollbarThumbHover: '#A8ADBD',
+                topbarBackground: 'rgba(247,248,250,0.8)'
               }
             },
             vscode: {
               dark: {
                 surface: '#191A1B',
                 surfaceElevated: '#242526',
+                surfaceHover: '#242526',
+                surfaceContent: '#191A1B',
                 border: '#2A2B2C',
+                gridLine: '#2A2B2C',
                 controlBorder: '#333536',
                 textPrimary: '#BFBFBF',
                 textSecondary: '#8C8C8C',
                 textOnAccent: '#FFFFFF',
                 accent: '#297AA0',
+                accentHover: '#478DAD',
                 danger: '#F48771',
+                success: '#4CAF50',
+                warning: '#E8B339',
+                keyPrimary: '#E8B339',
                 controlDisabled: '#555555',
                 focusRing: '#3994BC',
                 shadow: '0 8px 30px rgba(0,0,0,0.5)',
+                scrim: 'rgba(0,0,0,0.5)',
+                scrollbarThumb: 'rgba(51,53,54,0.65)',
+                scrollbarThumbHover: '#8C8C8C',
                 topbarBackground: 'rgba(25,26,27,0.72)'
               },
               light: {
-                surface: '#FAFAFD',
+                surface: '#F8F8F8',
                 surfaceElevated: '#FFFFFF',
-                border: '#909090',
-                controlBorder: '#D8D8D8',
-                textPrimary: '#202020',
-                textSecondary: '#606060',
+                surfaceHover: '#EDEDED',
+                surfaceContent: '#FFFFFF',
+                border: '#E5E5E5',
+                gridLine: '#EBEBEB',
+                controlBorder: '#CECECE',
+                textPrimary: '#3B3B3B',
+                textSecondary: '#6E6E6E',
                 textOnAccent: '#FFFFFF',
-                accent: '#0069CC',
-                danger: '#AD0707',
-                controlDisabled: '#BBBBBB',
-                focusRing: '#0069CC',
-                shadow: '0 8px 24px rgba(0,0,0,0.15)',
-                topbarBackground: 'rgba(250,250,253,0.72)'
+                accent: '#005FB8',
+                accentHover: '#0258A8',
+                danger: '#C4314B',
+                success: '#388A34',
+                warning: '#BF8803',
+                keyPrimary: '#BF8803',
+                controlDisabled: '#BDBDBD',
+                focusRing: '#005FB8',
+                shadow: '0 8px 24px rgba(0,0,0,0.10)',
+                scrim: 'rgba(0,0,0,0.28)',
+                scrollbarThumb: '#CCCCCC',
+                scrollbarThumbHover: '#AFAFAF',
+                topbarBackground: 'rgba(248,248,248,0.8)'
               }
             }
           };
@@ -89,16 +129,26 @@
           var CSS_VAR_NAMES = {
             surface: '--palette-surface',
             surfaceElevated: '--palette-surface-elevated',
+            surfaceHover: '--palette-surface-hover',
+            surfaceContent: '--palette-surface-content',
             border: '--palette-border',
+            gridLine: '--palette-grid-line',
             controlBorder: '--palette-control-border',
             textPrimary: '--palette-text-primary',
             textSecondary: '--palette-text-secondary',
             textOnAccent: '--palette-text-on-accent',
             accent: '--palette-accent',
+            accentHover: '--palette-accent-hover',
             danger: '--palette-danger',
+            success: '--palette-success',
+            warning: '--palette-warning',
+            keyPrimary: '--palette-key-primary',
             controlDisabled: '--palette-control-disabled',
             focusRing: '--palette-focus-ring',
             shadow: '--palette-shadow',
+            scrim: '--palette-scrim',
+            scrollbarThumb: '--palette-scrollbar-thumb',
+            scrollbarThumbHover: '--palette-scrollbar-thumb-hover',
             topbarBackground: '--palette-topbar-background'
           };
 
@@ -135,6 +185,9 @@
             root.style.setProperty(CSS_VAR_NAMES[field], palette[field]);
           }
           root.style.colorScheme = resolvedScheme;
+          // Mismo atributo que fija theme.ts: los pocos estilos que dependen
+          // del esquema (degradados de identidad, alto contraste) lo leen.
+          root.dataset.scheme = resolvedScheme;
         } catch (e) {
           // Si algo falla acá, se cae al CSS estático de tokens.css
           // (DataGrip Dark) — nunca debe romper el arranque de la app.

@@ -30,3 +30,6 @@ khipu-driver-mysql.workspace = true
 khipu-driver-postgres.workspace = true
 tokio.workspace = true
 keyring = "4.2.0"
+tauri-plugin-dialog = "2"
+trash = "5"
+tauri-plugin-clipboard-manager = "2"

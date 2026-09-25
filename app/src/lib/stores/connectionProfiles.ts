@@ -2,6 +2,7 @@ import { browser } from "$app/environment";
 import { writable } from "svelte/store";
 import type { ConnectionDriver } from "$lib/connections";
 import type { PasswordPolicy } from "$lib/credentials";
+import type { TlsMode } from "$lib/types";
 
 const STORAGE_KEY = "khipu:connection-profiles";
 
@@ -14,17 +15,38 @@ export interface ConnectionProfile {
   database: string;
   username: string;
   passwordPolicy: PasswordPolicy;
+  tlsMode: TlsMode;
+  // Solo tiene efecto con los modos que verifican el certificado.
+  caCertificatePath?: string;
+  // Grupo para ordenar la pantalla de conexiones ("Produccion", "Clientes").
+  group?: string;
+  // Color de identidad de la conexion, "#rrggbb". Por ahora solo se guarda.
+  color?: string;
 }
 
 function isDriver(value: unknown): value is ConnectionDriver {
   return value === "mysql" || value === "mariadb" || value === "postgres";
 }
 
+const TLS_MODES: readonly TlsMode[] = ["auto", "required", "verifyCa", "verifyIdentity", "disabled"];
+
+function isTlsMode(value: unknown): value is TlsMode {
+  return TLS_MODES.includes(value as TlsMode);
+}
+
+function optionalText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
 function isPasswordPolicy(value: unknown): value is PasswordPolicy {
   return value === "never" || value === "restart" || value === "forever";
 }
 
-function parseProfile(value: unknown): ConnectionProfile | null {
+export function parseProfile(value: unknown): ConnectionProfile | null {
   if (!value || typeof value !== "object") return null;
 
   const profile = value as Partial<ConnectionProfile>;
@@ -49,6 +71,12 @@ function parseProfile(value: unknown): ConnectionProfile | null {
     passwordPolicy: isPasswordPolicy(profile.passwordPolicy)
       ? profile.passwordPolicy
       : "forever",
+    // Perfiles guardados antes de que existiera el modo SSL: Automatico,
+    // que es lo que mas se parece a como conectaban (TLS si se podia).
+    tlsMode: isTlsMode(profile.tlsMode) ? profile.tlsMode : "auto",
+    caCertificatePath: optionalText(profile.caCertificatePath),
+    group: optionalText(profile.group),
+    color: isHexColor(profile.color) ? profile.color.toLowerCase() : undefined,
   };
 }
 

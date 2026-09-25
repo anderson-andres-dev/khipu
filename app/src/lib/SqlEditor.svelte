@@ -13,22 +13,54 @@
   import { catalogTables, connection } from "$lib/stores/connection";
   import { connectionProfiles } from "$lib/stores/connectionProfiles";
   import type { ConnectionDriver } from "$lib/connections";
-  import { buildCompletionSource, buildSqlSchema, dialectFor, extractDefaultTable } from "$lib/sqlSchema";
+  import {
+    buildCompletionSource,
+    buildSqlSchema,
+    dialectFor,
+    extractDefaultTable,
+    resolveCatalogTable,
+  } from "$lib/sqlSchema";
+  import { definitionLinkExtension, type CatalogTableRef } from "$lib/sqlDefinitionLink";
   import { shortcuts, toCodeMirrorKey } from "$lib/stores/shortcuts";
   import { editorSettings } from "$lib/stores/editorSettings";
   import { formatSqlBlock } from "$lib/sqlFormatter";
   import { activeStatementHighlight, autoUppercaseSqlKeywords } from "$lib/sqlEditorBehavior";
+  import {
+    executionMarker,
+    executionMarkerField,
+    markerFromResult,
+    setExecutionMarker,
+  } from "$lib/sqlExecutionMarker";
+  import type { QueryExecutionResult } from "$lib/types";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
+  import { writeClipboard as copyToClipboard } from "$lib/clipboard";
   import "$lib/sqlEditorIcons.css";
+  import "$lib/styles/editorSearch.css";
+  import { editorSearch, toggleSearchPanel } from "$lib/editorSearchPanel";
 
-  let { value = $bindable(""), onchange }: { value?: string; onchange?: (sql: string) => void } = $props();
+  let {
+    value = $bindable(""),
+    onchange,
+    onexecute,
+    executing = false,
+    result = null,
+    onopentabledefinition,
+  }: {
+    value?: string;
+    onchange?: (sql: string) => void;
+    onexecute?: (sql: string) => void;
+    executing?: boolean;
+    result?: QueryExecutionResult | null;
+    onopentabledefinition?: (ref: CatalogTableRef) => void;
+  } = $props();
 
   let container: HTMLDivElement;
   let view: EditorView | undefined;
   const themeCompartment = new Compartment();
   const sqlCompartment = new Compartment();
   const completionCompartment = new Compartment();
+  const definitionLinkCompartment = new Compartment();
   const keymapCompartment = new Compartment();
   const behaviorCompartment = new Compartment();
   const tabCompletionCompartment = new Compartment();
@@ -40,6 +72,10 @@
   let sqlDialect = dialectFor("mysql");
   let driver: ConnectionDriver = "mysql";
   let defaultTable: string | undefined;
+  // Ejecucion lanzada desde este editor cuyo resultado todavia no llego:
+  // `result` es el que habia al lanzarla, para reconocer cuando cambia (ver
+  // el $effect de mas abajo que actualiza el marcador de ejecucion).
+  let awaitingResult: { result: QueryExecutionResult | null } | null = null;
   let contextMenu = $state<{ x: number; y: number; hasSelection: boolean } | null>(null);
 
   const contextMenuItems = $derived.by((): ContextMenuItem[] => [
@@ -71,21 +107,9 @@
   }
 
   async function writeClipboard(text: string): Promise<boolean> {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      const copied = document.execCommand("copy");
-      textarea.remove();
-      view?.focus();
-      return copied;
-    }
+    const copied = await copyToClipboard(text);
+    view?.focus();
+    return copied;
   }
 
   async function copySelection() {
@@ -175,6 +199,27 @@
     return true;
   }
 
+  // Ejecuta la seleccion o la sentencia bajo el cursor. Ignorado mientras
+  // esta consola ya esta ejecutando (el boton se deshabilita, pero el atajo
+  // de teclado no pasa por el DOM del boton) — evita disparar una segunda
+  // ejecucion superpuesta desde aqui; Workspace hace la misma comprobacion
+  // otra vez del lado del store antes de invocar el backend.
+  function executeCurrentSql(): boolean {
+    if (!view || executing) return true;
+    const range = currentSqlRange();
+    if (!range) return true;
+
+    const raw = view.state.sliceDoc(range.from, range.to);
+    const sql = raw.trim();
+    if (!sql) return true;
+
+    const from = range.from + (raw.length - raw.trimStart().length);
+    view.dispatch({ effects: setExecutionMarker.of({ from, to: from + sql.length, status: "pending" }) });
+    awaitingResult = { result };
+    onexecute?.(sql);
+    return true;
+  }
+
   // El keymap por defecto de basicSetup ya deberia traer Mod-a -> selectAll,
   // pero en este webview no estaba disparando de forma confiable; se arma
   // explicito con Prec.highest para que gane sobre cualquier otro keymap, y
@@ -182,12 +227,16 @@
   function buildEditorKeymap() {
     const selectAllShortcut = get(shortcuts).find((shortcut) => shortcut.id === "select-all");
     const formatShortcut = get(shortcuts).find((shortcut) => shortcut.id === "format-sql");
+    const executeShortcut = get(shortcuts).find((shortcut) => shortcut.id === "execute-query");
     const bindings = [];
     if (selectAllShortcut) {
       bindings.push({ key: toCodeMirrorKey(selectAllShortcut.keys), run: selectAll, preventDefault: true });
     }
     if (formatShortcut) {
       bindings.push({ key: toCodeMirrorKey(formatShortcut.keys), run: formatCurrentSql, preventDefault: true });
+    }
+    if (executeShortcut) {
+      bindings.push({ key: toCodeMirrorKey(executeShortcut.keys), run: executeCurrentSql, preventDefault: true });
     }
 
     return Prec.highest(keymap.of(bindings));
@@ -202,6 +251,13 @@
     return Prec.highest(
       keymap.of([{ key: "Tab", run: moveCompletionSelection(true), shift: moveCompletionSelection(false) }]),
     );
+  }
+
+  function buildDefinitionLink() {
+    return definitionLinkExtension({
+      resolveTable: (word) => resolveCatalogTable(sqlSchema.schema, sqlSchema.defaultSchema, word),
+      onOpen: (ref) => onopentabledefinition?.(ref),
+    });
   }
 
   function reconfigureCompletion() {
@@ -223,8 +279,15 @@
             ],
           }),
         ),
+        definitionLinkCompartment.reconfigure(buildDefinitionLink()),
       ],
     });
+  }
+
+  // Ctrl+F pedido desde afuera: el Workspace lo enruta por la zona que tiene
+  // el mouse encima, aunque el foco este en otra parte.
+  export function toggleSearch() {
+    if (view) toggleSearchPanel(view);
   }
 
   onMount(() => {
@@ -233,11 +296,16 @@
       parent: container,
       extensions: [
         basicSetup,
+        // Barra de busqueda propia (Ctrl+F toggle) en vez del panel por
+        // defecto de basicSetup.
+        editorSearch(),
         sqlCompartment.of(sql({ dialect: sqlDialect, upperCaseKeywords: true })),
         completionCompartment.of(autocompletion()),
+        definitionLinkCompartment.of(buildDefinitionLink()),
         keymapCompartment.of(buildEditorKeymap()),
         tabCompletionCompartment.of(buildTabCompletionKeymap(get(editorSettings).tabNavigatesCompletion)),
         activeStatementHighlight,
+        executionMarker,
         behaviorCompartment.of(get(editorSettings).autoUppercaseKeywords ? autoUppercaseSqlKeywords : []),
         themeCompartment.of(buildCmTheme(get(editorPalette), get(effectiveScheme))),
         EditorView.updateListener.of((update) => {
@@ -262,6 +330,33 @@
         }),
       ],
     });
+  });
+
+  // Sigue la ejecucion lanzada en executeCurrentSql(). Arranca en
+  // "pending" (sin icono) y pasa a "running" solo cuando Workspace
+  // realmente la inicia: si beginQueryExecution() la descarta (p.ej. hay un
+  // guard abierto) no queda un "ejecutando" colgado. Si el guard la frena
+  // vuelve a "pending" hasta que se confirme o se lance otra, y cuando llega
+  // un resultado nuevo pasa a ok/error con su tiempo.
+  $effect(() => {
+    const isExecuting = executing;
+    const current = result;
+    if (!view || !awaitingResult) return;
+
+    const marker = view.state.field(executionMarkerField);
+    if (!marker) {
+      awaitingResult = null;
+      return;
+    }
+
+    if (!isExecuting && current && current !== awaitingResult.result) {
+      awaitingResult = null;
+      view.dispatch({ effects: setExecutionMarker.of(markerFromResult(marker.from, marker.to, current)) });
+      return;
+    }
+
+    const status = isExecuting ? "running" : "pending";
+    if (marker.status !== status) view.dispatch({ effects: setExecutionMarker.of({ ...marker, status }) });
   });
 
   $effect(() => {

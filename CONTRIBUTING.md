@@ -24,7 +24,8 @@ compatible con MySQL o Postgres), es la forma más directa de contribuir sin
 pisar el trabajo de nadie más:
 
 1. `cargo new --lib crates/drivers/<motor>`
-2. Implementar el trait `DbConnector` de `khipu-driver-core`
+2. Implementar el trait `DbConnector` de `khipu-driver-core`, incluido
+   `introspect_schema` (ver `docs/design/explorador-base-de-datos.md`)
 3. Agregarlo a `[workspace] members` en el `Cargo.toml` raíz
 4. Agregar la rama correspondiente en la fábrica de drivers de
    `app/src-tauri/src/drivers.rs` — hoy sí hace falta tocar `app` para que el
@@ -33,7 +34,7 @@ pisar el trabajo de nadie más:
 
 Si el motor necesita un dialecto SQL distinto de los que ya soporta
 `sqlparser`/`crates/engine/src/lib.rs` (enum `Dialect`), sí hay que extender
-ese enum — discutilo en un issue antes de mandar el PR.
+ese enum — discútelo en un issue antes de mandar el PR.
 
 ## Pruebas de contrato de drivers
 
@@ -58,6 +59,16 @@ Variables de entorno que necesita cada uno:
 
 Si falta alguna, el test hace `panic!` con un mensaje indicando qué setear
 (no hace falta memorizarlas: el mensaje del panic las lista).
+
+Opcionales, para los tests de TLS (`<MOTOR>` es `MYSQL` o `POSTGRES`):
+
+- `KHIPU_TEST_<MOTOR>_EXPECT_TLS`: qué debería negociar el servidor en modo
+  Automático. `encrypted` si tiene TLS moderno, `fallback` si ofrece TLS que
+  rustls no puede negociar (MySQL 5.7), `none` si no tiene TLS habilitado.
+  Sin la variable, solo se comprueba lo que vale para cualquier servidor.
+- `KHIPU_TEST_<MOTOR>_CA_CERT`: ruta a la CA que firmó el certificado del
+  servidor, para probar "Verificar CA" y "Verificar CA y host". El
+  certificado tiene que incluir el host del test en su subjectAltName.
 
 ## Flujo de ramas y releases
 
