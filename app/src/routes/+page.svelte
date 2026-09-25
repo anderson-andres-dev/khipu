@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { get } from "svelte/store";
-  import { connection, connectToProfile, pendingEdit } from "$lib/stores/connection";
+  import { connection, connectToProfile, deleteConnectionProfile, pendingEdit } from "$lib/stores/connection";
   import {
     connectionProfiles,
     type ConnectionProfile,
@@ -11,6 +11,8 @@
   import DriverPicker from "$lib/components/DriverPicker.svelte";
   import ConnectionForm from "$lib/components/ConnectionForm.svelte";
   import Workspace from "$lib/components/Workspace.svelte";
+  import ConfirmDialog from "$lib/components/ConfirmDialog.svelte";
+  import { t } from "$lib/i18n";
 
   // "Nueva conexion" abre primero el modal de motores (DriverPicker) y al
   // elegir uno, el formulario; la pantalla de conexiones queda detras.
@@ -19,6 +21,8 @@
   let activeProfile = $state<ConnectionProfile | null>(null);
   let fallbackError = $state<string | null>(null);
   let connectingId = $state<string | null>(null);
+  let deletingProfile = $state<ConnectionProfile | null>(null);
+  let deleteError = $state<string | null>(null);
 
   function startConnection() {
     selectedDriver = null;
@@ -46,6 +50,16 @@
     connectingId = null;
     if (!result.ok) {
       openProfile(profile, result.reason === "connect-failed" ? result.error : null);
+    }
+  }
+
+  async function confirmDelete(profile: ConnectionProfile) {
+    deletingProfile = null;
+    try {
+      await deleteConnectionProfile(profile.id);
+      deleteError = null;
+    } catch (error) {
+      deleteError = $t("connections.delete.failed", { error: String(error) });
     }
   }
 
@@ -97,6 +111,19 @@
       onnewconnection={startConnection}
       onconnect={handleConnect}
       onedit={openProfile}
+      ondelete={(profile) => (deletingProfile = profile)}
+      error={deleteError}
+    />
+  {/if}
+
+  {#if deletingProfile}
+    {@const profile = deletingProfile}
+    <ConfirmDialog
+      title={$t("connections.delete.title")}
+      message={$t("connections.delete.message", { name: profile.name })}
+      confirmLabel={$t("connections.delete.confirm")}
+      onconfirm={() => void confirmDelete(profile)}
+      oncancel={() => (deletingProfile = null)}
     />
   {/if}
 

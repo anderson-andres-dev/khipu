@@ -29,3 +29,9 @@ export async function loadConnectionPassword(
   if (policy === "restart") return runtimePasswords.get(profileId) ?? null;
   return invoke<string | null>("load_connection_password", { profileId });
 }
+
+// Olvida la contraseña del perfil, tanto la del keyring como la de sesion.
+export async function forgetConnectionPassword(profileId: string): Promise<void> {
+  runtimePasswords.delete(profileId);
+  await invoke("delete_connection_password", { profileId });
+}

@@ -586,3 +586,21 @@ export function closeQueryConsole(profileId: string, id: string): void {
     activeByProfile: { ...state.activeByProfile, [profileId]: nextActive },
   });
 }
+
+// Quita todas las consolas de un perfil (y su estado de ejecucion), para
+// cuando el perfil se elimina.
+export function forgetProfileConsoles(profileId: string): void {
+  queryConsoles.update((state) => {
+    const removed = new Set(state.consoles.filter((item) => item.profileId === profileId).map((item) => item.id));
+    const executionByConsole = Object.fromEntries(
+      Object.entries(state.executionByConsole).filter(([key]) => !removed.has(key)),
+    );
+    const { [profileId]: _active, ...activeByProfile } = state.activeByProfile;
+    return {
+      ...state,
+      consoles: state.consoles.filter((item) => !removed.has(item.id)),
+      activeByProfile,
+      executionByConsole,
+    };
+  });
+}

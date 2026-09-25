@@ -299,3 +299,24 @@ describe("queryConsoles: pestañas de tabla", () => {
     expect(item.table?.where).toBe("a = 1");
   });
 });
+
+describe("queryConsoles: eliminar un perfil", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("forgetProfileConsoles quita las consolas y la ejecucion del perfil sin tocar otros", async () => {
+    const mod = await freshQueryConsoles();
+    const gone = mod.createQueryConsole("profile-a");
+    const kept = mod.createQueryConsole("profile-b");
+    mod.requireQueryConfirmation(gone, { sql: "TRUNCATE users", statement: "truncate" });
+    mod.requireQueryConfirmation(kept, { sql: "TRUNCATE users", statement: "truncate" });
+
+    mod.forgetProfileConsoles("profile-a");
+
+    const state = get(mod.queryConsoles);
+    expect(state.consoles.map((item) => item.id)).toEqual([kept]);
+    expect(state.activeByProfile).toEqual({ "profile-b": kept });
+    expect(Object.keys(state.executionByConsole)).toEqual([kept]);
+  });
+});

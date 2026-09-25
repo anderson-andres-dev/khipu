@@ -1,7 +1,7 @@
 <script lang="ts">
   import DriverLogo from "$lib/components/DriverLogo.svelte";
   import { browser } from "$app/environment";
-  import { LayoutGrid, List, LoaderCircle, Pencil, Plus } from "@lucide/svelte";
+  import { LayoutGrid, List, LoaderCircle, Pencil, Plus, Trash2 } from "@lucide/svelte";
   import Button from "$lib/components/Button.svelte";
   import { getDriver } from "$lib/connections";
   import ConnectionAvatar from "$lib/components/ConnectionAvatar.svelte";
@@ -16,12 +16,16 @@
     onnewconnection,
     onconnect,
     onedit,
+    ondelete,
+    error = null,
   }: {
     profiles: ConnectionProfile[];
     connectingId?: string | null;
     onnewconnection: () => void;
     onconnect: (profile: ConnectionProfile) => void;
     onedit: (profile: ConnectionProfile) => void;
+    ondelete: (profile: ConnectionProfile) => void;
+    error?: string | null;
   } = $props();
 
   type View = "cards" | "list";
@@ -74,9 +78,9 @@
   }
 </script>
 
-{#snippet editButton(profile: ConnectionProfile)}
+{#snippet cornerActions(profile: ConnectionProfile)}
   <button
-    class="edit-button"
+    class="corner-button"
     type="button"
     aria-label={$t("connections.landing.editLabel", { name: profile.name })}
     title={$t("connections.landing.editTitle")}
@@ -87,6 +91,19 @@
     }}
   >
     <Pencil size={13} aria-hidden="true" />
+  </button>
+  <button
+    class="corner-button danger"
+    type="button"
+    aria-label={$t("connections.landing.deleteLabel", { name: profile.name })}
+    title={$t("connections.landing.deleteTitle")}
+    disabled={busy}
+    onclick={(event) => {
+      event.stopPropagation();
+      ondelete(profile);
+    }}
+  >
+    <Trash2 size={13} aria-hidden="true" />
   </button>
 {/snippet}
 
@@ -134,6 +151,9 @@
           </Button>
         </div>
       </header>
+      {#if error}
+        <p class="landing-error" role="alert">{error}</p>
+      {/if}
 
       {#each sections as section (section.title ?? "")}
         <section class="group" aria-label={section.title ?? $t("connections.landing.ungrouped")}>
@@ -168,7 +188,7 @@
                     {#if connectingId === profile.id}
                       <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
-                      {@render editButton(profile)}
+                      {@render cornerActions(profile)}
                     {/if}
                   </div>
                 </div>
@@ -205,7 +225,7 @@
                     {#if connectingId === profile.id}
                       <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
-                      {@render editButton(profile)}
+                      {@render cornerActions(profile)}
                     {/if}
                   </div>
                 </div>
@@ -255,6 +275,12 @@
     justify-content: space-between;
     gap: var(--space-4);
     margin-bottom: var(--space-6);
+  }
+
+  .landing-error {
+    margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+    color: var(--danger);
+    font-size: 0.8125rem;
   }
 
   .landing-title {
@@ -375,7 +401,7 @@
     white-space: nowrap;
   }
 
-  .edit-button {
+  .corner-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -392,25 +418,30 @@
       background-color var(--duration-fast);
   }
 
-  .card:hover .edit-button,
-  .card:focus-within .edit-button,
-  .row:hover .edit-button,
-  .row:focus-within .edit-button {
+  .card:hover .corner-button,
+  .card:focus-within .corner-button,
+  .row:hover .corner-button,
+  .row:focus-within .corner-button {
     opacity: 1;
   }
 
-  .edit-button:hover:not(:disabled) {
+  .corner-button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--text-primary) 10%, transparent);
     color: var(--text-primary);
   }
 
-  .edit-button:focus-visible {
+  .corner-button.danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger);
+  }
+
+  .corner-button:focus-visible {
     opacity: 1;
     outline: 2px solid var(--focus-ring);
     outline-offset: 1px;
   }
 
-  .edit-button:disabled {
+  .corner-button:disabled {
     cursor: not-allowed;
   }
 
@@ -450,7 +481,7 @@
     align-items: center;
     gap: var(--space-3);
     overflow: hidden;
-    padding: var(--space-3) 2.5rem var(--space-3) var(--space-3);
+    padding: var(--space-3) 3.75rem var(--space-3) var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface-elevated);
@@ -543,6 +574,7 @@
     top: var(--space-2);
     right: var(--space-2);
     display: flex;
+    gap: 2px;
   }
 
   /* --- Lista compacta ---------------------------------------------------- */
@@ -570,7 +602,7 @@
     grid-template-columns: 1.5rem minmax(8rem, 1.4fr) minmax(6rem, 0.8fr) minmax(6rem, 1fr) minmax(8rem, 1.2fr);
     align-items: center;
     gap: var(--space-3);
-    padding: 9px 3rem 9px var(--space-3);
+    padding: 9px 4rem 9px var(--space-3);
     border: 0;
     background: transparent;
     color: var(--text-primary);
@@ -641,6 +673,7 @@
     top: 50%;
     right: var(--space-2);
     display: flex;
+    gap: 2px;
     transform: translateY(-50%);
   }
 
