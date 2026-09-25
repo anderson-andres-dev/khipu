@@ -5,7 +5,7 @@
   <img src="docs/assets/brand/rowly-logo.svg" alt="Rowly DB" width="400">
 </picture>
 
-<br>
+<br><br>
 
 <p>
   <a href="https://github.com/anderson-andres-dev/rowly-db/stargazers"><img alt="Estrellas" src="https://img.shields.io/github/stars/anderson-andres-dev/rowly-db?style=for-the-badge&amp;label=STARS&amp;labelColor=505050&amp;color=e8bd25"></a>
