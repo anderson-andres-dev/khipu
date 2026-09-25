@@ -1,11 +1,16 @@
-# Khipu
+# Rowly DB
 
-**Open-source desktop SQL client for MySQL, MariaDB and PostgreSQL, built
-with Tauri, Rust and Svelte.**
+**Free & Open Source SQL Client**
 
-Khipu is a compact SQL workspace: connect to a database, explore its schema,
-write and run SQL with schema-aware autocompletion, and edit the results in
-a fast grid, in a lightweight desktop app.
+**Connect. Query. Explore.**
+
+A lightweight desktop client for querying, exploring and understanding databases.
+
+**100% free · Open source · No Pro edition**
+
+[Download](https://github.com/anderson-andres-dev/khipu/releases) · [Documentation](docs/ARCHITECTURE.md)
+
+No subscriptions. No Pro edition. No locked features.
 
 Read this in other languages: [Español](README.es.md).
 
@@ -17,7 +22,7 @@ Read this in other languages: [Español](README.es.md).
 
 ## Features
 
-Khipu is under active development. Available today:
+Rowly DB is under active development. Available today:
 
 **Connections**
 
@@ -66,13 +71,16 @@ Khipu is under active development. Available today:
 - Table tabs with `WHERE` / `ORDER BY` filters (double-click a table in the
   explorer), pinned result tabs and an Output tab with the execution log.
 
-**Appearance**
+**Appearance and language**
 
-- Dark and light themes (including Int UI Light and VS Code Light Modern).
+- Themes: DataGrip, VS Code, Gruvbox and Solarized (dark and light), plus
+  One Dark, Dracula and Nord (dark), using each theme's official colors.
+- Interface in English, Spanish, Portuguese (Brazil), French and German,
+  following the system language by default.
 
 ## Installation
 
-There are no published releases yet. Until the first release, Khipu is
+There are no published releases yet. Until the first release, Rowly DB is
 built from source (see [Development](#development)).
 
 To build a standalone binary:
@@ -118,6 +126,14 @@ Formatting is enforced with `cargo fmt --all`; lints can be run with
 
 Tests that need a real database are marked `#[ignore]`; see
 [CONTRIBUTING.md](CONTRIBUTING.md) for how to run them.
+
+## Rowly DB and Khipu
+
+**Rowly DB** is the product: the desktop application and its public name.
+**Khipu** is the internal engine and codename. The Rust crates
+(`khipu-engine`, `khipu-driver-*`, `khipu-lsp`), internal identifiers and the
+places where the app stores its configuration keep the Khipu name, so existing
+settings and saved passwords keep working.
 
 ## Architecture
 

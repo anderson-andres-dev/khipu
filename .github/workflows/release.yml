@@ -52,7 +52,7 @@ jobs:
         with:
           projectPath: app
           tagName: ${{ github.ref_name }}
-          releaseName: "Khipu ${{ github.ref_name }}"
+          releaseName: "Rowly DB ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.args }}

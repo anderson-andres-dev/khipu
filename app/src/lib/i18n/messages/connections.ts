@@ -108,7 +108,7 @@ export default defineMessages({
     "test.tls.yes": "sí",
     "test.tls.yesDetail": "sí ({detail})",
     "test.tls.fellBack":
-      "no: el servidor ofrece un cifrado que Khipu no admite (común en MySQL 5.7). Usa SSL «Requerido» para que falle en vez de conectar así.",
+      "no: el servidor ofrece un cifrado que Rowly DB no admite (común en MySQL 5.7). Usa SSL «Requerido» para que falle en vez de conectar así.",
     "test.tls.noTls": "no: el servidor no tiene TLS habilitado",
     "test.tls.unknown": "desconocido",
   },
@@ -216,7 +216,7 @@ export default defineMessages({
     "test.tls.yes": "yes",
     "test.tls.yesDetail": "yes ({detail})",
     "test.tls.fellBack":
-      "no: the server offers a cipher Khipu doesn’t support (common on MySQL 5.7). Set SSL to “Required” to make it fail instead of connecting this way.",
+      "no: the server offers a cipher Rowly DB doesn’t support (common on MySQL 5.7). Set SSL to “Required” to make it fail instead of connecting this way.",
     "test.tls.noTls": "no: the server doesn’t have TLS enabled",
     "test.tls.unknown": "unknown",
   },
@@ -324,7 +324,7 @@ export default defineMessages({
     "test.tls.yes": "sim",
     "test.tls.yesDetail": "sim ({detail})",
     "test.tls.fellBack":
-      "não: o servidor oferece uma cifra que o Khipu não suporta (comum no MySQL 5.7). Use SSL “Obrigatório” para que falhe em vez de conectar assim.",
+      "não: o servidor oferece uma cifra que o Rowly DB não suporta (comum no MySQL 5.7). Use SSL “Obrigatório” para que falhe em vez de conectar assim.",
     "test.tls.noTls": "não: o servidor não tem TLS habilitado",
     "test.tls.unknown": "desconhecido",
   },
@@ -433,7 +433,7 @@ export default defineMessages({
     "test.tls.yes": "oui",
     "test.tls.yesDetail": "oui ({detail})",
     "test.tls.fellBack":
-      "non : le serveur propose un chiffrement que Khipu ne prend pas en charge (fréquent avec MySQL 5.7). Choisissez SSL « Requis » pour que la connexion échoue au lieu de s’établir ainsi.",
+      "non : le serveur propose un chiffrement que Rowly DB ne prend pas en charge (fréquent avec MySQL 5.7). Choisissez SSL « Requis » pour que la connexion échoue au lieu de s’établir ainsi.",
     "test.tls.noTls": "non : TLS n’est pas activé sur le serveur",
     "test.tls.unknown": "inconnu",
   },
@@ -542,7 +542,7 @@ export default defineMessages({
     "test.tls.yes": "ja",
     "test.tls.yesDetail": "ja ({detail})",
     "test.tls.fellBack":
-      "nein: Der Server bietet eine Verschlüsselung an, die Khipu nicht unterstützt (häufig bei MySQL 5.7). Stelle SSL auf „Erforderlich“, damit die Verbindung fehlschlägt, statt so aufgebaut zu werden.",
+      "nein: Der Server bietet eine Verschlüsselung an, die Rowly DB nicht unterstützt (häufig bei MySQL 5.7). Stelle SSL auf „Erforderlich“, damit die Verbindung fehlschlägt, statt so aufgebaut zu werden.",
     "test.tls.noTls": "nein: Auf dem Server ist TLS nicht aktiviert",
     "test.tls.unknown": "unbekannt",
   },

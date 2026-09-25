@@ -27,7 +27,7 @@ export default defineMessages({
     "tls.unknown": "TLS: desconocido",
     "unencrypted.label": "Conexión sin cifrar",
     "unencrypted.fellBack":
-      "Conexión sin cifrar: el servidor ofrece TLS con un cifrado que Khipu no admite. Usa SSL «Requerido» en la conexión para que falle en vez de conectar así.",
+      "Conexión sin cifrar: el servidor ofrece TLS con un cifrado que Rowly DB no admite. Usa SSL «Requerido» en la conexión para que falle en vez de conectar así.",
     "unencrypted.noTls": "Conexión sin cifrar: el servidor no tiene TLS habilitado.",
     "schemas.pick": "Elegir schemas visibles",
     "schemas.loading": "Cargando schemas",
@@ -61,7 +61,7 @@ export default defineMessages({
     "tls.unknown": "TLS: unknown",
     "unencrypted.label": "Unencrypted connection",
     "unencrypted.fellBack":
-      "Unencrypted connection: the server offers TLS with a cipher Khipu doesn’t support. Set SSL to “Required” on the connection so it fails instead of connecting this way.",
+      "Unencrypted connection: the server offers TLS with a cipher Rowly DB doesn’t support. Set SSL to “Required” on the connection so it fails instead of connecting this way.",
     "unencrypted.noTls": "Unencrypted connection: the server doesn’t have TLS enabled.",
     "schemas.pick": "Choose visible schemas",
     "schemas.loading": "Loading schemas",
@@ -95,7 +95,7 @@ export default defineMessages({
     "tls.unknown": "TLS: desconhecido",
     "unencrypted.label": "Conexão sem criptografia",
     "unencrypted.fellBack":
-      "Conexão sem criptografia: o servidor oferece TLS com uma cifra que o Khipu não suporta. Use SSL “Obrigatório” na conexão para que ela falhe em vez de conectar assim.",
+      "Conexão sem criptografia: o servidor oferece TLS com uma cifra que o Rowly DB não suporta. Use SSL “Obrigatório” na conexão para que ela falhe em vez de conectar assim.",
     "unencrypted.noTls": "Conexão sem criptografia: o servidor não tem TLS habilitado.",
     "schemas.pick": "Escolher schemas visíveis",
     "schemas.loading": "Carregando schemas",
@@ -129,7 +129,7 @@ export default defineMessages({
     "tls.unknown": "TLS : inconnu",
     "unencrypted.label": "Connexion non chiffrée",
     "unencrypted.fellBack":
-      "Connexion non chiffrée : le serveur propose TLS avec un chiffrement que Khipu ne prend pas en charge. Choisissez SSL « Requis » dans la connexion pour qu’elle échoue au lieu de se connecter ainsi.",
+      "Connexion non chiffrée : le serveur propose TLS avec un chiffrement que Rowly DB ne prend pas en charge. Choisissez SSL « Requis » dans la connexion pour qu’elle échoue au lieu de se connecter ainsi.",
     "unencrypted.noTls": "Connexion non chiffrée : TLS n’est pas activé sur le serveur.",
     "schemas.pick": "Choisir les schémas visibles",
     "schemas.loading": "Chargement des schémas",
@@ -163,7 +163,7 @@ export default defineMessages({
     "tls.unknown": "TLS: unbekannt",
     "unencrypted.label": "Unverschlüsselte Verbindung",
     "unencrypted.fellBack":
-      "Unverschlüsselte Verbindung: Der Server bietet TLS mit einer Verschlüsselung an, die Khipu nicht unterstützt. Stell SSL in der Verbindung auf „Erforderlich“, damit sie fehlschlägt, statt so zu verbinden.",
+      "Unverschlüsselte Verbindung: Der Server bietet TLS mit einer Verschlüsselung an, die Rowly DB nicht unterstützt. Stell SSL in der Verbindung auf „Erforderlich“, damit sie fehlschlägt, statt so zu verbinden.",
     "unencrypted.noTls": "Unverschlüsselte Verbindung: Auf dem Server ist TLS nicht aktiviert.",
     "schemas.pick": "Sichtbare Schemas auswählen",
     "schemas.loading": "Schemas werden geladen",

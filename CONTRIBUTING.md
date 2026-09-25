@@ -1,7 +1,12 @@
-# Contribuir a Khipu
+# Contribuir a Rowly DB
 
 Gracias por el interés. El proyecto recién arranca, así que hay bastante
 espacio para decisiones de diseño — abrir un issue antes de un PR grande.
+
+**Rowly DB** es el nombre del producto; **Khipu** es el nombre interno del
+motor. En el código vas a ver `khipu-*` (crates, identificadores, claves de
+configuración): es a propósito y no hay que renombrarlo. Los textos que ve el
+usuario dicen Rowly DB.
 
 ## Antes de empezar
 
