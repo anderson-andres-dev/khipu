@@ -13,6 +13,7 @@ import type { ConnectionDriver } from "$lib/connections";
 import type { CatalogTable, ForeignKey } from "$lib/types";
 import { boostFor, recordUsage } from "$lib/usageStats";
 import { classifyContext } from "$lib/sqlContext";
+import { translate, type MessageKey } from "$lib/i18n";
 import { completionPolicy, type CompletionPolicy } from "$lib/sqlCompletionPolicy";
 
 // @codemirror/lang-sql pliega cada "Statement" de nivel superior desde
@@ -404,27 +405,30 @@ function rankKeywordResult(result: CompletionResult | null, policy: CompletionPo
   return { ...result, options };
 }
 
-const KEYWORD_DETAILS: Record<string, string> = {
-  SELECT: "Consultar filas",
-  INSERT: "Insertar filas",
-  UPDATE: "Actualizar filas",
-  DELETE: "Eliminar filas",
-  CREATE: "Crear un objeto",
-  ALTER: "Modificar un objeto",
-  DROP: "Eliminar un objeto",
-  FROM: "Origen de datos",
-  WHERE: "Filtrar resultados",
-  JOIN: "Relacionar tablas",
-  ON: "Condición de relación",
-  GROUP: "Agrupar resultados",
-  ORDER: "Ordenar resultados",
-  HAVING: "Filtrar grupos",
-  LIMIT: "Limitar resultados",
-  CASE: "Expresión condicional",
-  WHEN: "Rama condicional",
-  WITH: "Definir una CTE",
-  UNION: "Combinar resultados",
-  VALUES: "Valores de entrada",
+// Descripcion corta de las keywords mas usadas (texto gris del tooltip de
+// autocompletado). Se traduce al armar cada fuente de completado, que
+// SqlEditor.svelte vuelve a crear al cambiar el idioma.
+const KEYWORD_DETAILS: Record<string, MessageKey> = {
+  SELECT: "editor.completion.SELECT",
+  INSERT: "editor.completion.INSERT",
+  UPDATE: "editor.completion.UPDATE",
+  DELETE: "editor.completion.DELETE",
+  CREATE: "editor.completion.CREATE",
+  ALTER: "editor.completion.ALTER",
+  DROP: "editor.completion.DROP",
+  FROM: "editor.completion.FROM",
+  WHERE: "editor.completion.WHERE",
+  JOIN: "editor.completion.JOIN",
+  ON: "editor.completion.ON",
+  GROUP: "editor.completion.GROUP",
+  ORDER: "editor.completion.ORDER",
+  HAVING: "editor.completion.HAVING",
+  LIMIT: "editor.completion.LIMIT",
+  CASE: "editor.completion.CASE",
+  WHEN: "editor.completion.WHEN",
+  WITH: "editor.completion.WITH",
+  UNION: "editor.completion.UNION",
+  VALUES: "editor.completion.VALUES",
 };
 
 // keywordCompletionSource (lang-sql) clasifica cada palabra del dialecto en
@@ -460,10 +464,11 @@ const KEYWORD_ICON_TYPES: Record<string, string> = {
 
 function buildKeywordCompletion(label: string, type: string): Completion {
   const iconType = type === "keyword" ? (KEYWORD_ICON_TYPES[label] ?? type) : type;
+  const detailKey = KEYWORD_DETAILS[label] ?? (type === "type" ? "editor.completion.sqlType" : undefined);
   return {
     label,
     type: iconType,
-    detail: KEYWORD_DETAILS[label] ?? (type === "type" ? "Tipo SQL" : undefined),
+    detail: detailKey ? translate(detailKey) : undefined,
     boost: -1,
   };
 }

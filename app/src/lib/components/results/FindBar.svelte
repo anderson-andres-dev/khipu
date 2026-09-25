@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import { ArrowDown, ArrowUp, Search, X } from "@lucide/svelte";
   import type { FindOptions } from "$lib/gridFind";
+  import { numberFormat, t } from "$lib/i18n";
 
   // Barra de busqueda del grid (Ctrl+F): fila propia entre la barra de
   // herramientas y el encabezado del grid. Solo UI: la busqueda la hace
@@ -32,7 +33,6 @@
   } = $props();
 
   let input = $state<HTMLInputElement>();
-  const numberFormat = new Intl.NumberFormat("es");
 
   export async function focus() {
     await tick();
@@ -62,11 +62,11 @@
   }
 
   const status = $derived.by(() => {
-    if (error) return "Expresión inválida";
+    if (error) return $t("results.find.invalid");
     if (query === "") return "";
-    if (count === 0) return "Sin coincidencias";
-    const total = `${numberFormat.format(count)}${capped ? "+" : ""}`;
-    return `${numberFormat.format(current + 1)} de ${total}`;
+    if (count === 0) return $t("results.find.noMatches");
+    const total = `${$numberFormat.format(count)}${capped ? "+" : ""}`;
+    return $t("results.find.position", { current: $numberFormat.format(current + 1), total });
   });
 
   function toggle(key: keyof FindOptions) {
@@ -81,25 +81,25 @@
     <input
       bind:this={input}
       bind:value={query}
-      placeholder="Buscar en la página"
-      aria-label="Buscar en la página"
+      placeholder={$t("results.find.label")}
+      aria-label={$t("results.find.label")}
       spellcheck="false"
       autocomplete="off"
     />
     {#if query}
-      <button type="button" class="clear" aria-label="Limpiar búsqueda" onclick={() => ((query = ""), void focus())}>
+      <button type="button" class="clear" aria-label={$t("results.find.clear")} onclick={() => ((query = ""), void focus())}>
         <X size={12} aria-hidden="true" />
       </button>
     {/if}
   </div>
 
-  <div class="toggles" role="group" aria-label="Opciones de búsqueda">
+  <div class="toggles" role="group" aria-label={$t("results.find.options")}>
     <button
       type="button"
       class="toggle"
       class:on={options.matchCase}
       aria-pressed={options.matchCase}
-      title="Distinguir mayúsculas"
+      title={$t("results.find.matchCase")}
       onclick={() => toggle("matchCase")}>Cc</button
     >
     <button
@@ -107,7 +107,7 @@
       class="toggle mono"
       class:on={options.regex}
       aria-pressed={options.regex}
-      title="Expresión regular"
+      title={$t("results.find.regex")}
       onclick={() => toggle("regex")}>.*</button
     >
     <button
@@ -115,7 +115,7 @@
       class="toggle"
       class:on={options.wholeWord}
       aria-pressed={options.wholeWord}
-      title="Palabra completa"
+      title={$t("results.find.wholeWord")}
       onclick={() => toggle("wholeWord")}>W</button
     >
   </div>
@@ -126,8 +126,8 @@
     <button
       type="button"
       class="icon"
-      aria-label="Coincidencia anterior (Shift+Intro)"
-      title="Anterior (Shift+Intro)"
+      aria-label={$t("results.find.previousLabel")}
+      title={$t("results.find.previousTitle")}
       disabled={count === 0}
       onclick={onprevious}
     >
@@ -136,8 +136,8 @@
     <button
       type="button"
       class="icon"
-      aria-label="Coincidencia siguiente (Intro)"
-      title="Siguiente (Intro)"
+      aria-label={$t("results.find.nextLabel")}
+      title={$t("results.find.nextTitle")}
       disabled={count === 0}
       onclick={onnext}
     >
@@ -147,10 +147,10 @@
 
   <label class="filter">
     <input type="checkbox" bind:checked={filterRows} />
-    <span>Filtrar filas</span>
+    <span>{$t("results.find.filterRows")}</span>
   </label>
 
-  <button type="button" class="icon close" aria-label="Cerrar búsqueda (Esc)" title="Cerrar (Esc)" onclick={onclose}>
+  <button type="button" class="icon close" aria-label={$t("results.find.closeLabel")} title={$t("results.find.closeTitle")} onclick={onclose}>
     <X size={14} aria-hidden="true" />
   </button>
 </div>

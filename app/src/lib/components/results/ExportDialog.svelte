@@ -8,6 +8,7 @@
   import { COPY_FORMATS, serializeSelection, writeClipboardText, type CopyFormat } from "$lib/gridClipboard";
   import { escapeHtml, highlightJson } from "$lib/jsonHighlight";
   import { highlightSql } from "$lib/sqlHighlight";
+  import { t } from "$lib/i18n";
 
   // "Exportar datos": la consulta del resultado se vuelve a ejecutar ENTERA
   // en el backend y se escribe al archivo fila por fila (export.rs), sin
@@ -58,7 +59,7 @@
   let error = $state<string | null>(null);
   let dialog = $state<HTMLDialogElement>();
 
-  const safeName = $derived(source.replace(/[^\w.-]+/g, "_") || "resultado");
+  const safeName = $derived(source.replace(/[^\w.-]+/g, "_") || $t("results.export.defaultName"));
 
   // Al cambiar de formato, la extension del archivo acompaña.
   $effect(() => {
@@ -105,7 +106,7 @@
   async function chooseFile() {
     const extension = EXTENSIONS[format];
     const picked = await save({
-      title: "Exportar datos",
+      title: $t("results.export.title"),
       defaultPath: path || `${safeName}.${extension}`,
       filters: [{ name: COPY_FORMATS.find((item) => item.id === format)?.label ?? extension, extensions: [extension] }],
     });
@@ -160,16 +161,16 @@
 >
   <div class="layout">
     <div class="settings">
-      <h2>Exportar datos</h2>
+      <h2>{$t("results.export.title")}</h2>
 
       <div class="field">
-        <span class="label">Origen</span>
+        <span class="label">{$t("results.export.source")}</span>
         <div class="static">{source}</div>
       </div>
 
       <div class="field">
-        <span class="label">Formato</span>
-        <div class="formats" role="radiogroup" aria-label="Formato">
+        <span class="label">{$t("results.export.format")}</span>
+        <div class="formats" role="radiogroup" aria-label={$t("results.export.format")}>
           {#each COPY_FORMATS as item (item.id)}
             <button
               type="button"
@@ -186,19 +187,19 @@
       {#if format === "tsv" || format === "csv"}
         <label class="checkbox">
           <input type="checkbox" bind:checked={headers} />
-          <span>Incluir encabezados</span>
+          <span>{$t("results.includeHeaders")}</span>
         </label>
       {/if}
 
       <div class="field">
-        <span class="label">Archivo</span>
+        <span class="label">{$t("results.export.file")}</span>
         <div class="path">
-          <input aria-label="Archivo de destino" bind:value={path} spellcheck="false" />
-          <button type="button" class="icon-button" title="Elegir archivo" aria-label="Elegir archivo" onclick={() => void chooseFile()}>
+          <input aria-label={$t("results.export.target")} bind:value={path} spellcheck="false" />
+          <button type="button" class="icon-button" title={$t("results.export.chooseFile")} aria-label={$t("results.export.chooseFile")} onclick={() => void chooseFile()}>
             <FolderOpen size={15} aria-hidden="true" />
           </button>
         </div>
-        <p class="hint">Se exportan todas las filas de la consulta, no solo la página visible.</p>
+        <p class="hint">{$t("results.export.allRows")}</p>
       </div>
 
       {#if error}
@@ -207,7 +208,7 @@
     </div>
 
     <div class="preview">
-      <span class="label">Vista previa</span>
+      <span class="label">{$t("results.export.preview")}</span>
       <div class="code">
         <ol>
           {#each previewLines as line, index (index)}
@@ -221,12 +222,12 @@
 
   <footer>
     <button type="button" class="secondary-action" disabled={exporting} onclick={() => void copyPage()}>
-      Copiar página
+      {$t("results.export.copyPage")}
     </button>
     <span class="spacer"></span>
-    <button type="button" class="secondary-action" disabled={exporting} onclick={close}>Cancelar</button>
+    <button type="button" class="secondary-action" disabled={exporting} onclick={close}>{$t("common.cancel")}</button>
     <button type="button" class="primary-action" disabled={exporting} onclick={() => void exportToFile()}>
-      {exporting ? "Exportando…" : "Exportar a archivo"}
+      {exporting ? $t("results.export.exporting") : $t("results.export.toFile")}
     </button>
   </footer>
 </dialog>

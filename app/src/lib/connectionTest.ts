@@ -1,53 +1,59 @@
+import { translate, type Translate } from "$lib/i18n";
 import type { TestConnectionReport, TlsStatus } from "$lib/types";
 
-// Resumen de "Probar conexion" para el popover del formulario
+// Resumen de "Probar conexión" para el popover del formulario
 // (ConnectionForm.svelte): el estado, el texto corto que queda junto al
-// boton y las lineas del detalle, que tambien son lo que copia "Copiar".
+// botón y las líneas del detalle, que también son lo que copia "Copiar".
+// Los textos salen de `t`: el formulario pasa `$t` para que el resumen
+// cambie con el idioma; sin él se usa el idioma vigente al llamar.
 
 export type TestOutcome = "success" | "warning" | "error";
 
 export interface TestSummary {
   outcome: TestOutcome;
   title: string;
-  // Texto corto junto al boton, p.ej. "MySQL 8.4.9".
+  // Texto corto junto al botón, p.ej. "MySQL 8.4.9".
   badge: string;
   lines: { label: string; value: string }[];
 }
 
-function describeTls(tls: TlsStatus): string {
-  if (tls.encrypted === true) return tls.detail ? `sí (${tls.detail})` : "sí";
-  if (tls.encrypted === false) {
-    return tls.fellBack
-      ? "no: el servidor ofrece un cifrado que Khipu no admite (común en MySQL 5.7). Usa SSL «Requerido» para que falle en vez de conectar así."
-      : "no: el servidor no tiene TLS habilitado";
+function describeTls(tls: TlsStatus, t: Translate): string {
+  if (tls.encrypted === true) {
+    return tls.detail ? t("connections.test.tls.yesDetail", { detail: tls.detail }) : t("connections.test.tls.yes");
   }
-  return "desconocido";
+  if (tls.encrypted === false) {
+    return tls.fellBack ? t("connections.test.tls.fellBack") : t("connections.test.tls.noTls");
+  }
+  return t("connections.test.tls.unknown");
 }
 
-export function summarizeReport(report: TestConnectionReport): TestSummary {
+export function summarizeReport(report: TestConnectionReport, t: Translate = translate): TestSummary {
   const unencrypted = report.tls.encrypted === false;
   const lines = [
-    { label: "Servidor", value: report.serverVersion },
-    ...(report.defaultSchema ? [{ label: "Schema", value: report.defaultSchema }] : []),
-    { label: "Latencia", value: report.latencyMs === null ? "—" : `${report.latencyMs} ms` },
-    { label: "SSL", value: describeTls(report.tls) },
+    { label: t("connections.test.server"), value: report.serverVersion },
+    ...(report.defaultSchema ? [{ label: t("connections.test.schema"), value: report.defaultSchema }] : []),
+    {
+      label: t("connections.test.latency"),
+      value: report.latencyMs === null ? "—" : t("connections.test.latencyValue", { ms: report.latencyMs }),
+    },
+    { label: t("connections.test.ssl"), value: describeTls(report.tls, t) },
   ];
   return {
     outcome: unencrypted ? "warning" : "success",
-    title: unencrypted ? "Conectó sin cifrar" : "Conexión correcta",
+    title: unencrypted ? t("connections.test.unencrypted") : t("connections.test.success"),
     badge: report.serverVersion,
     lines,
   };
 }
 
-export function summarizeError(message: string, endpoint: string): TestSummary {
+export function summarizeError(message: string, endpoint: string, t: Translate = translate): TestSummary {
   return {
     outcome: "error",
-    title: "No se pudo conectar",
-    badge: "Falló",
+    title: t("connections.test.failed"),
+    badge: t("connections.test.failedBadge"),
     lines: [
-      { label: "Destino", value: endpoint },
-      { label: "Error", value: message },
+      { label: t("connections.test.target"), value: endpoint },
+      { label: t("connections.test.error"), value: message },
     ],
   };
 }

@@ -6,6 +6,7 @@
   import { getDriver } from "$lib/connections";
   import ConnectionAvatar from "$lib/components/ConnectionAvatar.svelte";
   import { NEUTRAL_IDENTITY_COLOR } from "$lib/connectionColors";
+  import { t } from "$lib/i18n";
   import type { ConnectionProfile } from "$lib/stores/connectionProfiles";
   import databaseIcon from "devicon/icons/sqldeveloper/sqldeveloper-plain.svg?url";
 
@@ -77,8 +78,8 @@
   <button
     class="edit-button"
     type="button"
-    aria-label={`Editar ${profile.name}`}
-    title="Editar conexión"
+    aria-label={$t("connections.landing.editLabel", { name: profile.name })}
+    title={$t("connections.landing.editTitle")}
     disabled={busy}
     onclick={(event) => {
       event.stopPropagation();
@@ -93,24 +94,24 @@
   {#if profiles.length === 0}
     <div class="empty">
       <span class="database-icon" style:--icon={`url("${databaseIcon}")`} aria-hidden="true"></span>
-      <h1 id="connection-state-title">Sin conexiones guardadas</h1>
-      <p>Conecta una base de datos para comenzar.</p>
-      <Button type="button" variant="primary" onclick={onnewconnection}>Nueva conexión</Button>
+      <h1 id="connection-state-title">{$t("connections.landing.emptyTitle")}</h1>
+      <p>{$t("connections.landing.emptyText")}</p>
+      <Button type="button" variant="primary" onclick={onnewconnection}>{$t("connections.newConnection")}</Button>
     </div>
   {:else}
     <div class="saved">
       <header class="landing-header">
         <div>
-          <h1 id="connection-state-title">Conexiones</h1>
-          <p>Selecciona una conexión para abrirla.</p>
+          <h1 id="connection-state-title">{$t("connections.landing.title")}</h1>
+          <p>{$t("connections.landing.subtitle")}</p>
         </div>
         <div class="toolbar">
-          <div class="view-toggle" role="group" aria-label="Vista de conexiones">
+          <div class="view-toggle" role="group" aria-label={$t("connections.landing.view")}>
             <button
               type="button"
               aria-pressed={view === "cards"}
-              aria-label="Vista de tarjetas"
-              title="Tarjetas"
+              aria-label={$t("connections.landing.viewCards")}
+              title={$t("connections.landing.cards")}
               onclick={() => setView("cards")}
             >
               <LayoutGrid size={15} aria-hidden="true" />
@@ -118,21 +119,21 @@
             <button
               type="button"
               aria-pressed={view === "list"}
-              aria-label="Vista de lista"
-              title="Lista"
+              aria-label={$t("connections.landing.viewList")}
+              title={$t("connections.landing.list")}
               onclick={() => setView("list")}
             >
               <List size={15} aria-hidden="true" />
             </button>
           </div>
           <Button type="button" variant="primary" onclick={onnewconnection}>
-            <span class="new-label"><Plus size={15} aria-hidden="true" /> Nueva</span>
+            <span class="new-label"><Plus size={15} aria-hidden="true" /> {$t("connections.landing.new")}</span>
           </Button>
         </div>
       </header>
 
       {#each sections as section (section.title ?? "")}
-        <section class="group" aria-label={section.title ?? "Conexiones sin grupo"}>
+        <section class="group" aria-label={section.title ?? $t("connections.landing.ungrouped")}>
           {#if section.title}
             <h2 class="group-title">
               {section.title}
@@ -148,7 +149,7 @@
                   <button
                     class="card-main"
                     type="button"
-                    aria-label={`Conectar a ${profile.name}, ${driver.name}`}
+                    aria-label={$t("connections.landing.connectTo", { name: profile.name, driver: driver.name })}
                     aria-busy={connectingId === profile.id}
                     disabled={busy}
                     onclick={() => onconnect(profile)}
@@ -162,7 +163,7 @@
                   </button>
                   <div class="card-corner">
                     {#if connectingId === profile.id}
-                      <LoaderCircle size={15} class="spin" aria-label="Conectando" />
+                      <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
                       {@render editButton(profile)}
                     {/if}
@@ -183,7 +184,7 @@
                   <button
                     class="row-main"
                     type="button"
-                    aria-label={`Conectar a ${profile.name}, ${driver.name}`}
+                    aria-label={$t("connections.landing.connectTo", { name: profile.name, driver: driver.name })}
                     aria-busy={connectingId === profile.id}
                     disabled={busy}
                     onclick={() => onconnect(profile)}
@@ -199,7 +200,7 @@
                   </button>
                   <div class="row-corner">
                     {#if connectingId === profile.id}
-                      <LoaderCircle size={15} class="spin" aria-label="Conectando" />
+                      <LoaderCircle size={15} class="spin" aria-label={$t("connections.connecting")} />
                     {:else}
                       {@render editButton(profile)}
                     {/if}

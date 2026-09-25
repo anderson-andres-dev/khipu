@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Ban, Check, ChevronDown, Pipette } from "@lucide/svelte";
   import { CONNECTION_COLORS, colorLabel, isPaletteColor } from "$lib/connectionColors";
+  import { t } from "$lib/i18n";
 
   // Menu "Color ⌄" que va dentro del campo Nombre del formulario de
   // conexion, como en DataGrip: sin color, la paleta con nombre y un color
@@ -43,23 +44,23 @@
     class="trigger"
     aria-haspopup="menu"
     aria-expanded={open}
-    aria-label={`Color: ${colorLabel(value)}`}
-    title={colorLabel(value)}
+    aria-label={$t("connections.color.buttonLabel", { color: colorLabel(value, $t) })}
+    title={colorLabel(value, $t)}
     {disabled}
     onclick={() => (open = !open)}
   >
     {#if value}
       <span class="dot" style:--dot={value}></span>
     {/if}
-    <span>Color</span>
+    <span>{$t("connections.color.button")}</span>
     <ChevronDown size={13} aria-hidden="true" />
   </button>
 
   {#if open}
-    <div class="menu" role="menu" aria-label="Color de la conexión">
+    <div class="menu" role="menu" aria-label={$t("connections.color.menu")}>
       <button type="button" role="menuitemradio" aria-checked={!value} class:selected={!value} onclick={() => choose(undefined)}>
         <Ban size={13} class="none-icon" aria-hidden="true" />
-        <span>Sin color</span>
+        <span>{$t("connections.color.none")}</span>
       </button>
       <div class="separator" role="separator"></div>
       {#each CONNECTION_COLORS as option (option.value)}
@@ -71,7 +72,7 @@
           onclick={() => choose(option.value)}
         >
           <span class="dot" style:--dot={option.value}></span>
-          <span>{option.label}</span>
+          <span>{$t(option.labelKey)}</span>
           {#if value === option.value}<Check size={13} class="check" aria-hidden="true" />{/if}
         </button>
       {/each}
@@ -88,7 +89,7 @@
         {:else}
           <Pipette size={13} class="none-icon" aria-hidden="true" />
         {/if}
-        <span>Personalizado…</span>
+        <span>{$t("connections.color.customOption")}</span>
         {#if custom}<Check size={13} class="check" aria-hidden="true" />{/if}
       </button>
     </div>

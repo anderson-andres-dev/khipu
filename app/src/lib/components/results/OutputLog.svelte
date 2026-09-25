@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import type { LogEntry } from "$lib/stores/executionLog";
   import { highlightSql } from "$lib/sqlHighlight";
+  import { t } from "$lib/i18n";
 
   // Pestaña "Salida": el registro de la consola, al estilo del Output de
   // DataGrip. Cada entrada con su marca de tiempo; las lineas siguientes de
@@ -39,7 +40,7 @@
 
 <div class="output-log" role="log" aria-live="polite" bind:this={scroller} onscroll={onScroll}>
   {#if entries.length === 0 && !running}
-    <p class="empty">Aquí aparecerá cada sentencia que ejecutes y su resultado.</p>
+    <p class="empty">{$t("results.output.empty")}</p>
   {/if}
   {#each entries as entry (entry.id)}
     <span class="time">[{formatTimestamp(entry.at)}]</span>
@@ -54,7 +55,7 @@
   {/each}
   {#if running}
     <span class="time"></span>
-    <span class="text running"><span class="dot"></span>Ejecutando…</span>
+    <span class="text running"><span class="dot"></span>{$t("results.output.running")}</span>
   {/if}
 </div>
 

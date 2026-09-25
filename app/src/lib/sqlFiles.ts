@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { get } from "svelte/store";
+import { translate } from "$lib/i18n";
 import {
+  consoleDisplayTitle,
   detachQueryConsoleFile,
   fileNameFromPath,
   markQueryConsoleSaved,
@@ -37,8 +39,9 @@ async function writeFile(item: QueryConsole, path: string): Promise<void> {
 }
 
 export async function saveConsoleAs(item: QueryConsole): Promise<boolean> {
-  const suggested = item.filePath ?? (/\.sql$/i.test(item.title) ? item.title : `${item.title}.sql`);
-  const picked = await save({ title: "Guardar como", defaultPath: suggested, filters: SQL_FILTERS });
+  const title = consoleDisplayTitle(item.title);
+  const suggested = item.filePath ?? (/\.sql$/i.test(title) ? title : `${title}.sql`);
+  const picked = await save({ title: translate("workspace.dialog.saveAs"), defaultPath: suggested, filters: SQL_FILTERS });
   if (!picked) return false;
   await writeFile(item, withSqlExtension(picked));
   return true;
@@ -64,14 +67,14 @@ export async function openSqlFileAtPath(profileId: string, path: string): Promis
 }
 
 export async function openSqlFileWithDialog(profileId: string): Promise<boolean> {
-  const picked = await open({ title: "Abrir archivo SQL", multiple: false, directory: false, filters: SQL_FILTERS });
+  const picked = await open({ title: translate("workspace.dialog.openFile"), multiple: false, directory: false, filters: SQL_FILTERS });
   if (typeof picked !== "string") return false;
   await openSqlFileAtPath(profileId, picked);
   return true;
 }
 
 export async function pickSqlFolder(): Promise<string | null> {
-  const picked = await open({ title: "Abrir carpeta de scripts", multiple: false, directory: true });
+  const picked = await open({ title: translate("workspace.dialog.openFolder"), multiple: false, directory: true });
   return typeof picked === "string" ? picked : null;
 }
 

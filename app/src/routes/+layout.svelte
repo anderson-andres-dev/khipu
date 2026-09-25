@@ -22,6 +22,7 @@
     sidebarWidth,
   } from "$lib/stores/sidebarLayout";
   import { initThemeEffects } from "$lib/theming/theme";
+  import { initLocaleEffects, t } from "$lib/i18n";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { fade } from "svelte/transition";
   import {
@@ -43,6 +44,7 @@
   import ConnectionSwitcher from "$lib/components/ConnectionSwitcher.svelte";
 
   let cleanupThemeEffects: (() => void) | undefined;
+  let cleanupLocaleEffects: (() => void) | undefined;
   let settingsOpen = $state(false);
   let sidebarCollapsed = $state(false);
   let refreshingTables = $state(false);
@@ -237,6 +239,7 @@
   onMount(() => {
     installDialogMotion();
     cleanupThemeEffects = initThemeEffects();
+    cleanupLocaleEffects = initLocaleEffects();
     document.addEventListener("keydown", handleGlobalKeydown);
     window.addEventListener("pointerdown", trackPointerRegion, true);
     // En captura: tiene que llegar antes que el keymap de CodeMirror.
@@ -245,6 +248,7 @@
 
   onDestroy(() => {
     cleanupThemeEffects?.();
+    cleanupLocaleEffects?.();
     document.removeEventListener("keydown", handleGlobalKeydown);
     window.removeEventListener("pointerdown", trackPointerRegion, true);
     window.removeEventListener("keydown", onSidebarFindKeydown, true);
@@ -267,8 +271,10 @@
         <button
           class="icon-button"
           type="button"
-          title={toggleSidebarKeys ? `Mostrar panel de tablas (${toggleSidebarKeys})` : "Mostrar panel de tablas"}
-          aria-label="Mostrar panel de tablas"
+          title={toggleSidebarKeys
+            ? $t("shell.showTablesPanelWithKeys", { keys: toggleSidebarKeys })
+            : $t("shell.showTablesPanel")}
+          aria-label={$t("shell.showTablesPanel")}
           onclick={() => (sidebarCollapsed = false)}
           in:fade={{ duration: 120 }}
         >
@@ -279,8 +285,8 @@
         <button
           class="icon-button"
           type="button"
-          title="Volver a conexiones"
-          aria-label="Volver a conexiones"
+          title={$t("shell.backToConnections")}
+          aria-label={$t("shell.backToConnections")}
           disabled={$connection.connecting}
           onclick={reset}
         >
@@ -297,27 +303,27 @@
     <button
       class="icon-button"
       type="button"
-      title="Ajustes"
-      aria-label={settingsOpen ? "Cerrar ajustes" : "Abrir ajustes"}
+      title={$t("shell.settings")}
+      aria-label={settingsOpen ? $t("shell.closeSettings") : $t("shell.openSettings")}
       aria-expanded={settingsOpen}
       aria-pressed={settingsOpen}
       onclick={() => (settingsOpen = !settingsOpen)}
     >
       <Settings size={17} aria-hidden="true" />
     </button>
-    <div class="window-controls" aria-label="Controles de ventana">
+    <div class="window-controls" aria-label={$t("shell.windowControls")}>
       <button
         type="button"
-        title="Minimizar"
-        aria-label="Minimizar"
+        title={$t("shell.minimize")}
+        aria-label={$t("shell.minimize")}
         onclick={() => appWindow.minimize()}
       >
         <Minus size={15} aria-hidden="true" />
       </button>
       <button
         type="button"
-        title="Maximizar o restaurar"
-        aria-label="Maximizar o restaurar"
+        title={$t("shell.maximizeRestore")}
+        aria-label={$t("shell.maximizeRestore")}
         onclick={() => appWindow.toggleMaximize()}
       >
         <Square size={12} aria-hidden="true" />
@@ -325,8 +331,8 @@
       <button
         class="close-window"
         type="button"
-        title="Cerrar"
-        aria-label="Cerrar"
+        title={$t("common.close")}
+        aria-label={$t("common.close")}
         onclick={() => appWindow.close()}
       >
         <X size={15} aria-hidden="true" />
@@ -375,7 +381,7 @@
             class:disabled={$sqlFolders.collapsed}
             role="separator"
             aria-orientation="horizontal"
-            aria-label="Redimensionar panel de archivos"
+            aria-label={$t("shell.resizeFilesPanel")}
             tabindex={$sqlFolders.collapsed ? -1 : 0}
             onpointerdown={startFilePanelResize}
             onkeydown={onFilePanelHandleKeydown}
@@ -400,12 +406,12 @@
           class="sidebar-resize-handle"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Redimensionar panel de tablas"
+          aria-label={$t("shell.resizeTablesPanel")}
           aria-valuenow={$sidebarWidth}
           aria-valuemin={MIN_SIDEBAR_WIDTH}
           aria-valuemax={MAX_SIDEBAR_WIDTH}
           tabindex="0"
-          title="Arrastra para cambiar el ancho · doble clic para restablecer"
+          title={$t("shell.resizeSidebarHint")}
           onpointerdown={startSidebarResize}
           ondblclick={() => sidebarWidth.set(DEFAULT_SIDEBAR_WIDTH)}
           onkeydown={onSidebarHandleKeydown}

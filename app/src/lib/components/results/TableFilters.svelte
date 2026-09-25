@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Filter, ListOrdered } from "@lucide/svelte";
+  import { t } from "$lib/i18n";
 
   // Filtros de una pestaña de tabla: WHERE y ORDER BY escritos a mano, como
   // en DataGrip. Intro aplica (vuelve a consultar), Esc vuelve a lo aplicado.
@@ -54,8 +55,8 @@
     <span class="keyword">WHERE</span>
     <input
       bind:value={whereDraft}
-      placeholder="estado = 'activo' AND id > 10"
-      aria-label="Filtro WHERE"
+      placeholder={$t("results.filters.wherePlaceholder")}
+      aria-label={$t("results.filters.where")}
       spellcheck="false"
       autocomplete="off"
       onkeydown={onKeydown}
@@ -67,7 +68,7 @@
     <input
       bind:value={orderDraft}
       placeholder="created_at DESC"
-      aria-label="Orden ORDER BY"
+      aria-label={$t("results.filters.orderBy")}
       spellcheck="false"
       autocomplete="off"
       onkeydown={onKeydown}
@@ -76,7 +77,7 @@
   {#if error}
     <span class="error" role="alert" title={error}>{error}</span>
   {:else if dirty}
-    <span class="hint">Intro para aplicar · Esc para descartar</span>
+    <span class="hint">{$t("results.filters.hint")}</span>
   {/if}
 </div>
 

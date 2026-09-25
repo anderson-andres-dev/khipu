@@ -2,6 +2,7 @@
   import DriverLogo from "$lib/components/DriverLogo.svelte";
   import { X } from "@lucide/svelte";
   import { connectionDrivers, type ConnectionDriver } from "$lib/connections";
+  import { t } from "$lib/i18n";
 
   // Primer paso de "Nueva conexion": un modal pequeño para elegir el motor.
   // Al elegir uno se cierra y la pagina abre el formulario de conexion.
@@ -43,10 +44,10 @@
 >
   <header>
     <div>
-      <h1 id="driver-picker-title">Nueva conexión</h1>
-      <p>Elige el motor de la base de datos.</p>
+      <h1 id="driver-picker-title">{$t("connections.newConnection")}</h1>
+      <p>{$t("connections.driver.subtitle")}</p>
     </div>
-    <button class="close" type="button" aria-label="Cerrar" onclick={() => dialogEl?.close()}>
+    <button class="close" type="button" aria-label={$t("common.close")} onclick={() => dialogEl?.close()}>
       <X size={16} aria-hidden="true" />
     </button>
   </header>

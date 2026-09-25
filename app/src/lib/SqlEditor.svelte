@@ -7,7 +7,7 @@
   import { autocompletion, moveCompletionSelection } from "@codemirror/autocomplete";
   import { selectAll } from "@codemirror/commands";
   import { keymap } from "@codemirror/view";
-  import { Compartment, EditorSelection, Prec } from "@codemirror/state";
+  import { Compartment, EditorSelection, EditorState, Prec } from "@codemirror/state";
   import { buildCmTheme } from "$lib/theming/codemirrorTheme";
   import { editorPalette, effectiveScheme } from "$lib/theming/theme";
   import { catalogTables, connection } from "$lib/stores/connection";
@@ -38,6 +38,33 @@
   import "$lib/sqlEditorIcons.css";
   import "$lib/styles/editorSearch.css";
   import { editorSearch, toggleSearchPanel } from "$lib/editorSearchPanel";
+  import { locale, t, translate, type MessageKey } from "$lib/i18n";
+
+  // Frases propias de CodeMirror (plegado, anuncios de lector de pantalla,
+  // "ir a linea"...) que se muestran o anuncian en el editor.
+  const CODEMIRROR_PHRASES: Record<string, MessageKey> = {
+    "Fold line": "editor.cm.foldLine",
+    "Unfold line": "editor.cm.unfoldLine",
+    "Folded lines": "editor.cm.foldedLines",
+    "Unfolded lines": "editor.cm.unfoldedLines",
+    to: "editor.cm.to",
+    "folded code": "editor.cm.foldedCode",
+    unfold: "editor.cm.unfold",
+    Completions: "editor.cm.completions",
+    "Control character": "editor.cm.controlCharacter",
+    "Selection deleted": "editor.cm.selectionDeleted",
+    "current match": "editor.cm.currentMatch",
+    "on line": "editor.cm.onLine",
+    "Go to line": "editor.cm.goToLine",
+    go: "editor.cm.go",
+    close: "editor.cm.close",
+  };
+
+  function buildPhrases() {
+    return EditorState.phrases.of(
+      Object.fromEntries(Object.entries(CODEMIRROR_PHRASES).map(([phrase, key]) => [phrase, translate(key)])),
+    );
+  }
 
   let {
     value = $bindable(""),
@@ -64,6 +91,7 @@
   const keymapCompartment = new Compartment();
   const behaviorCompartment = new Compartment();
   const tabCompletionCompartment = new Compartment();
+  const phrasesCompartment = new Compartment();
 
   // Config vigente. schema/dialect/fkIndex cambian poco (catalogo o conexion
   // activa); defaultTable cambia con cada tecla, asi que se separan para no
@@ -79,12 +107,12 @@
   let contextMenu = $state<{ x: number; y: number; hasSelection: boolean } | null>(null);
 
   const contextMenuItems = $derived.by((): ContextMenuItem[] => [
-    { label: "Cortar", shortcut: "Ctrl+X", disabled: !contextMenu?.hasSelection, action: cutSelection },
-    { label: "Copiar", shortcut: "Ctrl+C", disabled: !contextMenu?.hasSelection, action: copySelection },
-    { label: "Pegar", shortcut: "Ctrl+V", action: pasteClipboard },
-    { label: "Seleccionar todo", shortcut: "Ctrl+A", separatorBefore: true, action: selectEverything },
+    { label: $t("editor.menu.cut"), shortcut: "Ctrl+X", disabled: !contextMenu?.hasSelection, action: cutSelection },
+    { label: $t("editor.menu.copy"), shortcut: "Ctrl+C", disabled: !contextMenu?.hasSelection, action: copySelection },
+    { label: $t("editor.menu.paste"), shortcut: "Ctrl+V", action: pasteClipboard },
+    { label: $t("editor.menu.selectAll"), shortcut: "Ctrl+A", separatorBefore: true, action: selectEverything },
     {
-      label: "Formatear SQL",
+      label: $t("editor.menu.format"),
       shortcut: $shortcuts.find((shortcut) => shortcut.id === "format-sql")?.keys,
       separatorBefore: true,
       action: () => {
@@ -308,6 +336,7 @@
         executionMarker,
         behaviorCompartment.of(get(editorSettings).autoUppercaseKeywords ? autoUppercaseSqlKeywords : []),
         themeCompartment.of(buildCmTheme(get(editorPalette), get(effectiveScheme))),
+        phrasesCompartment.of(buildPhrases()),
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) return;
 
@@ -366,6 +395,16 @@
     view.dispatch({ effects: themeCompartment.reconfigure(buildCmTheme(palette, scheme)) });
   });
 
+  // Al cambiar el idioma: frases de CodeMirror y detalles del autocompletado
+  // (se traducen al armar la fuente). El dispatch tambien hace que el gutter
+  // vuelva a pintar el marcador de ejecucion con su texto nuevo.
+  $effect(() => {
+    $locale;
+    if (!view) return;
+    view.dispatch({ effects: phrasesCompartment.reconfigure(buildPhrases()) });
+    reconfigureCompletion();
+  });
+
   $effect(() => {
     $shortcuts;
     if (!view) return;
@@ -406,7 +445,7 @@
 <div
   class="sql-editor"
   role="group"
-  aria-label="Editor SQL"
+  aria-label={$t("editor.label")}
   bind:this={container}
   oncontextmenu={openContextMenu}
 ></div>

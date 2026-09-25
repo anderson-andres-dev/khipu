@@ -22,6 +22,7 @@
   import ExportDialog, { type ExportSummary } from "$lib/components/results/ExportDialog.svelte";
   import TableFilters from "$lib/components/results/TableFilters.svelte";
   import { copySettings } from "$lib/stores/copyFormat";
+  import { numberFormat, t } from "$lib/i18n";
   import {
     addPinnedTab,
     consoleOfKey,
@@ -63,6 +64,7 @@
     QueryExecutionResult,
   } from "$lib/types";
   import {
+    consoleDisplayTitle,
     activateQueryConsole,
     beginQueryExecution,
     cancelQueryConfirmation,
@@ -161,7 +163,7 @@
     const target = editStateFor($resultEdits, key).info?.target;
     if (target) return `${target.schema}.${target.table}`;
     const from = firstFromTable(sql);
-    if (!from) return "Resultado";
+    if (!from) return $t("workspace.result");
     return `${from.schema ?? (activeProfile.database || activeProfile.name)}.${from.table}`;
   }
 
@@ -179,10 +181,10 @@
     const consoleId = activeConsole.id;
     const tabs = pinnedTabs.map((item) => {
       const key = resultKey(consoleId, item.id);
-      return { key, label: labelForKey(key) ?? "Resultado", pinned: item.pinned };
+      return { key, label: labelForKey(key) ?? $t("workspace.result"), pinned: item.pinned };
     });
     if (liveExecution.result?.type === "resultSet") {
-      tabs.push({ key: consoleId, label: labelForKey(consoleId) ?? "Resultado", pinned: false });
+      tabs.push({ key: consoleId, label: labelForKey(consoleId) ?? $t("workspace.result"), pinned: false });
     }
     const order = resultTabOrder[consoleId];
     if (!order) return tabs;
@@ -287,7 +289,7 @@
     if (!item) return [];
     return [
       {
-        label: "Cambiar nombre",
+        label: $t("workspace.rename"),
         shortcut: shortcutKeys("rename-query-console"),
         action: () => startRename(item.id, item.title),
       },
@@ -296,25 +298,25 @@
         ? []
         : [
             {
-              label: "Guardar",
+              label: $t("common.save"),
               shortcut: shortcutKeys("save-query-console"),
               separatorBefore: true,
               action: () => void runFileAction(() => saveConsole(item)),
             },
             {
-              label: "Guardar como…",
+              label: $t("workspace.saveAs"),
               shortcut: shortcutKeys("save-query-console-as"),
               action: () => void runFileAction(() => saveConsoleAs(item)),
             },
           ]),
       {
-        label: item.table ? "Cerrar tabla" : item.filePath ? "Cerrar archivo" : "Cerrar consola",
+        label: $t(item.table ? "workspace.menu.closeTable" : item.filePath ? "workspace.menu.closeFile" : "workspace.menu.closeConsole"),
         shortcut: shortcutKeys("close-query-console"),
         separatorBefore: true,
         action: () => requestClose(item.id),
       },
       {
-        label: "Nueva consola",
+        label: $t("workspace.newConsole"),
         shortcut: shortcutKeys("new-query-console"),
         separatorBefore: true,
         action: () => {
@@ -322,7 +324,7 @@
         },
       },
       {
-        label: "Abrir archivo…",
+        label: $t("workspace.menu.openFile"),
         shortcut: shortcutKeys("open-sql-file"),
         action: () => void runFileAction(() => openSqlFileWithDialog(profileId)),
       },
@@ -418,7 +420,7 @@
 
   async function startRename(id: string, title: string) {
     renamingId = id;
-    renameValue = title;
+    renameValue = consoleDisplayTitle(title, $t);
     await tick();
     renameInput?.focus();
     renameInput?.select();
@@ -428,6 +430,10 @@
     const id = renamingId;
     renamingId = null;
     if (!save || !id) return;
+    // Confirmar sin cambios el nombre por defecto traducido no debe guardarlo
+    // traducido: se perdería el "consola_N" del que depende la numeración.
+    const original = currentConsole(id)?.title;
+    if (original !== undefined && renameValue === consoleDisplayTitle(original, $t)) return;
     // En un archivo, cambiar el nombre renombra el archivo en disco.
     if (currentConsole(id)?.filePath) {
       void runFileAction(() => renameConsoleFile(id, renameValue));
@@ -449,7 +455,7 @@
       return;
     }
     pendingCloseId = id;
-    closeDialogTitle = item?.title ?? "consola";
+    closeDialogTitle = item ? consoleDisplayTitle(item.title, $t) : $t("workspace.consoleFallback");
     await tick();
     closeDialog?.showModal();
     // El foco va al dialogo y no a un boton: asi ninguno aparece con el
@@ -656,21 +662,30 @@
   });
 
   // --- Salida -----------------------------------------------------------
-  const outputNumbers = new Intl.NumberFormat("es");
   const logSchema = $derived(activeProfile ? activeProfile.database || activeProfile.name : "");
 
+  // Duracion para la Salida: "1.234 ms", con los separadores del idioma.
+  function formatMs(elapsedMs: number): string {
+    return `${$numberFormat.format(Math.round(elapsedMs))} ms`;
+  }
+
   function describeOutcome(result: QueryExecutionResult, offset: number, elapsedMs: number): string {
-    const ms = `${outputNumbers.format(Math.round(elapsedMs))} ms`;
+    const ms = formatMs(elapsedMs);
     if (result.type === "resultSet") {
       const count = result.rows.length;
-      if (count === 0) return `0 filas obtenidas en ${ms}`;
-      const noun = count === 1 ? "fila obtenida" : "filas obtenidas";
-      return `${outputNumbers.format(count)} ${noun} desde la fila ${outputNumbers.format(offset + 1)} en ${ms}`;
+      if (count === 0) return $t("workspace.output.noRows", { ms });
+      return $t(count === 1 ? "workspace.output.fetchedOne" : "workspace.output.fetchedOther", {
+        count: $numberFormat.format(count),
+        from: $numberFormat.format(offset + 1),
+        ms,
+      });
     }
     if (result.type === "command") {
-      if (result.affectedRows === 0) return `completado en ${ms}`;
-      const noun = result.affectedRows === 1 ? "fila afectada" : "filas afectadas";
-      return `${outputNumbers.format(result.affectedRows)} ${noun} en ${ms}`;
+      if (result.affectedRows === 0) return $t("workspace.output.completed", { ms });
+      return $t(result.affectedRows === 1 ? "workspace.output.affectedOne" : "workspace.output.affectedOther", {
+        count: $numberFormat.format(result.affectedRows),
+        ms,
+      });
     }
     return result.code ? `[${result.code}] ${result.message}` : result.message;
   }
@@ -824,10 +839,12 @@
     try {
       const affected = await applyChanges(current.target, current.changes);
       logStatements();
-      const ms = outputNumbers.format(Math.round(performance.now() - started));
       appendLog(consoleId, {
         kind: "info",
-        text: `Cambios aplicados: ${outputNumbers.format(affected)} ${affected === 1 ? "fila afectada" : "filas afectadas"} en ${ms} ms`,
+        text: $t(affected === 1 ? "workspace.output.appliedOne" : "workspace.output.appliedOther", {
+          count: $numberFormat.format(affected),
+          ms: formatMs(performance.now() - started),
+        }),
       });
       clearResultPendingEdits(key);
       // El modal (si estaba abierto) se cierra animado; lo quita su onclose.
@@ -841,7 +858,13 @@
       logStatements();
       appendLog(consoleId, {
         kind: "error",
-        text: `No se aplicó ningún cambio. ${changeError.statementIndex !== null ? `Sentencia ${changeError.statementIndex + 1}: ` : ""}${changeError.message}`,
+        text:
+          changeError.statementIndex !== null
+            ? $t("workspace.output.applyFailedAt", {
+                index: changeError.statementIndex + 1,
+                message: changeError.message,
+              })
+            : $t("workspace.output.applyFailed", { message: changeError.message }),
       });
       if (preview) applyError = changeError;
       else void openChangesPreview(key, changeError);
@@ -858,7 +881,7 @@
     const source = executionForConsole($queryConsoles, exportFor);
     if (source.result?.type !== "resultSet" || !source.resultSql) return null;
     return {
-      label: labelForKey(exportFor) ?? "Resultado",
+      label: labelForKey(exportFor) ?? $t("workspace.result"),
       sql: source.resultSql,
       sort: source.sort,
       result: source.result,
@@ -930,17 +953,20 @@
 
   function exportTableName(key: string): string {
     const info = editStateFor($resultEdits, key).info;
-    return info ? `${info.target.schema}.${info.target.table}` : (labelForKey(key) ?? "tabla");
+    return info ? `${info.target.schema}.${info.target.table}` : (labelForKey(key) ?? $t("grid.defaultTableName"));
   }
 
   function onExported(key: string, summary: ExportSummary) {
-    const rows = outputNumbers.format(summary.rows);
-    const ms = outputNumbers.format(summary.elapsedMs);
+    const one = summary.rows === 1;
+    const params = { count: $numberFormat.format(summary.rows), path: summary.path };
     appendLog(consoleOfKey(key), {
       kind: "info",
-      text: `${rows} ${summary.rows === 1 ? "fila exportada" : "filas exportadas"} a ${summary.path} en ${ms} ms`,
+      text: $t(one ? "workspace.output.exportedOne" : "workspace.output.exportedOther", {
+        ...params,
+        ms: formatMs(summary.elapsedMs),
+      }),
     });
-    notifySuccess(`${rows} ${summary.rows === 1 ? "fila exportada" : "filas exportadas"} a ${summary.path}`);
+    notifySuccess($t(one ? "workspace.notify.exportedOne" : "workspace.notify.exportedOther", params));
   }
 
   // × de una pestaña de resultado: la quita (con cambios pendientes
@@ -1006,10 +1032,12 @@
     try {
       const total = await countQueryRows(sql);
       setQueryTotalRows(key, sql, total);
-      const ms = outputNumbers.format(Math.round(performance.now() - started));
       appendLog(consoleId, {
         kind: "info",
-        text: `${outputNumbers.format(total)} ${total === 1 ? "fila" : "filas"} en total · ${ms} ms`,
+        text: $t(total === 1 ? "workspace.output.totalOne" : "workspace.output.totalOther", {
+          count: $numberFormat.format(total),
+          ms: formatMs(performance.now() - started),
+        }),
       });
       return total;
     } catch (error) {
@@ -1104,7 +1132,7 @@
     class:fade-start={tabsOverflow.start}
     class:fade-end={tabsOverflow.end}
     role="tablist"
-    aria-label="Consolas SQL"
+    aria-label={$t("workspace.tabs.aria")}
     bind:this={tabsScroll}
     onscroll={updateTabsOverflow}
   >
@@ -1137,7 +1165,7 @@
         {#if renamingId === item.id}
           <input
             class="rename-input"
-            aria-label="Nombre de la consola"
+            aria-label={$t("workspace.tabs.renameAria")}
             bind:this={renameInput}
             bind:value={renameValue}
             onclick={(event) => event.stopPropagation()}
@@ -1151,15 +1179,17 @@
         {:else}
           <span
             class="console-tab-title"
-            title={item.table ? `${item.table.schema}.${item.table.name}` : (item.filePath ?? undefined)}>{item.title}</span
+            title={item.table ? `${item.table.schema}.${item.table.name}` : (item.filePath ?? undefined)}>{consoleDisplayTitle(item.title, $t)}</span
           >
         {/if}
         <button
           type="button"
           class="close-tab"
-          aria-label={dirty ? `Cerrar ${item.title} (cambios sin guardar)` : `Cerrar ${item.title}`}
+          aria-label={$t(dirty ? "workspace.tabs.closeDirty" : "workspace.tabs.close", { title: consoleDisplayTitle(item.title, $t) })}
           title={dirty
-            ? `${item.filePath ? "Cambios sin guardar" : "Sin guardar en un archivo"} (${shortcutKeys("save-query-console")} para guardar)`
+            ? $t(item.filePath ? "workspace.tabs.unsavedFile" : "workspace.tabs.unsavedConsole", {
+                shortcut: shortcutKeys("save-query-console"),
+              })
             : undefined}
           onclick={(event) => closeConsole(event, item.id)}
         >
@@ -1172,8 +1202,8 @@
     <button
       type="button"
       class="new-console"
-      title={`Nueva consola (${shortcutKeys("new-query-console")})`}
-      aria-label="Nueva consola SQL"
+      title={$t("workspace.tabs.newTitle", { shortcut: shortcutKeys("new-query-console") })}
+      aria-label={$t("workspace.tabs.newAria")}
       onclick={() => createQueryConsole(profileId)}
     >
       <Plus size={14} aria-hidden="true" />
@@ -1184,11 +1214,11 @@
       <SquareTerminal size={30} strokeWidth={1.25} class="workspace-empty-icon" aria-hidden="true" />
       <div class="workspace-empty-actions">
         <button type="button" onclick={() => createQueryConsole(profileId)}>
-          <span>Nueva consola</span>
+          <span>{$t("workspace.newConsole")}</span>
           <kbd>{shortcutKeys("new-query-console")}</kbd>
         </button>
         <button type="button" onclick={() => void runFileAction(() => openSqlFileWithDialog(profileId))}>
-          <span>Abrir archivo</span>
+          <span>{$t("workspace.openFile")}</span>
           <kbd>{shortcutKeys("open-sql-file")}</kbd>
         </button>
       </div>
@@ -1314,9 +1344,9 @@
 {#if discardPrompt}
   {@const prompt = discardPrompt}
   <ConfirmDialog
-    title="¿Descartar cambios sin aplicar?"
-    message="Los cambios pendientes del resultado se perderán."
-    confirmLabel="Descartar"
+    title={$t("workspace.discard.title")}
+    message={$t("workspace.discard.message")}
+    confirmLabel={$t("common.discard")}
     onconfirm={() => prompt.resolve(true)}
     oncancel={() => prompt.resolve(false)}
   />
@@ -1335,7 +1365,11 @@
     initialHeaders={$copySettings.headers}
     onexported={(summary) => onExported(consoleId, summary)}
     oncopied={(count) =>
-      notifySuccess(`${outputNumbers.format(count)} ${count === 1 ? "fila copiada" : "filas copiadas"} al portapapeles`)}
+      notifySuccess(
+        $t(count === 1 ? "workspace.notify.copiedOne" : "workspace.notify.copiedOther", {
+          count: $numberFormat.format(count),
+        }),
+      )}
     onclose={() => (exportFor = null)}
   />
 {/if}
@@ -1365,7 +1399,7 @@
       <TriangleAlert size={14} class="notice-icon" aria-hidden="true" />
     {/if}
     <span>{current.message}</span>
-    <button type="button" class="notice-close" aria-label="Cerrar aviso" onclick={() => dismissNotice(current.id)}>
+    <button type="button" class="notice-close" aria-label={$t("workspace.notice.close")} onclick={() => dismissNotice(current.id)}>
       <X size={12} aria-hidden="true" />
     </button>
   </div>
@@ -1384,12 +1418,12 @@
   <div class="dialog-icon" aria-hidden="true">
     <TriangleAlert size={24} strokeWidth={2} />
   </div>
-  <h2>¿Cerrar {closeDialogTitle}?</h2>
-  <p class="dialog-message">Hay cambios sin guardar.</p>
+  <h2>{$t("workspace.close.title", { title: closeDialogTitle })}</h2>
+  <p class="dialog-message">{$t("workspace.close.message")}</p>
   <div class="dialog-actions">
-    <button type="button" class="secondary-action" onclick={cancelClose}>Cancelar</button>
-    <button type="button" class="danger-action" onclick={discardAndClose}>Descartar</button>
-    <button type="button" class="primary-action" onclick={() => void saveAndClose()}>Guardar</button>
+    <button type="button" class="secondary-action" onclick={cancelClose}>{$t("common.cancel")}</button>
+    <button type="button" class="danger-action" onclick={discardAndClose}>{$t("common.discard")}</button>
+    <button type="button" class="primary-action" onclick={() => void saveAndClose()}>{$t("common.save")}</button>
   </div>
 </dialog>
 

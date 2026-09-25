@@ -4,6 +4,7 @@
   import { ChevronRight, FileCode, FilePlus, Folder, FolderOpen, RefreshCw, TriangleAlert, X } from "@lucide/svelte";
   import ContextMenu from "$lib/components/ContextMenu.svelte";
   import type { ContextMenuItem } from "$lib/contextMenu";
+  import { t } from "$lib/i18n";
   import {
     createSqlFile,
     listSqlDir,
@@ -171,20 +172,20 @@
 
   function folderMenuItems(dir: string): ContextMenuItem[] {
     const items: ContextMenuItem[] = [
-      { label: "Nuevo archivo SQL", action: () => void startCreate(dir) },
-      { label: "Actualizar", action: refreshAll },
+      { label: $t("workspace.files.newFile"), action: () => void startCreate(dir) },
+      { label: $t("workspace.files.refresh"), action: refreshAll },
     ];
     if (dir === folder) {
-      items.push({ label: "Cerrar carpeta", separatorBefore: true, action: () => closeSqlFolder(profileId) });
+      items.push({ label: $t("workspace.files.closeFolder"), separatorBefore: true, action: () => closeSqlFolder(profileId) });
     }
     return items;
   }
 
   function fileMenuItems(path: string): ContextMenuItem[] {
     return [
-      { label: "Abrir", action: () => openFile(path) },
-      { label: "Cambiar nombre", action: () => void startRename(path) },
-      { label: "Mover a la papelera", separatorBefore: true, action: () => void requestTrash(path) },
+      { label: $t("workspace.files.open"), action: () => openFile(path) },
+      { label: $t("workspace.rename"), action: () => void startRename(path) },
+      { label: $t("workspace.files.trash"), separatorBefore: true, action: () => void requestTrash(path) },
     ];
   }
 </script>
@@ -194,8 +195,8 @@
     <FileCode size={14} class="node-icon icon-file" aria-hidden="true" />
     <input
       class="edit-input"
-      aria-label={editing?.kind === "create" ? "Nombre del archivo nuevo" : "Nuevo nombre"}
-      placeholder="nombre.sql"
+      aria-label={editing?.kind === "create" ? $t("workspace.files.newFileName") : $t("workspace.files.newName")}
+      placeholder={$t("workspace.files.namePlaceholder")}
       bind:this={editInput}
       bind:value={editValue}
       onkeydown={onEditKeydown}
@@ -261,24 +262,24 @@
             <FileCode size={14} class="node-icon icon-file" aria-hidden="true" />
             <span class="label">{entry.name}</span>
             {#if dirtyPaths.has(entry.path)}
-              <span class="dirty-dot" title="Cambios sin guardar"></span>
+              <span class="dirty-dot" title={$t("workspace.files.unsaved")}></span>
             {/if}
           </button>
         </li>
       {/if}
     {/each}
     {#if listing.entries.length === 0 && dir === folder && editing?.kind !== "create"}
-      <li class="empty">Sin archivos .sql</li>
+      <li class="empty">{$t("workspace.files.empty")}</li>
     {/if}
   {:else if listing?.status === "error"}
     <li class="row message error" style:--depth={depth} title={listing.message}>
       <TriangleAlert size={13} aria-hidden="true" />
-      <span class="label">No se pudo leer la carpeta</span>
+      <span class="label">{$t("workspace.files.readError")}</span>
     </li>
   {/if}
 {/snippet}
 
-<section class="file-tree" aria-label="Archivos SQL">
+<section class="file-tree" aria-label={$t("workspace.files.aria")}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header class="files-header" oncontextmenu={(event) => openMenu(event, folderMenuItems(folder))}>
     <button
@@ -295,20 +296,20 @@
       <button
         type="button"
         class="action"
-        title="Nuevo archivo SQL"
-        aria-label="Nuevo archivo SQL"
+        title={$t("workspace.files.newFile")}
+        aria-label={$t("workspace.files.newFile")}
         onclick={() => void startCreate(folder)}
       >
         <FilePlus size={13} aria-hidden="true" />
       </button>
-      <button type="button" class="action" title="Actualizar" aria-label="Actualizar archivos" onclick={refreshAll}>
+      <button type="button" class="action" title={$t("workspace.files.refresh")} aria-label={$t("workspace.files.refreshAria")} onclick={refreshAll}>
         <RefreshCw size={13} aria-hidden="true" />
       </button>
       <button
         type="button"
         class="action"
-        title="Cerrar carpeta"
-        aria-label="Cerrar carpeta"
+        title={$t("workspace.files.closeFolder")}
+        aria-label={$t("workspace.files.closeFolder")}
         onclick={() => closeSqlFolder(profileId)}
       >
         <X size={13} aria-hidden="true" />
@@ -322,7 +323,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <nav
     class="files-scroll"
-    aria-label="Archivos de la carpeta"
+    aria-label={$t("workspace.files.folderAria")}
     inert={collapsed}
     oncontextmenu={(event) => openMenu(event, folderMenuItems(folder))}
   >
@@ -345,15 +346,19 @@
   }}
   onclose={() => (pendingTrash = null)}
 >
-  <h2>¿Mover {pendingTrash ? fileNameFromPath(pendingTrash) : "el archivo"} a la papelera?</h2>
-  <p>Podrás recuperarlo desde la papelera del sistema.</p>
+  <h2>
+    {pendingTrash
+      ? $t("workspace.files.trashTitle", { name: fileNameFromPath(pendingTrash) })
+      : $t("workspace.files.trashTitleFallback")}
+  </h2>
+  <p>{$t("workspace.files.trashMessage")}</p>
   <div class="dialog-actions">
     <button
       type="button"
       class="secondary-action"
-      onclick={() => trashDialog?.close()}>Cancelar</button
+      onclick={() => trashDialog?.close()}>{$t("common.cancel")}</button
     >
-    <button type="button" class="primary-action" onclick={() => void confirmTrash()}>Mover a la papelera</button>
+    <button type="button" class="primary-action" onclick={() => void confirmTrash()}>{$t("workspace.files.trash")}</button>
   </div>
 </dialog>
 

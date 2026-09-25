@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import { get, writable } from "svelte/store";
+import { translate, type Translate } from "$lib/i18n";
 import type { DestructiveStatement, QueryExecutionResult, ResultPage, SortKey } from "$lib/types";
 
 const STORAGE_KEY = "khipu:query-consoles:v1";
@@ -104,6 +105,15 @@ function parseTableTab(value: unknown): TableTab | null {
 
 function consoleTitle(ordinal: number): string {
   return `consola_${ordinal}`;
+}
+
+/**
+ * El nombre por defecto se guarda siempre como "consola_N", porque de ese
+ * formato depende la numeración; solo se traduce al mostrarlo.
+ */
+export function consoleDisplayTitle(title: string, t: Translate = translate): string {
+  const ordinal = /^consola_(\d+)$/.exec(title)?.[1];
+  return ordinal ? t("workspace.defaultConsoleName", { n: ordinal }) : title;
 }
 
 function parseConsole(value: unknown): QueryConsole | null {

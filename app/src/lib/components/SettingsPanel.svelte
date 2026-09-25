@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, Code2, Keyboard, Monitor, Moon, Palette, Pencil, RotateCcw, Sun } from "@lucide/svelte";
+  import { ArrowLeft, Code2, Keyboard, Languages, Monitor, Moon, Palette, Pencil, RotateCcw, Sun } from "@lucide/svelte";
+  import { LOCALE_NAMES, LOCALES, locale, localePreference, t, type LocalePreference, type MessageKey } from "$lib/i18n";
   import { palettes, type ThemeFamily } from "$lib/theming/palettes";
   import {
     effectiveScheme,
@@ -24,7 +25,7 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  type Section = "appearance" | "editor" | "shortcuts";
+  type Section = "appearance" | "editor" | "language" | "shortcuts";
   let activeSection = $state<Section>("appearance");
   let recordingId = $state<string | null>(null);
 
@@ -63,13 +64,11 @@
   }
 
   const schemeOptions = [
-    { value: "system", label: "Sistema", description: "Usa el modo del sistema operativo", icon: Monitor },
-    { value: "light", label: "Claro", description: "Mantiene la interfaz en modo claro", icon: Sun },
-    { value: "dark", label: "Oscuro", description: "Mantiene la interfaz en modo oscuro", icon: Moon },
+    { value: "system", icon: Monitor },
+    { value: "light", icon: Sun },
+    { value: "dark", icon: Moon },
   ] as const satisfies {
     value: SchemePreference;
-    label: string;
-    description: string;
     icon: typeof Monitor;
   }[];
 
@@ -85,14 +84,20 @@
   function setFamily(family: ThemeFamily) {
     themeChoice.update((choice) => ({ ...choice, family }));
   }
+
+  const localeOptions: LocalePreference[] = ["system", ...LOCALES];
+
+  function shortcutText(id: string, field: "label" | "description"): string {
+    return $t(`shortcuts.${id}.${field}` as MessageKey);
+  }
 </script>
 
 <dialog bind:this={dialogEl} aria-labelledby="settings-title" onclose={onclose} onclick={handleBackdropClick}>
 <section class="settings">
-  <aside class="settings-nav" aria-label="Secciones de ajustes">
+  <aside class="settings-nav" aria-label={$t("settings.sections")}>
     <button class="back" type="button" onclick={() => dialogEl?.close()}>
       <ArrowLeft size={15} aria-hidden="true" />
-      Volver
+      {$t("common.back")}
     </button>
 
     <nav>
@@ -104,7 +109,7 @@
         onclick={() => (activeSection = "editor")}
       >
         <Code2 size={15} aria-hidden="true" />
-        Editor SQL
+        {$t("settings.nav.editor")}
       </button>
       <button
         class="nav-item"
@@ -114,7 +119,17 @@
         onclick={() => (activeSection = "appearance")}
       >
         <Palette size={15} aria-hidden="true" />
-        Apariencia
+        {$t("settings.nav.appearance")}
+      </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "language"}
+        type="button"
+        aria-current={activeSection === "language" ? "page" : undefined}
+        onclick={() => (activeSection = "language")}
+      >
+        <Languages size={15} aria-hidden="true" />
+        {$t("settings.nav.language")}
       </button>
       <button
         class="nav-item"
@@ -124,7 +139,7 @@
         onclick={() => (activeSection = "shortcuts")}
       >
         <Keyboard size={15} aria-hidden="true" />
-        Atajos
+        {$t("settings.nav.shortcuts")}
       </button>
     </nav>
   </aside>
@@ -133,12 +148,12 @@
     {#if activeSection === "appearance"}
       <div class="settings-content">
         <header>
-          <h1 id="settings-title">Apariencia</h1>
-          <p>Personaliza el aspecto del shell y del editor.</p>
+          <h1 id="settings-title">{$t("settings.appearance.title")}</h1>
+          <p>{$t("settings.appearance.subtitle")}</p>
         </header>
 
         <fieldset>
-          <legend>Apariencia</legend>
+          <legend>{$t("settings.appearance.scheme")}</legend>
           <div class="scheme-grid">
             {#each schemeOptions as option (option.value)}
               {@const Icon = option.icon}
@@ -149,15 +164,15 @@
                 onclick={() => setScheme(option.value)}
               >
                 <Icon size={18} aria-hidden="true" />
-                <strong>{option.label}</strong>
-                <span>{option.description}</span>
+                <strong>{$t(`settings.scheme.${option.value}`)}</strong>
+                <span>{$t(`settings.scheme.${option.value}.description`)}</span>
               </button>
             {/each}
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Paleta</legend>
+          <legend>{$t("settings.appearance.palette")}</legend>
           <div class="palette-grid">
             {#each familyOptions as option (option.value)}
               {@const preview = palettes[option.value][$effectiveScheme]}
@@ -192,21 +207,49 @@
           </div>
         </fieldset>
       </div>
-    {:else if activeSection === "editor"}
+    {:else if activeSection === "language"}
       <div class="settings-content">
         <header>
-          <h1 id="settings-title">Editor SQL</h1>
-          <p>Configura el comportamiento del editor y del formateador.</p>
+          <h1 id="settings-title">{$t("settings.language.title")}</h1>
+          <p>{$t("settings.language.subtitle")}</p>
         </header>
 
         <fieldset>
-          <legend>Formato</legend>
+          <legend>{$t("settings.language.legend")}</legend>
+          <div class="language-list" role="radiogroup" aria-label={$t("settings.language.legend")}>
+            {#each localeOptions as option (option)}
+              <button
+                class:selected={$localePreference === option}
+                type="button"
+                role="radio"
+                aria-checked={$localePreference === option}
+                onclick={() => localePreference.set(option)}
+              >
+                {#if option === "system"}
+                  <strong>{$t("settings.language.system")}</strong>
+                  <span>{$t("settings.language.system.description", { language: LOCALE_NAMES[$locale] })}</span>
+                {:else}
+                  <strong lang={option}>{LOCALE_NAMES[option]}</strong>
+                {/if}
+                <span class="selection" aria-hidden="true"></span>
+              </button>
+            {/each}
+          </div>
+        </fieldset>
+      </div>
+    {:else if activeSection === "editor"}
+      <div class="settings-content">
+        <header>
+          <h1 id="settings-title">{$t("settings.editor.title")}</h1>
+          <p>{$t("settings.editor.subtitle")}</p>
+        </header>
+
+        <fieldset>
+          <legend>{$t("settings.editor.format")}</legend>
           <div class="setting-row">
             <div class="setting-text">
-              <label for="formatter-line-width">Longitud máxima de consulta corta</label>
-              <span>
-                Las consultas que caben en este límite permanecen en una línea; las más largas se organizan en bloques.
-              </span>
+              <label for="formatter-line-width">{$t("settings.editor.lineWidth")}</label>
+              <span>{$t("settings.editor.lineWidth.description")}</span>
             </div>
             <div class="number-setting">
               <input
@@ -218,13 +261,13 @@
                 value={$editorSettings.formatterLineWidth}
                 onchange={(event) => setFormatterLineWidth(event.currentTarget.valueAsNumber)}
               />
-              <span>caracteres</span>
+              <span>{$t("settings.editor.characters")}</span>
               {#if $editorSettings.formatterLineWidth !== DEFAULT_FORMATTER_LINE_WIDTH}
                 <button
                   class="shortcut-icon-button"
                   type="button"
-                  aria-label="Restablecer longitud a 60 caracteres"
-                  title="Restablecer a 60"
+                  aria-label={$t("settings.editor.lineWidth.resetLabel", { width: DEFAULT_FORMATTER_LINE_WIDTH })}
+                  title={$t("settings.editor.lineWidth.resetTitle", { width: DEFAULT_FORMATTER_LINE_WIDTH })}
                   onclick={() => setFormatterLineWidth(DEFAULT_FORMATTER_LINE_WIDTH)}
                 >
                   <RotateCcw size={13} aria-hidden="true" />
@@ -234,9 +277,10 @@
           </div>
           <div class="setting-row">
             <div class="setting-text">
-              <span class="setting-label">Mayúsculas automáticas para palabras clave</span>
+              <span class="setting-label">{$t("settings.editor.uppercase")}</span>
               <span>
-                Convierte palabras reconocidas como <code>select</code> y <code>where</code> al terminar de escribirlas.
+                {$t("settings.editor.uppercase.before")} <code>select</code> {$t("settings.editor.uppercase.and")}
+                <code>where</code> {$t("settings.editor.uppercase.after")}
               </span>
             </div>
             <button
@@ -245,7 +289,7 @@
               type="button"
               role="switch"
               aria-checked={$editorSettings.autoUppercaseKeywords}
-              aria-label="Mayúsculas automáticas para palabras clave SQL"
+              aria-label={$t("settings.editor.uppercase.aria")}
               onclick={() => setAutoUppercaseKeywords(!$editorSettings.autoUppercaseKeywords)}
             >
               <span aria-hidden="true"></span>
@@ -254,12 +298,13 @@
         </fieldset>
 
         <fieldset>
-          <legend>Autocompletado</legend>
+          <legend>{$t("settings.editor.completion")}</legend>
           <div class="setting-row">
             <div class="setting-text">
-              <span class="setting-label">Navegar sugerencias con Tab</span>
+              <span class="setting-label">{$t("settings.editor.tabNavigation")}</span>
               <span>
-                Además de las flechas, usa <code>Tab</code> para bajar y <code>Shift+Tab</code> para subir en la lista de sugerencias.
+                {$t("settings.editor.tabNavigation.before")} <code>Tab</code> {$t("settings.editor.tabNavigation.middle")}
+                <code>Shift+Tab</code> {$t("settings.editor.tabNavigation.after")}
               </span>
             </div>
             <button
@@ -268,7 +313,7 @@
               type="button"
               role="switch"
               aria-checked={$editorSettings.tabNavigatesCompletion}
-              aria-label="Navegar sugerencias del autocompletado con Tab"
+              aria-label={$t("settings.editor.tabNavigation.aria")}
               onclick={() => setTabNavigatesCompletion(!$editorSettings.tabNavigatesCompletion)}
             >
               <span aria-hidden="true"></span>
@@ -279,18 +324,18 @@
     {:else}
       <div class="settings-content">
         <header>
-          <h1 id="settings-title">Atajos</h1>
-          <p>Atajos de teclado disponibles en la app.</p>
+          <h1 id="settings-title">{$t("settings.shortcuts.title")}</h1>
+          <p>{$t("settings.shortcuts.subtitle")}</p>
         </header>
 
         <fieldset>
-          <legend>General</legend>
+          <legend>{$t("settings.shortcuts.general")}</legend>
           <ul class="shortcut-list">
             {#each $shortcuts as shortcut (shortcut.id)}
               <li>
                 <div class="shortcut-text">
-                  <strong>{shortcut.label}</strong>
-                  <span>{shortcut.description}</span>
+                  <strong>{shortcutText(shortcut.id, "label")}</strong>
+                  <span>{shortcutText(shortcut.id, "description")}</span>
                 </div>
 
                 <div class="shortcut-actions">
@@ -302,7 +347,7 @@
                       onkeydown={(event) => handleRecordKeydown(event, shortcut.id)}
                       onblur={() => (recordingId = null)}
                     >
-                      Presiona una combinacion...
+                      {$t("settings.shortcuts.recording")}
                     </button>
                   {:else}
                     <kbd>{shortcut.keys}</kbd>
@@ -310,8 +355,8 @@
                       <button
                         class="shortcut-icon-button"
                         type="button"
-                        aria-label={`Restablecer atajo de ${shortcut.label}`}
-                        title="Restablecer al valor por defecto"
+                        aria-label={$t("settings.shortcuts.resetLabel", { name: shortcutText(shortcut.id, "label") })}
+                        title={$t("settings.shortcuts.resetTitle")}
                         onclick={() => resetShortcutKeys(shortcut.id)}
                       >
                         <RotateCcw size={13} aria-hidden="true" />
@@ -320,8 +365,8 @@
                     <button
                       class="shortcut-icon-button"
                       type="button"
-                      aria-label={`Cambiar atajo de ${shortcut.label}`}
-                      title="Cambiar atajo"
+                      aria-label={$t("settings.shortcuts.changeLabel", { name: shortcutText(shortcut.id, "label") })}
+                      title={$t("settings.shortcuts.changeTitle")}
                       onclick={() => startRecording(shortcut.id)}
                     >
                       <Pencil size={13} aria-hidden="true" />
@@ -404,7 +449,8 @@
   .back:focus-visible,
   .nav-item:focus-visible,
   .scheme-grid button:focus-visible,
-  .palette-option:focus-visible {
+  .palette-option:focus-visible,
+  .language-list button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
@@ -459,7 +505,8 @@
   }
 
   .scheme-grid button,
-  .palette-option {
+  .palette-option,
+  .language-list button {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface-elevated);
@@ -498,12 +545,14 @@
   }
 
   .scheme-grid button:hover,
-  .palette-option:hover {
+  .palette-option:hover,
+  .language-list button:hover {
     border-color: var(--control-border);
   }
 
   .scheme-grid button.selected,
-  .palette-option.selected {
+  .palette-option.selected,
+  .language-list button.selected {
     border-color: var(--accent);
     background: color-mix(in srgb, var(--surface-elevated) 92%, var(--accent));
   }
@@ -763,7 +812,39 @@
     border-radius: 50%;
   }
 
-  .palette-option.selected .selection {
+  .language-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .language-list button {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 var(--space-3);
+    padding: var(--space-3);
+    text-align: left;
+  }
+
+  .language-list strong {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .language-list span:not(.selection) {
+    grid-column: 1;
+    color: var(--text-secondary);
+    font-size: 0.6875rem;
+  }
+
+  .language-list .selection {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+
+  .palette-option.selected .selection,
+  .language-list button.selected .selection {
     border-color: var(--accent);
     background: var(--accent);
     box-shadow: inset 0 0 0 2px var(--surface-elevated);

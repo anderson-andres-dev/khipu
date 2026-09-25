@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
+  import { t, type MessageKey } from "$lib/i18n";
   import { highlightSql } from "$lib/sqlHighlight";
   import type { ChangeError, ResultChanges } from "$lib/resultEditing";
 
@@ -31,10 +32,10 @@
 
   const summary = $derived(
     [
-      { count: changes.deletes.length, one: "eliminación", many: "eliminaciones", tone: "delete" },
-      { count: changes.updates.length, one: "actualización", many: "actualizaciones", tone: "update" },
-      { count: changes.inserts.length, one: "inserción", many: "inserciones", tone: "insert" },
-    ].filter((item) => item.count > 0),
+      { count: changes.deletes.length, one: "results.changes.deletesOne", many: "results.changes.deletesOther", tone: "delete" },
+      { count: changes.updates.length, one: "results.changes.updatesOne", many: "results.changes.updatesOther", tone: "update" },
+      { count: changes.inserts.length, one: "results.changes.insertsOne", many: "results.changes.insertsOther", tone: "insert" },
+    ].filter((item): item is { count: number; one: MessageKey; many: MessageKey; tone: string } => item.count > 0),
   );
 
   // Se resalta linea por linea (no el texto entero y despues se corta): un
@@ -69,17 +70,17 @@
   onclose={onclose}
 >
   <header>
-    <h2>Cambios pendientes</h2>
+    <h2>{$t("results.changes.title")}</h2>
     <div class="summary">
       {#each summary as item (item.tone)}
-        <span class={`chip ${item.tone}`}>{item.count} {item.count === 1 ? item.one : item.many}</span>
+        <span class={`chip ${item.tone}`}>{$t(item.count === 1 ? item.one : item.many, { count: item.count })}</span>
       {/each}
     </div>
   </header>
 
   <!-- Una fila por linea: el numero en su propia columna (no seleccionable)
        y el codigo resaltado al lado. -->
-  <div class="code" role="region" aria-label="SQL a ejecutar">
+  <div class="code" role="region" aria-label={$t("results.changes.sql")}>
     <ol>
       {#each lines as line, index (index)}
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -90,18 +91,18 @@
 
   {#if error}
     <div class="apply-error" role="alert">
-      <strong>No se aplicó ningún cambio.</strong>
+      <strong>{$t("results.changes.notApplied")}</strong>
       <span>
-        {#if error.statementIndex !== null}Sentencia {error.statementIndex + 1}: {/if}{error.message}{#if error.code}
+        {#if error.statementIndex !== null}{$t("results.changes.statement", { index: error.statementIndex + 1 })} {/if}{error.message}{#if error.code}
           ({error.code}){/if}
       </span>
     </div>
   {/if}
 
   <footer>
-    <button type="button" class="secondary-action" disabled={applying} onclick={close}>Cancelar</button>
+    <button type="button" class="secondary-action" disabled={applying} onclick={close}>{$t("common.cancel")}</button>
     <button type="button" class="primary-action" disabled={applying} onclick={onapply}>
-      {applying ? "Aplicando…" : "Aplicar cambios"}
+      {applying ? $t("results.changes.applying") : $t("results.applyChanges")}
     </button>
   </footer>
 </dialog>

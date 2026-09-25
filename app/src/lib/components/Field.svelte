@@ -2,6 +2,7 @@
   import { Eye, EyeOff } from "@lucide/svelte";
   import type { Snippet } from "svelte";
   import type { HTMLInputAttributes } from "svelte/elements";
+  import { t } from "$lib/i18n";
 
   interface Option {
     value: string;
@@ -173,7 +174,7 @@
         <button
           class="field-action"
           type="button"
-          aria-label={passwordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+          aria-label={passwordVisible ? $t("shell.hidePassword") : $t("shell.showPassword")}
           aria-pressed={passwordVisible}
           onclick={() => (passwordVisible = !passwordVisible)}
           {disabled}

@@ -5,6 +5,7 @@
   import { getDriver } from "$lib/connections";
   import { NEUTRAL_IDENTITY_COLOR } from "$lib/connectionColors";
   import { openConnectionWindow } from "$lib/connectionWindow";
+  import { t } from "$lib/i18n";
   import { connectToProfile, pendingEdit } from "$lib/stores/connection";
   import type { ConnectionProfile } from "$lib/stores/connectionProfiles";
 
@@ -20,6 +21,7 @@
 
   let open = $state(false);
   let activeOption = $state(0);
+  // Error crudo al abrir otra ventana; el texto que lo rodea se traduce al pintarlo.
   let windowError = $state<string | null>(null);
   let root = $state<HTMLElement>();
   const activeProfile = $derived(profiles.find((profile) => profile.id === activeProfileId) ?? null);
@@ -114,7 +116,7 @@
       await openConnectionWindow(profile);
       open = false;
     } catch (error) {
-      windowError = `No se pudo abrir la ventana: ${String(error)}`;
+      windowError = String(error);
     }
   }
 </script>
@@ -143,13 +145,13 @@
       <DriverLogo driver={activeProfile.driver} size={16} />
       <span class="switcher-name">{activeProfile.name}</span>
     {:else}
-      <span class="switcher-name">Sin conexión</span>
+      <span class="switcher-name">{$t("connections.switcher.none")}</span>
     {/if}
     <ChevronDown size={14} class="switcher-chevron" aria-hidden="true" />
   </button>
 
   {#if open}
-    <div class="switcher-menu" role="listbox" aria-label="Conexiones guardadas">
+    <div class="switcher-menu" role="listbox" aria-label={$t("connections.switcher.saved")}>
       {#each sections as section (section.title ?? "")}
         {#if section.title}
           <div class="section-title" role="presentation">{section.title}</div>
@@ -174,15 +176,15 @@
                 <span class="option-detail">{driver.name} · {profile.database}@{profile.host}</span>
               </span>
               {#if profile.id === activeProfileId}
-                <Check size={14} class="option-check" aria-label="Conexión actual" />
+                <Check size={14} class="option-check" aria-label={$t("connections.switcher.current")} />
               {/if}
             </button>
             <button
               type="button"
               class="new-window"
               tabindex="-1"
-              aria-label={`Abrir ${profile.name} en una ventana nueva`}
-              title="Abrir en una ventana nueva (Shift+Enter)"
+              aria-label={$t("connections.switcher.openLabel", { name: profile.name })}
+              title={$t("connections.switcher.openTitle")}
               onclick={() => openInNewWindow(profile)}
             >
               <SquareArrowOutUpRight size={14} aria-hidden="true" />
@@ -192,7 +194,7 @@
       {/each}
 
       {#if windowError}
-        <p class="menu-error" role="alert">{windowError}</p>
+        <p class="menu-error" role="alert">{$t("connections.switcher.windowError", { error: windowError })}</p>
       {/if}
     </div>
   {/if}

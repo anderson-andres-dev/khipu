@@ -5,6 +5,7 @@
   import { EditorState } from "@codemirror/state";
   import { sql, MySQL } from "@codemirror/lang-sql";
   import { X } from "@lucide/svelte";
+  import { t } from "$lib/i18n";
   import { fetchTableDefinition } from "$lib/tableDefinition";
   import { buildCmTheme } from "$lib/theming/codemirrorTheme";
   import { editorPalette, effectiveScheme } from "$lib/theming/theme";
@@ -86,27 +87,27 @@
 >
   <div class="dialog-heading">
     <h2>{table}</h2>
-    <button type="button" class="dialog-close" aria-label="Cerrar" onclick={() => dialogEl?.close()}>
+    <button type="button" class="dialog-close" aria-label={$t("common.close")} onclick={() => dialogEl?.close()}>
       <X size={15} aria-hidden="true" />
     </button>
   </div>
   <dl class="meta">
     <div class="meta-row">
-      <dt>Origen de datos</dt>
+      <dt>{$t("workspace.definition.dataSource")}</dt>
       <dd>{dataSource}</dd>
     </div>
     <div class="meta-row">
-      <dt>Schema</dt>
+      <dt>{$t("workspace.definition.schema")}</dt>
       <dd>{schema}</dd>
     </div>
     <div class="meta-row">
-      <dt>Tabla</dt>
+      <dt>{$t("workspace.definition.table")}</dt>
       <dd>{table}</dd>
     </div>
   </dl>
   <div class="ddl-region">
     {#if status === "loading"}
-      <p class="placeholder">Cargando estructura…</p>
+      <p class="placeholder">{$t("workspace.definition.loading")}</p>
     {:else if status === "error"}
       <p class="error">{errorMessage}</p>
     {:else}
