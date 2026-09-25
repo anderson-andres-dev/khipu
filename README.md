@@ -8,7 +8,7 @@ A lightweight desktop client for querying, exploring and understanding databases
 
 **100% free · Open source · No Pro edition**
 
-[Download](https://github.com/anderson-andres-dev/khipu/releases) · [Documentation](docs/ARCHITECTURE.md)
+[Download](https://github.com/anderson-andres-dev/rowly-db/releases) · [Documentation](docs/ARCHITECTURE.md)
 
 No subscriptions. No Pro edition. No locked features.
 

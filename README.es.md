@@ -9,7 +9,7 @@ datos.
 
 **100 % gratis · Código abierto · Sin versión Pro**
 
-[Descargar](https://github.com/anderson-andres-dev/khipu/releases) · [Documentación](docs/ARCHITECTURE.md)
+[Descargar](https://github.com/anderson-andres-dev/rowly-db/releases) · [Documentación](docs/ARCHITECTURE.md)
 
 Sin suscripciones. Sin versión Pro. Sin funciones bloqueadas.
 
