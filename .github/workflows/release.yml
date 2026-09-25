@@ -1,12 +1,33 @@
 name: Release
 
+# Un tag vX.Y.Z (o vX.Y.Z-rc.N para una versión preliminar) publica una
+# release con los instaladores de cada sistema y el latest.json firmado que
+# usa Ajustes > Actualizaciones. Las releases no se borran: son el historial
+# al que la app deja volver.
+
 on:
   push:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: write
+
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: El tag coincide con la versión de la app
+        run: |
+          app_version=$(python3 -c "import json; print(json.load(open('app/src-tauri/tauri.conf.json'))['version'])")
+          if [ "v${app_version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "El tag ${GITHUB_REF_NAME} no coincide con la versión ${app_version} de tauri.conf.json" >&2
+            exit 1
+          fi
+
   release:
+    needs: version
     strategy:
       fail-fast: false
       matrix:
@@ -15,6 +36,8 @@ jobs:
             args: "--target aarch64-apple-darwin"
           - platform: macos-latest
             args: "--target x86_64-apple-darwin"
+          # Ubuntu 22.04 (glibc 2.35): el binario corre también en Debian 12,
+          # Fedora y Arch, que traen una glibc igual o más nueva.
           - platform: ubuntu-22.04
             args: ""
           - platform: windows-latest
@@ -27,7 +50,7 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential curl wget file libssl-dev libgtk-3-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential curl wget file libssl-dev libgtk-3-dev rpm
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@1.90
@@ -49,10 +72,56 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
           tagName: ${{ github.ref_name }}
           releaseName: "Rowly DB ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+          # Firmas de actualización solo aquí: compilar el repo no necesita la clave.
+          args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json
+
+  arch:
+    needs: release
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Herramientas
+        run: pacman -Syu --noconfirm --needed git github-cli nodejs npm python pacman-contrib
+
+      - uses: actions/checkout@v4
+
+      - name: Construir el paquete de pacman desde el .deb del release
+        run: |
+          version="${TAG#v}"
+          useradd --create-home builder
+          install -d -o builder /home/builder/pkg
+          sed -e "s/^pkgver=.*/pkgver=${version//-/_}/" \
+              -e "s#/v\${pkgver}/#/${TAG}/#g" \
+              -e "s#_\${pkgver}_#_${version}_#g" \
+              packaging/arch/PKGBUILD > /home/builder/pkg/PKGBUILD
+          chown builder /home/builder/pkg/PKGBUILD
+          cd /home/builder/pkg
+          su builder -c "updpkgsums && makepkg --noconfirm --nodeps"
+          cp ./*.pkg.tar.zst "${GITHUB_WORKSPACE}/rowly-db_${version}_x86_64.pkg.tar.zst"
+          cp PKGBUILD "${GITHUB_WORKSPACE}/rowly-db-bin.PKGBUILD"
+
+      - name: Firmar y sumarlo a latest.json
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          version="${TAG#v}"
+          package="rowly-db_${version}_x86_64.pkg.tar.zst"
+          npx --yes @tauri-apps/cli@2 signer sign "${package}"
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --pattern latest.json --clobber
+          python3 packaging/arch/add-to-manifest.py latest.json "${package}" "${package}.sig" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${package}"
+          gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber \
+            "${package}" "${package}.sig" latest.json rowly-db-bin.PKGBUILD

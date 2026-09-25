@@ -7,6 +7,7 @@ import results from "./results";
 import settings from "./settings";
 import shell from "./shell";
 import shortcuts from "./shortcuts";
+import updates from "./updates";
 import workspace from "./workspace";
 
 // Un archivo por área de la interfaz; la clave completa es "área.clave".
@@ -20,6 +21,7 @@ export const messages = {
   settings,
   shell,
   shortcuts,
+  updates,
   workspace,
 };
 

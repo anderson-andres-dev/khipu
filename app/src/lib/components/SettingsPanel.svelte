@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { ArrowLeft, Code2, Keyboard, Languages, Monitor, Moon, Palette, Pencil, RotateCcw, Sun } from "@lucide/svelte";
+  import { ArrowLeft, Code2, Keyboard, Languages, Monitor, Moon, Palette, Pencil, RefreshCw, RotateCcw, Sun } from "@lucide/svelte";
+  import UpdatesSection from "$lib/components/UpdatesSection.svelte";
+  import { newerRelease } from "$lib/stores/updates";
   import { LOCALE_NAMES, LOCALES, locale, localePreference, t, type LocalePreference, type MessageKey } from "$lib/i18n";
   import { THEME_FAMILIES, palettes, themeVariant, type ThemeFamily } from "$lib/theming/palettes";
   import {
@@ -25,7 +27,7 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  type Section = "appearance" | "editor" | "language" | "shortcuts";
+  type Section = "appearance" | "editor" | "language" | "shortcuts" | "updates";
   let activeSection = $state<Section>("appearance");
   let recordingId = $state<string | null>(null);
 
@@ -144,6 +146,21 @@
         <Keyboard size={15} aria-hidden="true" />
         {$t("settings.nav.shortcuts")}
       </button>
+      <button
+        class="nav-item"
+        class:active={activeSection === "updates"}
+        type="button"
+        aria-current={activeSection === "updates" ? "page" : undefined}
+        onclick={() => (activeSection = "updates")}
+      >
+        <RefreshCw size={15} aria-hidden="true" />
+        {$t("settings.nav.updates")}
+        {#if $newerRelease}
+          <span class="nav-dot" title={$t("settings.nav.updatesAvailable")}>
+            <span class="visually-hidden">{$t("settings.nav.updatesAvailable")}</span>
+          </span>
+        {/if}
+      </button>
     </nav>
   </aside>
 
@@ -250,6 +267,14 @@
             {/each}
           </div>
         </fieldset>
+      </div>
+    {:else if activeSection === "updates"}
+      <div class="settings-content">
+        <header>
+          <h1 id="settings-title">{$t("updates.title")}</h1>
+          <p>{$t("updates.subtitle")}</p>
+        </header>
+        <UpdatesSection />
       </div>
     {:else if activeSection === "language"}
       <div class="settings-content">
@@ -973,6 +998,23 @@
     height: 0.75rem;
     border: 1px solid var(--control-border);
     border-radius: 50%;
+  }
+
+  .nav-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    margin-left: auto;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .language-list {

@@ -23,6 +23,7 @@
   } from "$lib/stores/sidebarLayout";
   import { initThemeEffects } from "$lib/theming/theme";
   import { initLocaleEffects, t } from "$lib/i18n";
+  import { checkOnStartup, newerRelease } from "$lib/stores/updates";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { fade } from "svelte/transition";
   import {
@@ -240,6 +241,9 @@
     installDialogMotion();
     cleanupThemeEffects = initThemeEffects();
     cleanupLocaleEffects = initLocaleEffects();
+    // Solo la ventana principal busca versiones al arrancar: las de conexión
+    // no repiten la consulta a GitHub.
+    if (getCurrentWindow().label === "main") void checkOnStartup();
     document.addEventListener("keydown", handleGlobalKeydown);
     window.addEventListener("pointerdown", trackPointerRegion, true);
     // En captura: tiene que llegar antes que el keymap de CodeMirror.
@@ -310,6 +314,9 @@
       onclick={() => (settingsOpen = !settingsOpen)}
     >
       <Settings size={17} aria-hidden="true" />
+      {#if $newerRelease}
+        <span class="update-dot" aria-hidden="true"></span>
+      {/if}
     </button>
     <div class="window-controls" aria-label={$t("shell.windowControls")}>
       <button
@@ -541,6 +548,7 @@
   }
 
   .icon-button {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -774,5 +782,17 @@
   .route-content {
     height: 100%;
     min-height: 0;
+  }
+
+  /* Hay una versión nueva: un punto sobre el engranaje, sin interrumpir. */
+  .update-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border: 1.5px solid var(--surface);
+    border-radius: 50%;
+    background: var(--accent);
   }
 </style>

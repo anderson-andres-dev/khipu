@@ -1,0 +1,29 @@
+# Paquete de Arch Linux de Rowly DB (rowly-db-bin): reempaqueta el .deb que
+# publica cada release. El workflow de release lo construye con makepkg, lo
+# firma y lo sube como .pkg.tar.zst, y deja este PKGBUILD con las sumas de
+# esa versión listo para publicarlo en AUR.
+
+pkgname=rowly-db-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Free & Open Source SQL Client"
+arch=('x86_64')
+url="https://github.com/anderson-andres-dev/rowly-db"
+license=('MIT' 'Apache-2.0')
+depends=('webkit2gtk-4.1' 'gtk3' 'hicolor-icon-theme')
+provides=('rowly-db')
+conflicts=('rowly-db')
+options=('!strip' '!debug')
+# GitHub cambia los espacios del nombre del producto ("Rowly DB") por puntos.
+source=("Rowly.DB_${pkgver}_amd64.deb::${url}/releases/download/v${pkgver}/Rowly.DB_${pkgver}_amd64.deb"
+        "LICENSE-MIT::https://raw.githubusercontent.com/anderson-andres-dev/rowly-db/v${pkgver}/LICENSE-MIT"
+        "LICENSE-APACHE::https://raw.githubusercontent.com/anderson-andres-dev/rowly-db/v${pkgver}/LICENSE-APACHE")
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP')
+
+package() {
+  bsdtar -xf "${srcdir}/data.tar.gz" -C "${pkgdir}"
+  install -Dm644 "${srcdir}/LICENSE-MIT" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-MIT"
+  install -Dm644 "${srcdir}/LICENSE-APACHE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-APACHE"
+}
